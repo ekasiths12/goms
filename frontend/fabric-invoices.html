@@ -176,6 +176,78 @@
             color: #fff;
         }
 
+        /* Pagination Styles */
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            background: #2c2c2c;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #424242;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #5c6bc0;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #3949ab;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2c2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .pagination-info {
+            color: #b0bec5;
+            font-size: 14px;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #424242;
+            color: #eceff1;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #5c6bc0;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #5c6bc0;
+            color: #fff;
+        }
+
         /* Action Buttons */
         .action-buttons {
             display: flex;
@@ -475,6 +547,20 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                Showing <span id="paginationStart">0</span> to <span id="paginationEnd">0</span> of <span id="paginationTotal">0</span> records
+            </div>
+            <div class="pagination-buttons">
+                <button class="pagination-btn" id="firstPage" onclick="goToPage(1)">First</button>
+                <button class="pagination-btn" id="prevPage" onclick="goToPage(currentPage - 1)">Previous</button>
+                <span id="pageNumbers"></span>
+                <button class="pagination-btn" id="nextPage" onclick="goToPage(currentPage + 1)">Next</button>
+                <button class="pagination-btn" id="lastPage" onclick="goToPage(getTotalPages())">Last</button>
+            </div>
+        </div>
         
         <!-- Action Buttons -->
         <div class="action-buttons">
@@ -501,6 +587,8 @@
         // Fabric Invoice Functions
         let invoiceData = [];
         let selectedRows = [];
+        let currentPage = 1;
+        const itemsPerPage = 30;
 
         // Load data when page loads
         window.addEventListener('load', async () => {
@@ -588,6 +676,7 @@
                         invoiceData = JSON.parse(responseText);
                         console.log('📊 Parsed invoice data:', invoiceData);
                         console.log('📊 Received invoice data:', invoiceData.length, 'records');
+                        currentPage = 1; // Reset to first page when new data is loaded
                         populateInvoiceTable();
                         populateFilters();
                     } catch (parseError) {
@@ -613,12 +702,24 @@
 
             if (invoiceData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
+                updatePaginationControls();
                 return;
             }
 
-            invoiceData.forEach((invoice, index) => {
+            // Calculate pagination
+            const totalPages = getTotalPages();
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, invoiceData.length);
+            const pageData = invoiceData.slice(startIndex, endIndex);
+
+            pageData.forEach((invoice, pageIndex) => {
+                const actualIndex = startIndex + pageIndex; // Use actual index for selection
                 const row = document.createElement('tr');
-                row.onclick = () => toggleRowSelection(row, index);
+                row.onclick = () => toggleRowSelection(row, actualIndex);
                 
                 // Use yards_sent and yards_consumed like the old Qt app
                 const yardsSent = invoice.yards_sent || invoice.quantity || 0;
@@ -643,7 +744,58 @@
                 `;
                 tbody.appendChild(row);
             });
-            console.log('✅ Invoice table populated with', invoiceData.length, 'rows');
+            
+            updatePaginationControls();
+            console.log('✅ Invoice table populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
+        }
+
+        function getTotalPages() {
+            return Math.ceil(invoiceData.length / itemsPerPage);
+        }
+
+        function updatePaginationControls() {
+            const totalPages = getTotalPages();
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, invoiceData.length);
+            
+            // Update pagination info
+            document.getElementById('paginationStart').textContent = invoiceData.length > 0 ? startIndex + 1 : 0;
+            document.getElementById('paginationEnd').textContent = endIndex;
+            document.getElementById('paginationTotal').textContent = invoiceData.length;
+            
+            // Update button states
+            document.getElementById('firstPage').disabled = currentPage <= 1;
+            document.getElementById('prevPage').disabled = currentPage <= 1;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages;
+            document.getElementById('lastPage').disabled = currentPage >= totalPages;
+            
+            // Update page numbers
+            const pageNumbersSpan = document.getElementById('pageNumbers');
+            pageNumbersSpan.innerHTML = '';
+            
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pageNumbersSpan.appendChild(pageBtn);
+            }
+        }
+
+        function goToPage(page) {
+            const totalPages = getTotalPages();
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                populateInvoiceTable();
+            }
         }
 
         function populateFilters() {
@@ -795,6 +947,7 @@
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
             document.getElementById('showConsumed').checked = false;
+            currentPage = 1; // Reset to first page when clearing filters
             loadInvoiceData(); // Show all data
         }
 
