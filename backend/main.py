@@ -22,7 +22,14 @@ def create_app(config_class=Config):
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
+    
+    # Configure CORS for local development
+    if app.debug:
+        # Allow all origins in development mode
+        CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True)
+    else:
+        # Production CORS settings
+        CORS(app)
     
     # Register blueprints
     from app.routes.main import main_bp
