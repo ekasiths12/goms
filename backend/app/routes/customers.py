@@ -1,23 +1,33 @@
 from flask import Blueprint, request, jsonify
-from app import db
 from app.models.customer import Customer
+from main import db
+import json
+import os
+from datetime import datetime
 
 customers_bp = Blueprint('customers', __name__)
+
+# Customer ID file path (similar to old Qt app)
+CUSTOMER_ID_FILE = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'customer_ids.json')
 
 @customers_bp.route('/', methods=['GET'])
 def get_customers():
     """Get all customers"""
     try:
-        customers = Customer.query.order_by(Customer.short_name).all()
-        return jsonify({
-            'success': True,
-            'data': [customer.to_dict() for customer in customers]
-        }), 200
+        customers = Customer.query.all()
+        result = []
+        for customer in customers:
+            result.append({
+                'id': customer.id,
+                'customer_id': customer.customer_id,
+                'short_name': customer.short_name,
+                'full_name': customer.full_name,
+                'registration_date': customer.registration_date.isoformat() if customer.registration_date else None,
+                'is_active': customer.is_active
+            })
+        return jsonify(result)
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return {'error': str(e)}, 500
 
 @customers_bp.route('/<int:customer_id>', methods=['GET'])
 def get_customer(customer_id):
@@ -154,3 +164,33 @@ def get_active_customers():
             'success': False,
             'error': str(e)
         }), 500
+
+@customers_bp.route('/customer-ids', methods=['GET'])
+def get_customer_ids():
+    """Get selected customer IDs for .dat import filtering"""
+    try:
+        if os.path.exists(CUSTOMER_ID_FILE):
+            with open(CUSTOMER_ID_FILE, 'r') as f:
+                customer_ids = json.load(f)
+        else:
+            customer_ids = []
+        return jsonify(customer_ids)
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@customers_bp.route('/customer-ids', methods=['POST'])
+def save_customer_ids():
+    """Save selected customer IDs for .dat import filtering"""
+    try:
+        data = request.get_json()
+        customer_ids = data.get('customer_ids', [])
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(CUSTOMER_ID_FILE), exist_ok=True)
+        
+        with open(CUSTOMER_ID_FILE, 'w') as f:
+            json.dump(customer_ids, f)
+        
+        return {'message': 'Customer IDs saved successfully'}, 200
+    except Exception as e:
+        return {'error': str(e)}, 500

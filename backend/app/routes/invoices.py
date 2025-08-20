@@ -41,21 +41,35 @@ def get_invoices():
             query = query.filter(InvoiceLine.delivered_location.ilike(f'%{location_filter}%'))
         if date_from:
             try:
-                date_from_obj = datetime.strptime(date_from, '%d/%m/%y')
-                query = query.filter(Invoice.invoice_date >= date_from_obj)
-            except ValueError:
+                # Convert DD/MM/YY to YYYY-MM-DD (like old Qt app)
+                if len(date_from) == 8 and date_from.count('/') == 2:
+                    day, month, year = date_from.split('/')
+                    # Convert 2-digit year to 4-digit year
+                    if len(year) == 2:
+                        year = '20' + year if int(year) < 50 else '19' + year
+                    date_from_iso = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+                    date_from_obj = datetime.strptime(date_from_iso, '%Y-%m-%d')
+                    query = query.filter(Invoice.invoice_date >= date_from_obj)
+            except (ValueError, IndexError):
                 pass
         if date_to:
             try:
-                date_to_obj = datetime.strptime(date_to, '%d/%m/%y')
-                query = query.filter(Invoice.invoice_date <= date_to_obj)
-            except ValueError:
+                # Convert DD/MM/YY to YYYY-MM-DD (like old Qt app)
+                if len(date_to) == 8 and date_to.count('/') == 2:
+                    day, month, year = date_to.split('/')
+                    # Convert 2-digit year to 4-digit year
+                    if len(year) == 2:
+                        year = '20' + year if int(year) < 50 else '19' + year
+                    date_to_iso = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+                    date_to_obj = datetime.strptime(date_to_iso, '%Y-%m-%d')
+                    query = query.filter(Invoice.invoice_date <= date_to_obj)
+            except (ValueError, IndexError):
                 pass
         
         # Filter out fully consumed fabrics if not showing them
         if not show_consumed:
             query = query.filter(
-                (InvoiceLine.quantity - InvoiceLine.yards_consumed) > 0
+                (InvoiceLine.yards_sent - InvoiceLine.yards_consumed) > 0
             )
 
         # Execute query
@@ -64,7 +78,10 @@ def get_invoices():
         # Format response
         result = []
         for line in invoice_lines:
-            pending = (line.quantity or 0) - (line.yards_consumed or 0)
+            # Use yards_sent and yards_consumed like the old Qt app
+            yards_sent = line.yards_sent or line.quantity or 0
+            yards_consumed = line.yards_consumed or 0
+            pending = yards_sent - yards_consumed
             result.append({
                 'id': line.id,
                 'invoice_id': line.invoice_id,
@@ -82,9 +99,10 @@ def get_invoices():
                 'color': line.color,
                 'delivery_note': line.delivery_note,
                 'delivered_location': line.delivered_location,
-                'yards_consumed': float(line.yards_consumed) if line.yards_consumed else 0,
+                'yards_sent': float(yards_sent),
+                'yards_consumed': float(yards_consumed),
                 'pending': pending,
-                'total_value': float((line.quantity or 0) * (line.unit_price or 0))
+                'total_value': float(yards_sent * (line.unit_price or 0))
             })
         
         return jsonify(result)
@@ -243,83 +261,4 @@ def assign_tax_invoice_number():
         db.session.rollback()
         return {'error': str(e)}, 500
 
-@invoices_bp.route('/test-data', methods=['POST'])
-def create_test_data():
-    """Create sample invoice data for testing"""
-    try:
-        # Check if test data already exists
-        existing_customer = Customer.query.filter_by(short_name='Test Customer').first()
-        if existing_customer:
-            return {'message': 'Test data already exists'}, 200
-        
-        # Create test customer
-        customer = Customer(
-            customer_id='TEST001',
-            short_name='Test Customer',
-            full_name='Test Customer Full Name',
-            registration_date=datetime.now(),
-            is_active=True
-        )
-        db.session.add(customer)
-        db.session.flush()
-        
-        # Create test invoice
-        invoice = Invoice(
-            invoice_number='INV-001',
-            customer_id=customer.id,
-            invoice_date=datetime.now(),
-            total_amount=1000.00,
-            status='open',
-            tax_invoice_number='TAX-001'
-        )
-        db.session.add(invoice)
-        db.session.flush()
-        
-        # Create test invoice lines
-        test_lines = [
-            {
-                'item_name': 'Cotton Fabric',
-                'quantity': 100.0,
-                'unit_price': 5.50,
-                'color': 'Blue',
-                'delivery_note': 'DN-001',
-                'delivered_location': 'Warehouse A'
-            },
-            {
-                'item_name': 'Polyester Fabric',
-                'quantity': 75.0,
-                'unit_price': 3.25,
-                'color': 'Red',
-                'delivery_note': 'DN-002',
-                'delivered_location': 'Warehouse B'
-            },
-            {
-                'item_name': 'Silk Fabric',
-                'quantity': 50.0,
-                'unit_price': 12.00,
-                'color': 'Green',
-                'delivery_note': 'DN-003',
-                'delivered_location': 'Warehouse C'
-            }
-        ]
-        
-        for line_data in test_lines:
-            invoice_line = InvoiceLine(
-                invoice_id=invoice.id,
-                item_name=line_data['item_name'],
-                quantity=line_data['quantity'],
-                unit_price=line_data['unit_price'],
-                color=line_data['color'],
-                delivery_note=line_data['delivery_note'],
-                delivered_location=line_data['delivered_location'],
-                yards_sent=line_data['quantity'],
-                yards_consumed=0.0
-            )
-            db.session.add(invoice_line)
-        
-        db.session.commit()
-        return {'message': 'Test data created successfully', 'customer_id': customer.id, 'invoice_id': invoice.id}, 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return {'error': str(e)}, 500
+
