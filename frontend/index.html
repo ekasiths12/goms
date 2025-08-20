@@ -757,12 +757,17 @@
 
             // Add active class to clicked tab
             event.target.classList.add('active');
+            
+            // Load data for specific sections
+            if (sectionId === 'fabric-invoices' && invoiceData.length === 0) {
+                loadInvoiceData();
+            }
         }
 
         // Test API connection on page load
         window.addEventListener('load', async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/health');
+                const response = await fetch('/api/health');
                 if (response.ok) {
                     console.log('✅ Backend API is running');
                     // Load initial data for fabric invoices
@@ -780,17 +785,28 @@
         let selectedRows = [];
 
         async function loadInvoiceData() {
+            const tbody = document.getElementById('invoiceTableBody');
+            if (!tbody) {
+                console.error('Invoice table body not found');
+                return;
+            }
+            
+            // Show loading state
+            tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">Loading invoice data...</td></tr>';
+            
             try {
-                const response = await fetch('http://localhost:8000/api/invoices');
+                const response = await fetch('/api/invoices');
                 if (response.ok) {
                     invoiceData = await response.json();
                     populateInvoiceTable();
                     populateFilters();
                 } else {
                     console.error('Failed to load invoice data');
+                    tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading invoice data:', error);
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
             }
         }
 
@@ -1055,7 +1071,7 @@
             const progressText = document.querySelector('.progress-text');
 
             try {
-                const response = await fetch('http://localhost:8000/api/files/import-dat', {
+                const response = await fetch('/api/files/import-dat', {
                     method: 'POST',
                     body: formData
                 });
@@ -1087,7 +1103,7 @@
             };
 
             try {
-                const response = await fetch('http://localhost:8000/api/invoices', {
+                const response = await fetch('/api/invoices', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
