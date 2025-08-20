@@ -3,6 +3,7 @@ from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
 from main import db
 from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, and_
 from datetime import datetime
 import traceback
 
@@ -12,6 +13,7 @@ invoices_bp = Blueprint('invoices', __name__)
 def get_invoices():
     """Get all invoices with line items and customer information"""
     try:
+        print("DEBUG: get_invoices called")
         # Get query parameters for filtering
         customer_filter = request.args.get('customer')
         invoice_number_filter = request.args.get('invoice_number')
@@ -22,6 +24,8 @@ def get_invoices():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         show_consumed = request.args.get('show_consumed', 'false').lower() == 'true'
+
+        print(f"DEBUG: Filters - customer: {customer_filter}, show_consumed: {show_consumed}")
 
         # Build query
         query = db.session.query(InvoiceLine).join(Invoice).join(Customer)
@@ -69,11 +73,17 @@ def get_invoices():
         # Filter out fully consumed fabrics if not showing them
         if not show_consumed:
             query = query.filter(
-                (InvoiceLine.yards_sent - InvoiceLine.yards_consumed) > 0
+                or_(
+                    InvoiceLine.yards_consumed.is_(None),
+                    InvoiceLine.yards_consumed == 0,
+                    InvoiceLine.yards_sent > InvoiceLine.yards_consumed
+                )
             )
 
         # Execute query
+        print("DEBUG: About to execute query")
         invoice_lines = query.all()
+        print(f"DEBUG: Query executed, found {len(invoice_lines)} invoice lines")
         
         # Format response
         result = []
@@ -105,9 +115,12 @@ def get_invoices():
                 'total_value': float(yards_sent * (line.unit_price or 0))
             })
         
+        print(f"DEBUG: Returning {len(result)} results")
         return jsonify(result)
         
     except Exception as e:
+        print(f"DEBUG: Error in get_invoices: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return {'error': str(e)}, 500
 
 @invoices_bp.route('/', methods=['POST'])
