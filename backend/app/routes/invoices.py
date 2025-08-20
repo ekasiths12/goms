@@ -280,26 +280,55 @@ def delete_multiple_invoice_lines():
 
 @invoices_bp.route('/assign-location', methods=['POST'])
 def assign_delivered_location():
-    """Assign delivered location to selected invoice lines"""
+    """Assign delivered location to selected invoice lines (like old Qt app)"""
     try:
         data = request.get_json()
-        line_ids = data.get('line_ids', [])
+        lines = data.get('lines', [])
         location = data.get('location', '')
         
-        if not line_ids:
+        if not lines:
             return {'error': 'No invoice lines selected'}, 400
         if not location:
             return {'error': 'Location is required'}, 400
         
-        # Update all selected lines
-        updated_count = InvoiceLine.query.filter(
-            InvoiceLine.id.in_(line_ids)
-        ).update({
-            'delivered_location': location
-        }, synchronize_session=False)
+        updated_count = 0
+        not_found = 0
+        
+        for line_data in lines:
+            invoice_number = line_data.get('invoice_number')
+            item_name = line_data.get('item_name')
+            color = line_data.get('color')
+            
+            # Update using invoice_number, item_name, and color (like old Qt app)
+            result = db.session.execute(
+                db.text("""
+                    UPDATE invoice_lines l
+                    JOIN invoices i ON l.invoice_id = i.id
+                    SET l.delivered_location = :location
+                    WHERE i.invoice_number = :invoice_number 
+                    AND l.item_name = :item_name 
+                    AND l.color = :color
+                """),
+                {
+                    'location': location,
+                    'invoice_number': invoice_number,
+                    'item_name': item_name,
+                    'color': color
+                }
+            )
+            
+            if result.rowcount > 0:
+                updated_count += result.rowcount
+            else:
+                not_found += 1
         
         db.session.commit()
-        return {'message': f'Location assigned to {updated_count} invoice lines'}, 200
+        
+        message = f"Location '{location}' assigned to {updated_count} invoice lines."
+        if not_found > 0:
+            message += f" {not_found} selected line(s) could not be found and were skipped."
+        
+        return {'message': message}, 200
         
     except Exception as e:
         db.session.rollback()
@@ -307,26 +336,36 @@ def assign_delivered_location():
 
 @invoices_bp.route('/assign-tax-invoice', methods=['POST'])
 def assign_tax_invoice_number():
-    """Assign tax invoice number to selected invoices"""
+    """Assign tax invoice number to selected invoices (like old Qt app)"""
     try:
         data = request.get_json()
-        invoice_ids = data.get('invoice_ids', [])
+        base_invoice_number = data.get('base_invoice_number', '')
         tax_invoice_number = data.get('tax_invoice_number', '')
         
-        if not invoice_ids:
-            return {'error': 'No invoices selected'}, 400
-        if not tax_invoice_number:
-            return {'error': 'Tax invoice number is required'}, 400
+        if not base_invoice_number:
+            return {'error': 'Base invoice number is required'}, 400
         
-        # Update all selected invoices
-        updated_count = Invoice.query.filter(
-            Invoice.id.in_(invoice_ids)
-        ).update({
-            'tax_invoice_number': tax_invoice_number
-        }, synchronize_session=False)
-        
-        db.session.commit()
-        return {'message': f'Tax invoice number assigned to {updated_count} invoices'}, 200
+        # If user entered "0", clear the tax invoice number (set to NULL)
+        if tax_invoice_number == "0":
+            result = db.session.execute(
+                db.text("UPDATE invoices SET tax_invoice_number = NULL WHERE invoice_number LIKE :base_invoice"),
+                {'base_invoice': f"{base_invoice_number}%"}
+            )
+            affected_rows = result.rowcount
+            db.session.commit()
+            return {'message': f'Cleared tax invoice number for {affected_rows} invoices starting with {base_invoice_number}'}, 200
+        else:
+            # Update all invoices that start with the base invoice number
+            result = db.session.execute(
+                db.text("UPDATE invoices SET tax_invoice_number = :tax_invoice WHERE invoice_number LIKE :base_invoice"),
+                {
+                    'tax_invoice': tax_invoice_number,
+                    'base_invoice': f"{base_invoice_number}%"
+                }
+            )
+            affected_rows = result.rowcount
+            db.session.commit()
+            return {'message': f'Tax invoice number "{tax_invoice_number}" assigned to {affected_rows} invoices starting with {base_invoice_number}'}, 200
         
     except Exception as e:
         db.session.rollback()

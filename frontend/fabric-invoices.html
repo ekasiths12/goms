@@ -805,15 +805,19 @@
         // Action button functions
         function assignDeliveredLocation() {
             if (selectedRows.length === 0) {
-                alert('Please select at least one invoice to assign location.');
+                alert('Please select one or more invoice lines.');
                 return;
             }
             
             const location = prompt('Enter delivered location for selected lines:');
             if (!location) return;
             
-            // Get the selected invoice line IDs
-            const lineIds = selectedRows.map(index => invoiceData[index].id);
+            // Get the selected lines data (like old Qt app)
+            const selectedLines = selectedRows.map(index => ({
+                invoice_number: invoiceData[index].invoice_number,
+                item_name: invoiceData[index].item_name,
+                color: invoiceData[index].color
+            }));
             
             fetch('/api/invoices/assign-location', {
                 method: 'POST',
@@ -821,7 +825,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    line_ids: lineIds,
+                    lines: selectedLines,
                     location: location
                 })
             })
@@ -841,15 +845,31 @@
 
         function assignTaxInvoiceNumber() {
             if (selectedRows.length === 0) {
-                alert('Please select at least one invoice to assign tax invoice number.');
+                alert('Please select one or more fabric invoice lines to assign tax invoice numbers.');
                 return;
             }
             
-            const taxInvoiceNumber = prompt('Enter tax invoice number for selected invoices:');
-            if (!taxInvoiceNumber) return;
+            // Get unique invoice numbers from selected rows (like old Qt app)
+            const invoiceNumbers = new Set();
+            selectedRows.forEach(index => {
+                invoiceNumbers.add(invoiceData[index].invoice_number);
+            });
             
-            // Get the selected invoice IDs (not line IDs)
-            const invoiceIds = [...new Set(selectedRows.map(index => invoiceData[index].invoice_id))];
+            if (invoiceNumbers.size > 1) {
+                alert('Please select lines from only one invoice at a time.');
+                return;
+            }
+            
+            const invoiceNumber = Array.from(invoiceNumbers)[0];
+            
+            // Extract base invoice number (remove line number suffix like -01, -02, etc.)
+            let baseInvoiceNumber = invoiceNumber;
+            if (invoiceNumber.includes('-')) {
+                baseInvoiceNumber = invoiceNumber.split('-')[0];
+            }
+            
+            const taxInvoiceNumber = prompt(`Enter tax invoice number for invoice ${baseInvoiceNumber} (will apply to all lines):\n\nEnter '0' to clear/remove the tax invoice number.`);
+            if (taxInvoiceNumber === null) return;
             
             fetch('/api/invoices/assign-tax-invoice', {
                 method: 'POST',
@@ -857,8 +877,8 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    invoice_ids: invoiceIds,
-                    tax_invoice_number: taxInvoiceNumber
+                    base_invoice_number: baseInvoiceNumber,
+                    tax_invoice_number: taxInvoiceNumber.trim()
                 })
             })
             .then(response => response.json())
