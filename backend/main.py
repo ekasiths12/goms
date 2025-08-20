@@ -61,7 +61,14 @@ def create_app(config_class=Config):
     @app.route('/api/init-db')
     def init_database():
         try:
-            from app.models import *
+            # Import specific models instead of using import *
+            from app.models.customer import Customer
+            from app.models.invoice import Invoice, InvoiceLine
+            from app.models.stitching import StitchingInvoice, GarmentFabric, LiningFabric
+            from app.models.packing_list import PackingList, PackingListLine
+            from app.models.group_bill import StitchingInvoiceGroup, StitchingInvoiceGroupLine
+            from app.models.image import Image
+            from app.models.serial_counter import SerialCounter
             
             # Create all tables
             db.create_all()
@@ -69,7 +76,6 @@ def create_app(config_class=Config):
             # Initialize serial counters
             serial_types = ['ST', 'GB', 'PL', 'GBN']
             for serial_type in serial_types:
-                from app.models.serial_counter import SerialCounter
                 counter = SerialCounter.get_or_create(serial_type)
             
             return {
