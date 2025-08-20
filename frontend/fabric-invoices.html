@@ -574,9 +574,17 @@
                 if (showConsumed) params.append('show_consumed', 'true');
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                const apiUrl = `/api/invoices?${params.toString()}`;
+                // Use absolute URL to avoid mixed content issues
+                const baseUrl = window.location.origin;
+                const apiUrl = `${baseUrl}/api/invoices?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
-                const response = await fetch(apiUrl);
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
                 console.log('📡 Response status:', response.status);
                 console.log('📡 Response headers:', response.headers);
                 
