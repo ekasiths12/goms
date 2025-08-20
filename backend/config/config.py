@@ -13,8 +13,8 @@ class Config:
     
     # Handle Railway MySQL URL format
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('mysql://'):
-        # Railway uses mysql:// but SQLAlchemy expects mysql+mysqlconnector://
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('mysql://', 'mysql+mysqlconnector://', 1)
+        # Railway uses mysql:// but SQLAlchemy expects mysql+pymysql://
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('mysql://', 'mysql+pymysql://', 1)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File upload configuration
