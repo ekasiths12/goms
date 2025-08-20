@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Root app.py file for Nixpacks detection
-This file helps Nixpacks identify this as a Python project
+WSGI entry point for Garment Management System
 """
 
 import os
@@ -11,19 +10,23 @@ import sys
 backend_path = os.path.join(os.path.dirname(__file__), 'backend')
 sys.path.insert(0, backend_path)
 
+# Set environment variables
+os.environ['FLASK_APP'] = 'main.py'
+os.environ['FLASK_ENV'] = 'production'
+
 try:
     # Import and create the Flask app
     from main import create_app
     app = create_app()
-except ImportError as e:
-    print(f"Import error: {e}")
+    print("✅ Flask app created successfully")
+except Exception as e:
+    print(f"❌ Error creating Flask app: {e}")
     print(f"Current working directory: {os.getcwd()}")
     print(f"Python path: {sys.path}")
     print(f"Backend path: {backend_path}")
     print(f"Backend exists: {os.path.exists(backend_path)}")
     raise
 
-# Run the app if this file is executed directly
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)

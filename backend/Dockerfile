@@ -34,4 +34,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # Run the Railway startup script and then the application
-CMD ["sh", "-c", "python railway_start.py && cd .. && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 app:app"]
+CMD ["sh", "-c", "python railway_start.py && cd .. && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 wsgi:app"]

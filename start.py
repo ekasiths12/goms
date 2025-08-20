@@ -68,7 +68,7 @@ print("✅ Application can start without database")
         '--bind', f'0.0.0.0:{port}',
         '--workers', '2',
         '--timeout', '120',
-        'app:app'
+        'wsgi:app'
     ]
     
     try:
