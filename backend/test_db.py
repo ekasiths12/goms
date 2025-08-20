@@ -80,6 +80,16 @@ def test_database_connection():
                 result = cursor.fetchone()
                 print(f"✅ Query test successful: {result}")
             
+            # Also test SQLAlchemy connection
+            print("🔍 Testing SQLAlchemy connection...")
+            from main import create_app, db
+            app = create_app()
+            with app.app_context():
+                with db.engine.connect() as connection:
+                    result = connection.execute(db.text('SELECT 1'))
+                    result.close()
+                print("✅ SQLAlchemy connection test successful")
+            
             connection.close()
             return True
             

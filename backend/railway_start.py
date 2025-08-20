@@ -17,9 +17,10 @@ def wait_for_database():
         try:
             app = create_app()
             with app.app_context():
-                # Test the connection with a simple query
-                result = db.engine.execute('SELECT 1')
-                result.close()
+                # Test the connection with a simple query using new SQLAlchemy syntax
+                with db.engine.connect() as connection:
+                    result = connection.execute(db.text('SELECT 1'))
+                    result.close()
                 print("✅ Database connection successful!")
                 return True
         except Exception as e:
