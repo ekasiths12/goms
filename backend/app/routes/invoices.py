@@ -256,6 +256,28 @@ def delete_invoice_line(line_id):
         db.session.rollback()
         return {'error': str(e)}, 500
 
+@invoices_bp.route('/delete-multiple', methods=['POST'])
+def delete_multiple_invoice_lines():
+    """Delete multiple invoice lines"""
+    try:
+        data = request.get_json()
+        line_ids = data.get('line_ids', [])
+        
+        if not line_ids:
+            return {'error': 'No invoice lines selected'}, 400
+        
+        # Delete all selected lines
+        deleted_count = InvoiceLine.query.filter(
+            InvoiceLine.id.in_(line_ids)
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+        return {'message': f'{deleted_count} invoice line(s) deleted successfully'}, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
 @invoices_bp.route('/assign-location', methods=['POST'])
 def assign_delivered_location():
     """Assign delivered location to selected invoice lines"""

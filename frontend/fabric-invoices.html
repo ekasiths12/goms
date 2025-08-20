@@ -467,7 +467,7 @@
                         <th>Price</th>
                         <th>Total</th>
                         <th>Delivered Location</th>
-                        <th>Line ID</th>
+                        <th style="display: none;">Line ID</th>
                     </tr>
                 </thead>
                 <tbody id="invoiceTableBody">
@@ -518,20 +518,13 @@
                 dateToInput.addEventListener('input', () => formatDateInput(dateToInput));
             }
             
-            // Add filter change listeners
-            const filterInputs = [
-                'filterCustomer', 'filterFabInvoice', 'filterTaxInvoice', 
-                'filterItemCode', 'filterDN', 'filterLocation', 'showConsumed'
-            ];
+            // Add filter change listeners (only for checkbox, not real-time for text inputs)
+            const filterCheckboxes = ['showConsumed'];
             
-            filterInputs.forEach(id => {
+            filterCheckboxes.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    if (element.type === 'checkbox') {
-                        element.addEventListener('change', applyFilters);
-                    } else {
-                        element.addEventListener('input', applyFilters);
-                    }
+                    element.addEventListener('change', applyFilters);
                 }
             });
         });
@@ -646,7 +639,7 @@
                     <td>${formatNumber(invoice.unit_price || 0)}</td>
                     <td>${formatNumber(yardsSent * (invoice.unit_price || 0))}</td>
                     <td>${invoice.delivered_location || ''}</td>
-                    <td>${invoice.id || ''}</td>
+                    <td style="display: none;">${invoice.id || ''}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -815,7 +808,35 @@
                 alert('Please select at least one invoice to assign location.');
                 return;
             }
-            openLocationAssignmentDialog();
+            
+            const location = prompt('Enter delivered location for selected lines:');
+            if (!location) return;
+            
+            // Get the selected invoice line IDs
+            const lineIds = selectedRows.map(index => invoiceData[index].id);
+            
+            fetch('/api/invoices/assign-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    line_ids: lineIds,
+                    location: location
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    loadInvoiceData(); // Refresh the table
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error assigning location: ' + error.message);
+            });
         }
 
         function assignTaxInvoiceNumber() {
@@ -823,7 +844,35 @@
                 alert('Please select at least one invoice to assign tax invoice number.');
                 return;
             }
-            openTaxInvoiceDialog();
+            
+            const taxInvoiceNumber = prompt('Enter tax invoice number for selected invoices:');
+            if (!taxInvoiceNumber) return;
+            
+            // Get the selected invoice IDs (not line IDs)
+            const invoiceIds = [...new Set(selectedRows.map(index => invoiceData[index].invoice_id))];
+            
+            fetch('/api/invoices/assign-tax-invoice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    invoice_ids: invoiceIds,
+                    tax_invoice_number: taxInvoiceNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    loadInvoiceData(); // Refresh the table
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error assigning tax invoice number: ' + error.message);
+            });
         }
 
         function refreshInvoiceTable() {
@@ -852,9 +901,32 @@
                 alert('Please select at least one invoice to delete.');
                 return;
             }
-            if (confirm(`Are you sure you want to delete ${selectedRows.length} selected invoice(s)?`)) {
-                // TODO: Implement delete functionality
-                alert('Delete functionality will be implemented next.');
+            if (confirm(`Are you sure you want to delete ${selectedRows.length} selected invoice line(s)?`)) {
+                // Get the selected invoice line IDs
+                const lineIds = selectedRows.map(index => invoiceData[index].id);
+                
+                fetch('/api/invoices/delete-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        line_ids: lineIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        selectedRows = []; // Clear selection
+                        loadInvoiceData(); // Refresh the table
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error deleting invoice lines: ' + error.message);
+                });
             }
         }
 
