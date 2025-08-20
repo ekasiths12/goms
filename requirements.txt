@@ -1,0 +1,12 @@
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-CORS==4.0.0
+PyMySQL==1.1.0
+FPDF==1.7.2
+Pillow==10.0.1
+gunicorn==21.2.0
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+marshmallow==3.20.1
+marshmallow-sqlalchemy==0.29.0
+cryptography==41.0.7
