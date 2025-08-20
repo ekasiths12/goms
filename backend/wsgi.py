@@ -6,10 +6,6 @@ WSGI entry point for Garment Management System
 import os
 import sys
 
-# Add backend directory to Python path
-backend_path = os.path.join(os.path.dirname(__file__), 'backend')
-sys.path.insert(0, backend_path)
-
 # Set environment variables
 os.environ['FLASK_APP'] = 'main.py'
 os.environ['FLASK_ENV'] = 'production'
@@ -23,8 +19,6 @@ except Exception as e:
     print(f"❌ Error creating Flask app: {e}")
     print(f"Current working directory: {os.getcwd()}")
     print(f"Python path: {sys.path}")
-    print(f"Backend path: {backend_path}")
-    print(f"Backend exists: {os.path.exists(backend_path)}")
     raise
 
 if __name__ == '__main__':
