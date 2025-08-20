@@ -537,6 +537,7 @@
 
         async function loadInvoiceData() {
             console.log('🔄 loadInvoiceData called');
+            console.log('🔄 Current URL:', window.location.href);
             
             const tbody = document.getElementById('invoiceTableBody');
             if (!tbody) {
@@ -573,16 +574,29 @@
                 if (showConsumed) params.append('show_consumed', 'true');
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                const response = await fetch(`/api/invoices?${params.toString()}`);
+                const apiUrl = `/api/invoices?${params.toString()}`;
+                console.log('🌐 Full API URL:', apiUrl);
+                const response = await fetch(apiUrl);
                 console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers);
                 
                 if (response.ok) {
-                    invoiceData = await response.json();
-                    console.log('📊 Received invoice data:', invoiceData.length, 'records');
-                    populateInvoiceTable();
-                    populateFilters();
+                    const responseText = await response.text();
+                    console.log('📡 Raw response:', responseText);
+                    try {
+                        invoiceData = JSON.parse(responseText);
+                        console.log('📊 Parsed invoice data:', invoiceData);
+                        console.log('📊 Received invoice data:', invoiceData.length, 'records');
+                        populateInvoiceTable();
+                        populateFilters();
+                    } catch (parseError) {
+                        console.error('❌ JSON parse error:', parseError);
+                        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
+                    }
                 } else {
                     console.error('❌ Failed to load invoice data, status:', response.status);
+                    const errorText = await response.text();
+                    console.error('❌ Error response:', errorText);
                     tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
