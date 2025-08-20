@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from config.config import Config
@@ -20,13 +20,9 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Handle proxy headers for HTTPS
-    from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-    
     # Initialize extensions
     db.init_app(app)
-    CORS(app, origins=['https://goms.up.railway.app', 'http://localhost:8000'], supports_credentials=True)
+    CORS(app)
     
     # Register blueprints
     from app.routes.main import main_bp
@@ -49,6 +45,13 @@ def create_app(config_class=Config):
     @app.route('/test')
     def test():
         return {'message': 'Flask app is working', 'status': 'ok'}
+    
+    # Force HTTPS redirects in production
+    @app.before_request
+    def force_https():
+        if not app.debug and request.headers.get('X-Forwarded-Proto') == 'http':
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)
     
     # Health check endpoint
     @app.route('/api/health')

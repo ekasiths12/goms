@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Fabric Invoices - Garment Management System</title>
     <style>
         * {
@@ -574,7 +575,7 @@
                 if (showConsumed) params.append('show_consumed', 'true');
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                // Use relative URL to avoid protocol issues
+                // Use relative URL with proper protocol handling
                 const apiUrl = `/api/invoices?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
                 const response = await fetch(apiUrl, {
