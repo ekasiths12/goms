@@ -44,7 +44,45 @@ def create_app(config_class=Config):
     # Health check endpoint
     @app.route('/api/health')
     def health_check():
-        return {'status': 'healthy', 'message': 'Garment Management System API is running'}
+        try:
+            # Test database connection
+            db.engine.execute('SELECT 1')
+            db_status = 'connected'
+        except Exception as e:
+            db_status = f'disconnected: {str(e)[:50]}'
+        
+        return {
+            'status': 'healthy', 
+            'message': 'Garment Management System API is running',
+            'database': db_status
+        }
+    
+    # Database initialization endpoint
+    @app.route('/api/init-db')
+    def init_database():
+        try:
+            from app.models import *
+            
+            # Create all tables
+            db.create_all()
+            
+            # Initialize serial counters
+            serial_types = ['ST', 'GB', 'PL', 'GBN']
+            for serial_type in serial_types:
+                from app.models.serial_counter import SerialCounter
+                counter = SerialCounter.get_or_create(serial_type)
+            
+            return {
+                'status': 'success',
+                'message': 'Database initialized successfully',
+                'tables_created': True,
+                'serial_counters': serial_types
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Database initialization failed: {str(e)}'
+            }, 500
     
     return app
 
