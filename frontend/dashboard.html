@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Garment Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #212121;
+            color: #eceff1;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            background: #23272f;
+            border-bottom: 1px solid #3949ab;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: #eceff1;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background-color: #3949ab;
+            color: #ffffff;
+        }
+
+        .nav-tab.active {
+            background-color: #3949ab;
+            color: #ffffff;
+            border-bottom-color: #5c6bc0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px;
+            min-height: calc(100vh - 60px);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #5c6bc0;
+        }
+
+        .section-description {
+            color: #b0bec5;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-ready {
+            background-color: #4caf50;
+        }
+
+        .status-pending {
+            background-color: #ff9800;
+        }
+
+        .status-todo {
+            background-color: #f44336;
+        }
+
+        /* Feature List */
+        .feature-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .feature-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #424242;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .feature-description {
+            color: #b0bec5;
+            font-size: 14px;
+        }
+
+        /* API Status */
+        .api-status {
+            background: #1e1e1e;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .api-status h3 {
+            color: #5c6bc0;
+            margin-bottom: 10px;
+        }
+
+        .api-endpoint {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .api-endpoint:last-child {
+            border-bottom: none;
+        }
+
+        .endpoint-name {
+            font-family: 'Courier New', monospace;
+            color: #81c784;
+        }
+
+        .endpoint-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .status-working {
+            background: #2e7d32;
+            color: #ffffff;
+        }
+
+        .status-todo {
+            background: #c62828;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <ul class="nav-tabs">
+            <li><button class="nav-tab active">Dashboard</button></li>
+            <li><button class="nav-tab" onclick="window.location.href='fabric-invoices.html'">Fabric Invoices</button></li>
+            <li><button class="nav-tab" onclick="window.location.href='stitching-records.html'">Stitching Records</button></li>
+            <li><button class="nav-tab" onclick="window.location.href='packing-lists.html'">Packing Lists</button></li>
+            <li><button class="nav-tab" onclick="window.location.href='group-bills.html'">Group Bills</button></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <h1 class="section-title">Dashboard</h1>
+        <p class="section-description">
+            Welcome to the Garment Management System. This is the main dashboard where you can monitor system status and access all features.
+        </p>
+        
+        <div class="api-status">
+            <h3>Backend API Status</h3>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/health</span>
+                <span class="endpoint-status status-working">Working</span>
+            </div>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/customers</span>
+                <span class="endpoint-status status-working">Working</span>
+            </div>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/invoices</span>
+                <span class="endpoint-status status-working">Working</span>
+            </div>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/stitching</span>
+                <span class="endpoint-status status-todo">TODO</span>
+            </div>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/packing-lists</span>
+                <span class="endpoint-status status-todo">TODO</span>
+            </div>
+            <div class="api-endpoint">
+                <span class="endpoint-name">GET /api/group-bills</span>
+                <span class="endpoint-status status-todo">TODO</span>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #5c6bc0;">System Features</h3>
+        <ul class="feature-list">
+            <li class="feature-item">
+                <span class="status-indicator status-ready"></span>
+                <div>
+                    <div class="feature-name">Backend Setup</div>
+                    <div class="feature-description">Flask API with database models and basic routes</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-ready"></span>
+                <div>
+                    <div class="feature-name">Database Models</div>
+                    <div class="feature-description">All database tables and relationships defined</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-ready"></span>
+                <div>
+                    <div class="feature-name">Customer Management</div>
+                    <div class="feature-description">Full CRUD operations for customers</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-ready"></span>
+                <div>
+                    <div class="feature-name">Fabric Invoice Management</div>
+                    <div class="feature-description">Invoice and line item management with .DAT file import</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-todo"></span>
+                <div>
+                    <div class="feature-name">Stitching Records</div>
+                    <div class="feature-description">Stitching record creation and management</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-todo"></span>
+                <div>
+                    <div class="feature-name">Packing Lists</div>
+                    <div class="feature-description">Packing list generation and management</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-todo"></span>
+                <div>
+                    <div class="feature-name">Group Bills</div>
+                    <div class="feature-description">Group billing with PDF generation</div>
+                </div>
+            </li>
+            <li class="feature-item">
+                <span class="status-indicator status-todo"></span>
+                <div>
+                    <div class="feature-name">File Management</div>
+                    <div class="feature-description">Image uploads and PDF downloads</div>
+                </div>
+            </li>
+        </ul>
+    </main>
+
+    <script>
+        // Test API connection on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/health');
+                if (response.ok) {
+                    console.log('✅ Backend API is running');
+                } else {
+                    console.log('❌ Backend API is not responding');
+                }
+            } catch (error) {
+                console.log('❌ Cannot connect to backend API:', error.message);
+            }
+        });
+    </script>
+</body>
+</html>
