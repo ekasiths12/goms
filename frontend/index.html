@@ -771,6 +771,7 @@
                 if (response.ok) {
                     console.log('✅ Backend API is running');
                     // Load initial data for fabric invoices
+                    console.log('🔄 Loading invoice data...');
                     loadInvoiceData();
                 } else {
                     console.log('❌ Backend API is not responding');
@@ -785,34 +786,46 @@
         let selectedRows = [];
 
         async function loadInvoiceData() {
+            console.log('🔄 loadInvoiceData called');
             const tbody = document.getElementById('invoiceTableBody');
             if (!tbody) {
-                console.error('Invoice table body not found');
+                console.error('❌ Invoice table body not found');
                 return;
             }
             
+            console.log('✅ Found invoice table body, showing loading state');
             // Show loading state
             tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">Loading invoice data...</td></tr>';
             
             try {
+                console.log('🌐 Fetching /api/invoices...');
                 const response = await fetch('/api/invoices');
+                console.log('📡 Response status:', response.status);
+                
                 if (response.ok) {
                     invoiceData = await response.json();
+                    console.log('📊 Received invoice data:', invoiceData.length, 'records');
                     populateInvoiceTable();
                     populateFilters();
                 } else {
-                    console.error('Failed to load invoice data');
+                    console.error('❌ Failed to load invoice data, status:', response.status);
                     tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
-                console.error('Error loading invoice data:', error);
+                console.error('❌ Error loading invoice data:', error);
                 tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
             }
         }
 
         function populateInvoiceTable() {
+            console.log('🔄 populateInvoiceTable called with', invoiceData.length, 'records');
             const tbody = document.getElementById('invoiceTableBody');
             tbody.innerHTML = '';
+
+            if (invoiceData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
+                return;
+            }
 
             invoiceData.forEach((invoice, index) => {
                 const row = document.createElement('tr');
@@ -841,6 +854,7 @@
                 `;
                 tbody.appendChild(row);
             });
+            console.log('✅ Invoice table populated with', invoiceData.length, 'rows');
         }
 
         function populateFilters() {
