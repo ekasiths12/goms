@@ -574,9 +574,8 @@
                 if (showConsumed) params.append('show_consumed', 'true');
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                // Force HTTPS to avoid mixed content issues
-                const host = window.location.host;
-                const apiUrl = `https://${host}/api/invoices?${params.toString()}`;
+                // Use relative URL to avoid protocol issues
+                const apiUrl = `/api/invoices?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
                 const response = await fetch(apiUrl, {
                     method: 'GET',

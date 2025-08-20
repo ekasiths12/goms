@@ -20,9 +20,13 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
+    # Handle proxy headers for HTTPS
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
+    CORS(app, origins=['https://goms.up.railway.app', 'http://localhost:8000'], supports_credentials=True)
     
     # Register blueprints
     from app.routes.main import main_bp
