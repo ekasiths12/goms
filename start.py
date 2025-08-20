@@ -12,13 +12,29 @@ def main():
     
     # Check if DATABASE_URL is set
     database_url = os.environ.get('DATABASE_URL')
-    if not database_url:
-        print("❌ DATABASE_URL environment variable not set!")
-        print("💡 Please add a MySQL database service to your Railway project")
-        print("💡 Or set DATABASE_URL manually in environment variables")
+    mysql_url = os.environ.get('MYSQL_URL')
+    
+    print(f"🔍 Environment check:")
+    print(f"   DATABASE_URL: {database_url}")
+    print(f"   MYSQL_URL: {mysql_url}")
+    
+    # Try to get the actual database URL
+    actual_database_url = None
+    if database_url and not database_url.startswith('${{'):
+        actual_database_url = database_url
+    elif mysql_url and not mysql_url.startswith('${{'):
+        actual_database_url = mysql_url
+    
+    if not actual_database_url:
+        print("❌ No valid database URL found!")
+        print("💡 Please ensure the MySQL service is properly linked to your web service")
+        print("💡 Check that the DATABASE_URL or MYSQL_URL is being set correctly")
         sys.exit(1)
     
-    print(f"🔗 Database URL: {database_url[:20]}...")
+    print(f"🔗 Using Database URL: {actual_database_url[:30]}...")
+    
+    # Set the DATABASE_URL for the backend
+    os.environ['DATABASE_URL'] = actual_database_url
     
     # Change to backend directory
     os.chdir('backend')
