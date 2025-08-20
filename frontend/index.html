@@ -760,8 +760,13 @@
             event.target.classList.add('active');
             
             // Load data for specific sections
-            if (sectionId === 'fabric-invoices' && invoiceData.length === 0) {
-                loadInvoiceData();
+            if (sectionId === 'fabric-invoices') {
+                // Always show the UI first
+                showFabricInvoiceUI();
+                // Load data if not already loaded
+                if (invoiceData.length === 0) {
+                    loadInvoiceData();
+                }
             }
         }
 
@@ -788,6 +793,10 @@
 
         async function loadInvoiceData() {
             console.log('🔄 loadInvoiceData called');
+            
+            // Always ensure the UI is visible first
+            showFabricInvoiceUI();
+            
             const tbody = document.getElementById('invoiceTableBody');
             if (!tbody) {
                 console.error('❌ Invoice table body not found');
@@ -815,6 +824,59 @@
             } catch (error) {
                 console.error('❌ Error loading invoice data:', error);
                 tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
+            }
+        }
+
+        function showFabricInvoiceUI() {
+            console.log('🔄 Showing fabric invoice UI');
+            // Ensure the fabric invoice section is visible
+            const fabricSection = document.getElementById('fabric-invoices');
+            if (fabricSection) {
+                fabricSection.style.display = 'block';
+                console.log('✅ Fabric invoice section is visible');
+            }
+            
+            // Ensure all UI elements are properly initialized
+            initializeFilterControls();
+        }
+
+        function initializeFilterControls() {
+            console.log('🔄 Initializing filter controls');
+            
+            // Initialize filter selects with empty options
+            const filterSelects = [
+                'filterCustomer',
+                'filterFabInvoice', 
+                'filterTaxInvoice',
+                'filterItemCode',
+                'filterDN',
+                'filterLocation'
+            ];
+            
+            filterSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // Keep the default "All" option
+                    select.innerHTML = select.innerHTML || `<option value="">All ${selectId.replace('filter', '')}</option>`;
+                    console.log(`✅ Initialized ${selectId}`);
+                }
+            });
+            
+            // Initialize date inputs
+            const dateInputs = ['filterDateFrom', 'filterDateTo'];
+            dateInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.placeholder = 'DD/MM/YY';
+                    console.log(`✅ Initialized ${inputId}`);
+                }
+            });
+            
+            // Initialize checkbox
+            const checkbox = document.getElementById('showConsumed');
+            if (checkbox) {
+                checkbox.checked = false;
+                console.log('✅ Initialized showConsumed checkbox');
             }
         }
 
@@ -859,29 +921,91 @@
         }
 
         function populateFilters() {
+            console.log('🔄 Populating filters with', invoiceData.length, 'records');
+            
             // Populate customer filter
             const customers = [...new Set(invoiceData.map(inv => inv.customer?.short_name).filter(Boolean))];
             const customerSelect = document.getElementById('filterCustomer');
-            customerSelect.innerHTML = '<option value="">All Customers</option>';
-            customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer;
-                option.textContent = customer;
-                customerSelect.appendChild(option);
-            });
+            if (customerSelect) {
+                customerSelect.innerHTML = '<option value="">All Customers</option>';
+                customers.forEach(customer => {
+                    const option = document.createElement('option');
+                    option.value = customer;
+                    option.textContent = customer;
+                    customerSelect.appendChild(option);
+                });
+                console.log(`✅ Populated customer filter with ${customers.length} options`);
+            }
 
-            // Populate other filters similarly
+            // Populate invoice number filter
             const invoiceNumbers = [...new Set(invoiceData.map(inv => inv.invoice_number).filter(Boolean))];
             const fabInvoiceSelect = document.getElementById('filterFabInvoice');
-            fabInvoiceSelect.innerHTML = '<option value="">All Invoices</option>';
-            invoiceNumbers.forEach(inv => {
-                const option = document.createElement('option');
-                option.value = inv;
-                option.textContent = inv;
-                fabInvoiceSelect.appendChild(option);
-            });
+            if (fabInvoiceSelect) {
+                fabInvoiceSelect.innerHTML = '<option value="">All Invoices</option>';
+                invoiceNumbers.forEach(inv => {
+                    const option = document.createElement('option');
+                    option.value = inv;
+                    option.textContent = inv;
+                    fabInvoiceSelect.appendChild(option);
+                });
+                console.log(`✅ Populated invoice filter with ${invoiceNumbers.length} options`);
+            }
 
-            // Add more filter population as needed
+            // Populate tax invoice filter
+            const taxInvoices = [...new Set(invoiceData.map(inv => inv.tax_invoice_number).filter(Boolean))];
+            const taxInvoiceSelect = document.getElementById('filterTaxInvoice');
+            if (taxInvoiceSelect) {
+                taxInvoiceSelect.innerHTML = '<option value="">All Tax Invoices</option>';
+                taxInvoices.forEach(tax => {
+                    const option = document.createElement('option');
+                    option.value = tax;
+                    option.textContent = tax;
+                    taxInvoiceSelect.appendChild(option);
+                });
+                console.log(`✅ Populated tax invoice filter with ${taxInvoices.length} options`);
+            }
+
+            // Populate item code filter
+            const itemCodes = [...new Set(invoiceData.map(inv => inv.item_name).filter(Boolean))];
+            const itemCodeSelect = document.getElementById('filterItemCode');
+            if (itemCodeSelect) {
+                itemCodeSelect.innerHTML = '<option value="">All Items</option>';
+                itemCodes.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    itemCodeSelect.appendChild(option);
+                });
+                console.log(`✅ Populated item filter with ${itemCodes.length} options`);
+            }
+
+            // Populate DN filter
+            const deliveryNotes = [...new Set(invoiceData.map(inv => inv.delivery_note).filter(Boolean))];
+            const dnSelect = document.getElementById('filterDN');
+            if (dnSelect) {
+                dnSelect.innerHTML = '<option value="">All DN</option>';
+                deliveryNotes.forEach(dn => {
+                    const option = document.createElement('option');
+                    option.value = dn;
+                    option.textContent = dn;
+                    dnSelect.appendChild(option);
+                });
+                console.log(`✅ Populated DN filter with ${deliveryNotes.length} options`);
+            }
+
+            // Populate location filter
+            const locations = [...new Set(invoiceData.map(inv => inv.delivered_location).filter(Boolean))];
+            const locationSelect = document.getElementById('filterLocation');
+            if (locationSelect) {
+                locationSelect.innerHTML = '<option value="">All Locations</option>';
+                locations.forEach(location => {
+                    const option = document.createElement('option');
+                    option.value = location;
+                    option.textContent = location;
+                    locationSelect.appendChild(option);
+                });
+                console.log(`✅ Populated location filter with ${locations.length} options`);
+            }
         }
 
         function toggleRowSelection(row, index) {
