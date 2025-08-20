@@ -10,6 +10,16 @@ import subprocess
 def main():
     print("🚀 Starting Garment Management System...")
     
+    # Check if DATABASE_URL is set
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        print("❌ DATABASE_URL environment variable not set!")
+        print("💡 Please add a MySQL database service to your Railway project")
+        print("💡 Or set DATABASE_URL manually in environment variables")
+        sys.exit(1)
+    
+    print(f"🔗 Database URL: {database_url[:20]}...")
+    
     # Change to backend directory
     os.chdir('backend')
     
@@ -20,6 +30,7 @@ def main():
         print("✅ Database initialization completed")
     except subprocess.CalledProcessError as e:
         print(f"❌ Database initialization failed: {e}")
+        print("💡 Please check your DATABASE_URL and ensure the database is accessible")
         sys.exit(1)
     
     # Start the Flask application with Gunicorn
