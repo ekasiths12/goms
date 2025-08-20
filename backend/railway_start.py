@@ -17,15 +17,22 @@ def wait_for_database():
         try:
             app = create_app()
             with app.app_context():
-                db.engine.execute('SELECT 1')
+                # Test the connection with a simple query
+                result = db.engine.execute('SELECT 1')
+                result.close()
                 print("✅ Database connection successful!")
                 return True
         except Exception as e:
             attempt += 1
             print(f"⏳ Waiting for database... (attempt {attempt}/{max_attempts})")
-            time.sleep(2)
+            print(f"   Error: {str(e)[:100]}...")
+            time.sleep(3)  # Increased wait time
     
     print("❌ Database connection failed after maximum attempts")
+    print("💡 Please check:")
+    print("   1. MySQL service is running")
+    print("   2. Database credentials are correct")
+    print("   3. Network connectivity between services")
     return False
 
 def initialize_database():

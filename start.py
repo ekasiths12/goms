@@ -39,6 +39,16 @@ def main():
     # Change to backend directory
     os.chdir('backend')
     
+    # Test database connection first
+    print("🔍 Testing database connection...")
+    try:
+        subprocess.run([sys.executable, 'test_db.py'], check=True)
+        print("✅ Database connection test passed")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Database connection test failed: {e}")
+        print("💡 Please check your DATABASE_URL and ensure the database is accessible")
+        sys.exit(1)
+    
     # Run database initialization
     print("📊 Initializing database...")
     try:
