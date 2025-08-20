@@ -1,11 +1,15 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
-from main import db
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
 from datetime import datetime
 import traceback
+
+# Get db instance from current app
+def get_db():
+    return current_app.extensions['sqlalchemy'].db
 
 invoices_bp = Blueprint('invoices', __name__)
 
@@ -21,9 +25,10 @@ def test_invoices():
 def count_invoices():
     """Count endpoint to check database tables"""
     try:
-        invoice_count = Invoice.query.count()
-        invoice_line_count = InvoiceLine.query.count()
-        customer_count = Customer.query.count()
+        db = get_db()
+        invoice_count = db.session.query(Invoice).count()
+        invoice_line_count = db.session.query(InvoiceLine).count()
+        customer_count = db.session.query(Customer).count()
         
         return {
             'message': 'Database counts',
@@ -55,14 +60,11 @@ def get_invoices():
 
         print(f"DEBUG: Filters - customer: {customer_filter}, show_consumed: {show_consumed}")
 
-        # Test database connection first
-        try:
-            db.session.execute(db.text('SELECT 1'))
-            print("DEBUG: Database connection test successful")
-        except Exception as db_error:
-            print(f"DEBUG: Database connection test failed: {db_error}")
-            return {'error': f'Database connection failed: {str(db_error)}'}, 500
+        print("DEBUG: About to execute query")
 
+        # Get database instance
+        db = get_db()
+        
         # Build query
         query = db.session.query(InvoiceLine).join(Invoice).join(Customer)
         

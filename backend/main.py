@@ -108,4 +108,15 @@ def create_app(config_class=Config):
 
 if __name__ == '__main__':
     app = create_app()
+    
+    # Ensure app context is available
+    with app.app_context():
+        # Test database connection
+        try:
+            db.engine.connect()
+            print("✅ Database connection successful")
+        except Exception as e:
+            print(f"❌ Database connection failed: {e}")
+            print("💡 Make sure MySQL is running and database is accessible")
+    
     app.run(debug=True, host='0.0.0.0', port=8000)
