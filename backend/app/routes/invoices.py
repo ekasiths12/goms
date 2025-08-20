@@ -9,11 +9,39 @@ import traceback
 
 invoices_bp = Blueprint('invoices', __name__)
 
+@invoices_bp.route('/test', methods=['GET'])
+def test_invoices():
+    """Test endpoint to check if the API is working"""
+    try:
+        return {'message': 'Invoices API is working', 'status': 'ok'}, 200
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@invoices_bp.route('/count', methods=['GET'])
+def count_invoices():
+    """Count endpoint to check database tables"""
+    try:
+        invoice_count = Invoice.query.count()
+        invoice_line_count = InvoiceLine.query.count()
+        customer_count = Customer.query.count()
+        
+        return {
+            'message': 'Database counts',
+            'invoices': invoice_count,
+            'invoice_lines': invoice_line_count,
+            'customers': customer_count
+        }, 200
+    except Exception as e:
+        return {'error': str(e)}, 500
+
 @invoices_bp.route('/', methods=['GET'])
 def get_invoices():
     """Get all invoices with line items and customer information"""
     try:
         print("DEBUG: get_invoices called")
+        print(f"DEBUG: Request URL: {request.url}")
+        print(f"DEBUG: Request args: {dict(request.args)}")
+        
         # Get query parameters for filtering
         customer_filter = request.args.get('customer')
         invoice_number_filter = request.args.get('invoice_number')
@@ -26,6 +54,14 @@ def get_invoices():
         show_consumed = request.args.get('show_consumed', 'false').lower() == 'true'
 
         print(f"DEBUG: Filters - customer: {customer_filter}, show_consumed: {show_consumed}")
+
+        # Test database connection first
+        try:
+            db.session.execute(db.text('SELECT 1'))
+            print("DEBUG: Database connection test successful")
+        except Exception as db_error:
+            print(f"DEBUG: Database connection test failed: {db_error}")
+            return {'error': f'Database connection failed: {str(db_error)}'}, 500
 
         # Build query
         query = db.session.query(InvoiceLine).join(Invoice).join(Customer)
