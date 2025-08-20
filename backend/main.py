@@ -41,6 +41,11 @@ def create_app(config_class=Config):
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(files_bp, url_prefix='/api/files')
     
+    # Test route
+    @app.route('/test')
+    def test():
+        return {'message': 'Flask app is working', 'status': 'ok'}
+    
     # Health check endpoint
     @app.route('/api/health')
     def health_check():

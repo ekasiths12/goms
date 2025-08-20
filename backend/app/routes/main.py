@@ -3,6 +3,11 @@ import os
 
 main_bp = Blueprint('main', __name__)
 
+@main_bp.route('/test')
+def test():
+    """Test route to check if routing is working"""
+    return {'message': 'Main blueprint is working', 'status': 'ok'}
+
 @main_bp.route('/')
 def index():
     """Redirect to dashboard"""
