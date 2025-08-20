@@ -440,11 +440,11 @@
     <!-- Navigation Bar -->
     <nav class="nav-bar">
         <ul class="nav-tabs">
-            <li><a href="/dashboard" class="nav-tab">Dashboard</a></li>
-            <li><a href="/fabric-invoices" class="nav-tab active">Fabric Invoices</a></li>
-            <li><a href="/stitching-records" class="nav-tab">Stitching Records</a></li>
-            <li><a href="/packing-lists" class="nav-tab">Packing Lists</a></li>
-            <li><a href="/group-bills" class="nav-tab">Group Bills</a></li>
+            <li><a href="/index.html" class="nav-tab">Dashboard</a></li>
+            <li><a href="/fabric-invoices.html" class="nav-tab active">Fabric Invoices</a></li>
+            <li><a href="/stitching-records.html" class="nav-tab">Stitching Records</a></li>
+            <li><a href="/packing-lists.html" class="nav-tab">Packing Lists</a></li>
+            <li><a href="/group-bills.html" class="nav-tab">Group Bills</a></li>
         </ul>
     </nav>
 
@@ -589,6 +589,20 @@
         let selectedRows = [];
         let currentPage = 1;
         const itemsPerPage = 30;
+        
+        // API Base URL - works for both local development and Railway
+        const getApiBaseUrl = () => {
+            const host = window.location.host;
+            const protocol = window.location.protocol;
+            
+            // If running locally on port 3000, use port 8000 for API
+            if (host.includes('localhost:3000')) {
+                return `${protocol}//localhost:8000`;
+            }
+            
+            // For Railway or other deployments, use relative URLs
+            return '';
+        };
 
         // Load data when page loads
         window.addEventListener('load', async () => {
@@ -656,8 +670,9 @@
                 if (showConsumed) params.append('show_consumed', 'true');
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                // Use relative URL with proper protocol handling
-                const apiUrl = `/api/invoices?${params.toString()}`;
+                // Use dynamic API base URL for local development vs Railway
+                const apiBaseUrl = getApiBaseUrl();
+                const apiUrl = `${apiBaseUrl}/api/invoices?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -972,7 +987,7 @@
                 color: invoiceData[index].color
             }));
             
-            fetch('/api/invoices/assign-location', {
+            fetch(`${getApiBaseUrl()}/api/invoices/assign-location`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1024,7 +1039,7 @@
             const taxInvoiceNumber = prompt(`Enter tax invoice number for invoice ${baseInvoiceNumber} (will apply to all lines):\n\nEnter '0' to clear/remove the tax invoice number.`);
             if (taxInvoiceNumber === null) return;
             
-            fetch('/api/invoices/assign-tax-invoice', {
+            fetch(`${getApiBaseUrl()}/api/invoices/assign-tax-invoice`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1078,7 +1093,7 @@
                 // Get the selected invoice line IDs
                 const lineIds = selectedRows.map(index => invoiceData[index].id);
                 
-                fetch('/api/invoices/delete-multiple', {
+                fetch(`${getApiBaseUrl()}/api/invoices/delete-multiple`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1270,7 +1285,7 @@
             const progressText = document.querySelector('.progress-text');
 
             try {
-                const response = await fetch('/api/files/import-dat', {
+                const response = await fetch(`${getApiBaseUrl()}/api/files/import-dat`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1309,7 +1324,7 @@
             };
 
             try {
-                const response = await fetch('/api/invoices', {
+                const response = await fetch(`${getApiBaseUrl()}/api/invoices`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1334,7 +1349,7 @@
 
         async function loadCustomerIds() {
             try {
-                const response = await fetch('/api/customers/customer-ids');
+                const response = await fetch(`${getApiBaseUrl()}/api/customers/customer-ids`);
                 if (response.ok) {
                     customerIds = await response.json();
                     displayCustomerIds();
@@ -1415,7 +1430,7 @@
 
         async function saveCustomerIds() {
             try {
-                const response = await fetch('/api/customers/customer-ids', {
+                const response = await fetch(`${getApiBaseUrl()}/api/customers/customer-ids`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
