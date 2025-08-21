@@ -234,6 +234,106 @@
             color: #ffffff;
         }
 
+        /* Pagination Styles */
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            background: #2c2c2c;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #424242;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #5c6bc0;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #3949ab;
+        }
+
+        /* Checkbox styling */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #5c6bc0;
+        }
+
+        /* Make it clear that rows are not clickable */
+        .data-table tr {
+            cursor: default;
+        }
+
+        .data-table tr:hover {
+            background: #424242 !important;
+        }
+
+        .data-table tr:hover td {
+            background: #424242 !important;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2c2c2c;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .pagination-info {
+            color: #b0bec5;
+            font-size: 14px;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #424242;
+            color: #eceff1;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #5c6bc0;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #5c6bc0;
+            color: #fff;
+        }
+
         /* Action Buttons */
         .action-buttons {
             display: flex;

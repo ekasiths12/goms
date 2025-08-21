@@ -194,39 +194,65 @@
         }
 
         .btn-primary {
+            background: #3949ab;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
             background: #5c6bc0;
-            color: #ffffff;
         }
 
         .btn-secondary {
-            background: #546e7a;
-            color: #eceff1;
+            background: #757575;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #9e9e9e;
+        }
+
+        .btn-success {
+            background: #388e3c;
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #4caf50;
+        }
+
+        .btn-warning {
+            background: #f57c00;
+            color: #fff;
+        }
+
+        .btn-warning:hover {
+            background: #ff9800;
         }
 
         .btn-danger {
             background: #d32f2f;
-            color: #ffffff;
+            color: #fff;
         }
 
-        .btn-warning {
-            background: #ffb74d;
-            color: #ffffff;
+        .btn-danger:hover {
+            background: #f44336;
         }
 
-        .btn-success {
-            background: #4caf50;
-            color: #ffffff;
+        .btn-info {
+            background: #1976d2;
+            color: #fff;
         }
 
-        /* Data Table */
-        .data-table-container {
+        .btn-info:hover {
+            background: #2196f3;
+        }
+
+        /* Table Styles */
+        .table-container {
             background: #2c2c2c;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 20px;
-            max-height: 70vh;
-            overflow-y: auto;
-            overflow-x: auto;
+            margin-bottom: 10px;
         }
 
         .data-table {
@@ -249,6 +275,42 @@
         .data-table td {
             padding: 10px 8px;
             border-bottom: 1px solid #444;
+        }
+
+        .data-table tr:hover {
+            background: #3c3c3c;
+        }
+
+        .data-table tr.selected {
+            background: #5c6bc0 !important;
+            color: #ffffff;
+        }
+
+        /* Pagination Styles */
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            background: #2c2c2c;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #424242;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #5c6bc0;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #3949ab;
         }
 
         /* Specific column styling for better readability */
@@ -390,6 +452,26 @@
             padding-left: 40px;
             background: #1e1e1e;
             color: #b0bec5;
+        }
+
+        /* Checkbox styling */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #5c6bc0;
+        }
+
+        /* Make it clear that rows are not clickable */
+        .data-table tr {
+            cursor: default;
         }
 
         /* Expand/Collapse indicator */
