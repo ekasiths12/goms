@@ -125,17 +125,33 @@ def import_dat_file_core(file, selected_customer_ids=None):
                 continue
             
             # Ensure customer exists (like old Qt app)
-            customer = Customer.query.filter_by(customer_id=customer_id_normalized, short_name=short_name).first()
+            print(f"🔍 Processing customer: ID={customer_id_normalized}, Name={short_name}")
+            
+            # Check for existing customer by customer_id first
+            customer = Customer.query.filter_by(customer_id=customer_id_normalized).first()
             if not customer:
-                customer = Customer(
-                    customer_id=customer_id_normalized,
-                    short_name=short_name,
-                    full_name=short_name,
-                    registration_date=datetime.now(),
-                    is_active=True
-                )
-                db.session.add(customer)
-                db.session.flush()
+                # Check for existing customer by short_name
+                customer = Customer.query.filter_by(short_name=short_name).first()
+                if customer:
+                    print(f"⚠️  Found customer with same name but different ID: {customer.customer_id} vs {customer_id_normalized}")
+                    # Update the customer_id to match the .dat file
+                    customer.customer_id = customer_id_normalized
+                    db.session.flush()
+                    print(f"✅ Updated customer ID: {customer.id}, CustomerID={customer.customer_id}, Name={customer.short_name}")
+                else:
+                    print(f"➕ Creating new customer: ID={customer_id_normalized}, Name={short_name}")
+                    customer = Customer(
+                        customer_id=customer_id_normalized,
+                        short_name=short_name,
+                        full_name=short_name,
+                        registration_date=datetime.now(),
+                        is_active=True
+                    )
+                    db.session.add(customer)
+                    db.session.flush()
+                    print(f"✅ Customer created with ID: {customer.id}")
+            else:
+                print(f"📋 Found existing customer: ID={customer.id}, CustomerID={customer.customer_id}, Name={customer.short_name}")
             
             # Handle duplicate invoice numbers by adding line numbers (like old Qt app)
             if invoice_number in invoice_line_counts:
@@ -195,6 +211,13 @@ def import_dat_file_core(file, selected_customer_ids=None):
                 continue
         
         db.session.commit()
+        
+        # Verify customer data was saved
+        print("🔍 Verifying customer data after import...")
+        all_customers = Customer.query.all()
+        print(f"📊 Total customers in database: {len(all_customers)}")
+        for cust in all_customers:
+            print(f"   - ID: {cust.id}, CustomerID: {cust.customer_id}, Name: {cust.short_name}")
         
         return {
             'imported_count': imported_count,
