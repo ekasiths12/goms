@@ -973,8 +973,11 @@
                 const expandIndicator = isExpandable ? 
                     `<span class="expand-indicator" onclick="event.stopPropagation(); toggleRecordExpansion(${record.id})">▶</span>` : '';
                 
+                const isSelected = selectedRows.includes(actualIndex);
+                console.log(`🔍 Row ${actualIndex}: isSelected = ${isSelected}, selectedRows = [${selectedRows.join(', ')}]`);
+                
                 parentRow.innerHTML = `
-                    <td><input type="checkbox" onchange="event.stopPropagation(); toggleRowSelection(${actualIndex})" ${selectedRows.includes(actualIndex) ? 'checked' : ''}></td>
+                    <td><input type="checkbox" onchange="event.stopPropagation(); toggleRowSelection(${actualIndex})" ${isSelected ? 'checked' : ''}></td>
                     <td>${record.packing_list_number || ''}</td>
                     <td>${expandIndicator}${record.stitching_invoice_number || ''}</td>
                     <td>${record.stitched_item || ''}</td>
@@ -1032,6 +1035,7 @@
 
             console.log('✅ Stitching treeview populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
             updatePaginationControls();
+            updateSelectAllCheckbox();
         }
         
         function createFabricChildRow(parentRecord, fabric, type) {
@@ -1310,6 +1314,8 @@
             const selectAllCheckbox = document.getElementById('selectAllTree');
             const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
             
+            console.log('🔍 toggleSelectAllTree called, selectAllCheckbox.checked:', selectAllCheckbox.checked);
+            
             checkboxes.forEach((checkbox, index) => {
                 const actualIndex = (currentPage - 1) * itemsPerPage + index;
                 if (selectAllCheckbox.checked) {
@@ -1322,6 +1328,59 @@
                     selectedRows = selectedRows.filter(i => i !== actualIndex);
                 }
             });
+            
+            console.log('📋 Updated selectedRows:', selectedRows);
+        }
+
+        function toggleRowSelection(actualIndex) {
+            console.log('🔍 toggleRowSelection called with actualIndex:', actualIndex);
+            console.log('📋 Current selectedRows:', selectedRows);
+            
+            if (selectedRows.includes(actualIndex)) {
+                // Remove from selection
+                selectedRows = selectedRows.filter(i => i !== actualIndex);
+                console.log('❌ Removed from selection, new selectedRows:', selectedRows);
+            } else {
+                // Add to selection
+                selectedRows.push(actualIndex);
+                console.log('✅ Added to selection, new selectedRows:', selectedRows);
+            }
+            
+            // Update the checkbox state
+            const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
+            checkboxes.forEach((checkbox, index) => {
+                const checkboxActualIndex = (currentPage - 1) * itemsPerPage + index;
+                if (checkboxActualIndex === actualIndex) {
+                    checkbox.checked = selectedRows.includes(actualIndex);
+                }
+            });
+            
+            // Update select all checkbox
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
+            const selectAllCheckbox = document.getElementById('selectAllTree');
+            
+            if (checkboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                return;
+            }
+            
+            const checkedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+            
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
         }
 
         function applyFilters() {

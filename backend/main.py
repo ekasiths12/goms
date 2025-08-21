@@ -35,6 +35,7 @@ def create_app(config_class=Config):
     from app.routes.group_bills import group_bills_bp
     from app.routes.customers import customers_bp
     from app.routes.files import files_bp
+    from app.routes.images import images_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(invoices_bp, url_prefix='/api/invoices')
@@ -43,6 +44,7 @@ def create_app(config_class=Config):
     app.register_blueprint(group_bills_bp, url_prefix='/api/group-bills')
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(files_bp, url_prefix='/api/files')
+    app.register_blueprint(images_bp, url_prefix='/api/images')
     
     # Test route
     @app.route('/test')

@@ -697,6 +697,7 @@
             <button class="btn btn-warning" onclick="openAddInvoiceLineDialog()">Add Invoice Line</button>
             <button class="btn btn-danger" onclick="deleteSelectedInvoice()">Delete Selected Invoice</button>
             <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
+            <button class="btn btn-secondary" onclick="openImageUploadDialog()">Upload Image</button>
         </div>
 
         <!-- Invoice Table -->
@@ -2220,6 +2221,90 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
+        }
+
+        function openImageUploadDialog() {
+            const dialogHtml = `
+                <div id="imageUploadDialog" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title">Upload Image to Google Drive</h2>
+                            <span class="close" onclick="closeImageUploadDialog()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="imageUploadForm" enctype="multipart/form-data">
+                                <div style="margin-bottom: 15px;">
+                                    <label for="imageFile" style="display: block; margin-bottom: 5px; font-weight: bold;">Select Image:</label>
+                                    <input type="file" id="imageFile" name="image" accept="image/*" required style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label for="garmentName" style="display: block; margin-bottom: 5px; font-weight: bold;">Garment Name:</label>
+                                    <input type="text" id="garmentName" name="garment_name" required placeholder="e.g., T-Shirt, Dress, Pants" style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label for="fabricName" style="display: block; margin-bottom: 5px; font-weight: bold;">Fabric Name:</label>
+                                    <input type="text" id="fabricName" name="fabric_name" required placeholder="e.g., Cotton, Silk, Polyester" style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label for="fabricColor" style="display: block; margin-bottom: 5px; font-weight: bold;">Fabric Color:</label>
+                                    <input type="text" id="fabricColor" name="fabric_color" required placeholder="e.g., Blue, Red, White" style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                                </div>
+                                <div id="uploadProgress" style="display: none; margin-bottom: 15px;">
+                                    <div style="background: #424242; border-radius: 4px; overflow: hidden;">
+                                        <div id="progressBar" style="background: #5c6bc0; height: 20px; width: 0%; transition: width 0.3s ease;"></div>
+                                    </div>
+                                    <div style="text-align: center; margin-top: 5px; color: #b0bec5;">Uploading to Google Drive...</div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeImageUploadDialog()">Cancel</button>
+                            <button class="btn btn-primary" onclick="uploadImage()">Upload Image</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', dialogHtml);
+        }
+
+        function closeImageUploadDialog() {
+            const dialog = document.getElementById('imageUploadDialog');
+            if (dialog) {
+                dialog.remove();
+            }
+        }
+
+        async function uploadImage() {
+            const form = document.getElementById('imageUploadForm');
+            const formData = new FormData(form);
+            
+            // Show progress
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('progressBar').style.width = '50%';
+            
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/images/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                document.getElementById('progressBar').style.width = '100%';
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Image uploaded successfully!\n\nFilename: ${result.google_drive_filename}\nGoogle Drive Link: ${result.google_drive_link}`);
+                    closeImageUploadDialog();
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+            } finally {
+                document.getElementById('uploadProgress').style.display = 'none';
+                document.getElementById('progressBar').style.width = '0%';
+            }
         }
 
         function createModal(modalId, title) {
