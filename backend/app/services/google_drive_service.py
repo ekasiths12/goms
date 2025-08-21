@@ -20,6 +20,13 @@ class GoogleDriveService:
         self.service = None
         self._authenticate()
     
+    def is_available(self):
+        """Check if Google Drive service is available (credentials configured)"""
+        try:
+            return self.service is not None
+        except:
+            return False
+    
     def _authenticate(self):
         """Authenticate with Google Drive API"""
         # The file token.pickle stores the user's access and refresh tokens
@@ -34,10 +41,10 @@ class GoogleDriveService:
             else:
                 # Check if credentials file exists
                 if not os.path.exists('credentials.json'):
-                    raise FileNotFoundError(
-                        "credentials.json not found. Please download it from Google Cloud Console "
-                        "and place it in the backend directory."
-                    )
+                    print("⚠️  Google Drive credentials.json not found. Google Drive features will be disabled.")
+                    print("💡 To enable Google Drive uploads, download credentials.json from Google Cloud Console")
+                    self.service = None
+                    return
                 
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', self.SCOPES)

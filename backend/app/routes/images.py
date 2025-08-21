@@ -43,7 +43,8 @@ def upload_image():
         try:
             drive_service = GoogleDriveService()
         except Exception as e:
-            return jsonify({'error': f'Google Drive service error: {str(e)}'}), 500
+            print(f"⚠️  Google Drive service error: {str(e)}")
+            drive_service = None
         
         # Save file locally first
         filename = secure_filename(file.filename)
@@ -54,33 +55,52 @@ def upload_image():
         file.save(local_path)
         
         # Generate Google Drive filename
-        drive_filename = drive_service.generate_filename(garment_name, fabric_name, fabric_color)
+        drive_filename = drive_service.generate_filename(garment_name, fabric_name, fabric_color) if drive_service else None
         
         # Upload to Google Drive
         try:
-            drive_result = drive_service.upload_image_from_path(local_path, drive_filename)
+            if drive_service and drive_service.is_available():
+                drive_result = drive_service.upload_image_from_path(local_path, drive_filename)
             
             # Save to database
-            image = Image(
-                file_path=local_path,
-                uploaded_at=datetime.utcnow(),
-                google_drive_id=drive_result['file_id'],
-                google_drive_link=drive_result['web_view_link'],
-                google_drive_filename=drive_result['name']
-            )
-            
-            db.session.add(image)
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': 'Image uploaded successfully',
-                'image_id': image.id,
-                'local_path': local_path,
-                'google_drive_id': drive_result['file_id'],
-                'google_drive_link': drive_result['web_view_link'],
-                'google_drive_filename': drive_result['name']
-            })
+            if drive_service and drive_service.is_available() and drive_result:
+                image = Image(
+                    file_path=local_path,
+                    uploaded_at=datetime.utcnow(),
+                    google_drive_id=drive_result['file_id'],
+                    google_drive_link=drive_result['web_view_link'],
+                    google_drive_filename=drive_result['name']
+                )
+                
+                db.session.add(image)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Image uploaded successfully to local storage and Google Drive',
+                    'image_id': image.id,
+                    'local_path': local_path,
+                    'google_drive_id': drive_result['file_id'],
+                    'google_drive_link': drive_result['web_view_link'],
+                    'google_drive_filename': drive_result['name']
+                })
+            else:
+                # Google Drive not available, save locally only
+                image = Image(
+                    file_path=local_path,
+                    uploaded_at=datetime.utcnow()
+                )
+                
+                db.session.add(image)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Image uploaded to local storage (Google Drive not configured)',
+                    'image_id': image.id,
+                    'local_path': local_path,
+                    'warning': 'Google Drive upload disabled - credentials not configured'
+                })
             
         except Exception as e:
             # If Google Drive upload fails, still save locally
@@ -93,11 +113,11 @@ def upload_image():
             
             return jsonify({
                 'success': True,
-                'message': 'Image uploaded locally (Google Drive upload failed)',
+                'message': 'Image uploaded to local storage (Google Drive upload failed)',
                 'image_id': image.id,
                 'local_path': local_path,
-                'error': f'Google Drive upload failed: {str(e)}'
-            }), 207  # 207 Multi-Status
+                'warning': f'Google Drive upload failed: {str(e)}'
+            })
             
     except Exception as e:
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500

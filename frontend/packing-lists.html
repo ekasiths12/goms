@@ -613,7 +613,24 @@
         let packingListData = [];
 
         function getApiBaseUrl() {
-            // Use the same domain as the current page to avoid CORS issues
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            
+            // Local development - Flask backend runs on port 8000
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // If frontend is on port 3000, backend should be on 8000
+                if (port === '3000') {
+                    return 'http://localhost:8000';
+                }
+                // If frontend is on port 5000, backend is on 8000
+                if (port === '5000') {
+                    return 'http://localhost:8000';
+                }
+                // Default to port 8000 for local development
+                return 'http://localhost:8000';
+            }
+            
+            // Railway deployment - use same domain
             return window.location.origin;
         }
 

@@ -1316,7 +1316,9 @@
             
             console.log('🔍 toggleSelectAllTree called, selectAllCheckbox.checked:', selectAllCheckbox.checked);
             
-            checkboxes.forEach((checkbox, index) => {
+            // Convert NodeList to Array for forEach method
+            const checkboxesArray = Array.from(checkboxes);
+            checkboxesArray.forEach((checkbox, index) => {
                 const actualIndex = (currentPage - 1) * itemsPerPage + index;
                 if (selectAllCheckbox.checked) {
                     checkbox.checked = true;
@@ -1369,7 +1371,9 @@
                 return;
             }
             
-            const checkedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+            // Convert NodeList to Array for filter method
+            const checkboxesArray = Array.from(checkboxes);
+            const checkedCount = checkboxesArray.filter(checkbox => checkbox.checked).length;
             
             if (checkedCount === 0) {
                 selectAllCheckbox.checked = false;
@@ -1830,7 +1834,24 @@
         }
 
         function getApiBaseUrl() {
-            // Use the same domain as the current page to avoid CORS issues
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            
+            // Local development - Flask backend runs on port 8000
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // If frontend is on port 3000, backend should be on 8000
+                if (port === '3000') {
+                    return 'http://localhost:8000';
+                }
+                // If frontend is on port 5000, backend is on 8000
+                if (port === '5000') {
+                    return 'http://localhost:8000';
+                }
+                // Default to port 8000 for local development
+                return 'http://localhost:8000';
+            }
+            
+            // Railway deployment - use same domain
             return window.location.origin;
         }
 

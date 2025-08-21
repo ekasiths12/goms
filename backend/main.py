@@ -19,13 +19,24 @@ def create_app(config_class=Config):
     # Initialize extensions
     db.init_app(app)
     
-    # Configure CORS for local development
-    if app.debug:
-        # Allow all origins in development mode
-        CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True, methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-    else:
-        # Production CORS settings
-        CORS(app)
+    # Configure CORS for local development and production
+    CORS(app, 
+         origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:8000", "http://127.0.0.1:8000"], 
+         supports_credentials=True, 
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+         expose_headers=['Content-Type', 'Authorization'])
+    
+    # Add CORS headers to all responses
+    @app.after_request
+    def after_request(response):
+        origin = request.headers.get('Origin')
+        if origin in ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:8000", "http://127.0.0.1:8000"]:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
     
     # Register blueprints
     from app.routes.main import main_bp
