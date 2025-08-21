@@ -1001,10 +1001,24 @@
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
             const isChecked = selectAllCheckbox.checked;
             
-            // Select/deselect all invoice checkboxes
+            // Clear selectedRows array
+            selectedRows = [];
+            
+            // Select/deselect all invoice checkboxes and update selectedRows
             document.querySelectorAll('.invoice-checkbox').forEach(checkbox => {
                 checkbox.checked = isChecked;
+                
+                if (isChecked) {
+                    // Add to selectedRows
+                    const invoiceId = checkbox.getAttribute('data-invoice-id');
+                    const actualIndex = invoiceData.findIndex(invoice => invoice.id == invoiceId);
+                    if (actualIndex !== -1) {
+                        selectedRows.push(actualIndex);
+                    }
+                }
             });
+            
+            console.log('📋 Select all - Selected rows:', selectedRows);
         }
 
         function toggleInvoiceSelection(event, invoiceId) {
@@ -1013,6 +1027,23 @@
             const checkbox = document.querySelector(`input[data-invoice-id="${invoiceId}"].invoice-checkbox`);
             const isChecked = checkbox.checked;
             
+            // Find the actual index of this invoice in the invoiceData array
+            const actualIndex = invoiceData.findIndex(invoice => invoice.id == invoiceId);
+            
+            if (isChecked) {
+                // Add to selectedRows if not already there
+                if (!selectedRows.includes(actualIndex)) {
+                    selectedRows.push(actualIndex);
+                }
+            } else {
+                // Remove from selectedRows
+                const indexToRemove = selectedRows.indexOf(actualIndex);
+                if (indexToRemove > -1) {
+                    selectedRows.splice(indexToRemove, 1);
+                }
+            }
+            
+            console.log('📋 Selected rows:', selectedRows);
             updateSelectAllCheckbox();
         }
 
@@ -2050,6 +2081,10 @@
         }
 
         function openStitchingRecordDialog() {
+            console.log('🔍 Opening stitching record dialog...');
+            console.log('📋 Current selectedRows:', selectedRows);
+            console.log('📋 selectedRows.length:', selectedRows.length);
+            
             if (selectedRows.length === 0) {
                 alert('Please select one or more fabric invoice lines to create a stitching record.');
                 return;
