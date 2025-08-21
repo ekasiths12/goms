@@ -75,7 +75,7 @@ def import_dat_file_core(file, selected_customer_ids=None):
                 continue
             
             # Map fields from .DAT file (exactly like old Qt app)
-            tax = parts[0]
+            tax = parts[0]  # This is NOT the tax invoice number - it's something else
             short_name = parts[1]
             customer_id = parts[2]
             date_raw = parts[3]
@@ -89,6 +89,8 @@ def import_dat_file_core(file, selected_customer_ids=None):
             description = parts[11]
             vat = parts[12]
             # parts[13] is unused
+            
+            print(f"🔍 .DAT file fields - tax field (parts[0]): '{tax}' (NOT tax invoice number)")
             
             # Convert the padded customer ID from .dat file to regular format (like old Qt app)
             # .dat file has customer ID as 8-digit padded (e.g., "00000328")
