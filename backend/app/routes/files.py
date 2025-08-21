@@ -158,7 +158,7 @@ def import_dat_file_core(file, selected_customer_ids=None):
                     invoice_date=invoice_date,
                     total_amount=calculated_total_value,
                     status='open',
-                    tax_invoice_number=tax if tax else None
+                    tax_invoice_number=None  # Tax invoice number should be empty/null, not from .dat file
                 )
                 db.session.add(invoice)
                 db.session.flush()
