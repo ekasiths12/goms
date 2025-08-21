@@ -802,6 +802,13 @@
             const username = localStorage.getItem('gms_username');
             document.getElementById('currentUser').textContent = `Welcome, ${username}`;
             
+            // Set default filter to undelivered items
+            const undeliveredRadio = document.querySelector('input[name="deliveryStatus"][value="undelivered"]');
+            if (undeliveredRadio) {
+                undeliveredRadio.checked = true;
+                console.log('✅ Set default filter to undelivered items');
+            }
+            
             await loadStitchingData();
         });
 
