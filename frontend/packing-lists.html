@@ -593,7 +593,7 @@
         window.addEventListener('load', async () => {
             console.log('🔄 Packing Lists page loaded');
             setupFilters();
-            await loadPackingListsData();
+            await refreshPackingListTable();
             // Default to unbilled and apply filter automatically
             document.querySelector('input[name="billingStatus"][value="unbilled"]').checked = true;
             filterData();
