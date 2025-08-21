@@ -1771,12 +1771,8 @@
         }
 
         function getApiBaseUrl() {
-            // Use dynamic API base URL for local development vs Railway
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return 'http://localhost:8000';
-            } else {
-                return 'https://garment-management-system-production.up.railway.app';
-            }
+            // Use the same domain as the current page to avoid CORS issues
+            return window.location.origin;
         }
 
 

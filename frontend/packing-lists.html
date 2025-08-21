@@ -613,12 +613,8 @@
         let packingListData = [];
 
         function getApiBaseUrl() {
-            const hostname = window.location.hostname;
-            const baseUrl = (hostname === 'localhost' || hostname === '127.0.0.1') 
-                ? 'http://localhost:8000' 
-                : 'https://garment-management-system-production.up.railway.app';
-            console.log('🌐 getApiBaseUrl - hostname:', hostname, 'baseUrl:', baseUrl);
-            return baseUrl;
+            // Use the same domain as the current page to avoid CORS issues
+            return window.location.origin;
         }
 
         // Check authentication

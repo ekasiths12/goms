@@ -761,16 +761,8 @@
         
         // API Base URL - works for both local development and Railway
         const getApiBaseUrl = () => {
-            const host = window.location.host;
-            const protocol = window.location.protocol;
-            
-            // If running locally on port 3000, use port 8000 for API
-            if (host.includes('localhost:3000')) {
-                return `${protocol}//localhost:8000`;
-            }
-            
-            // For Railway or other deployments, use relative URLs
-            return '';
+            // Use the same domain as the current page to avoid CORS issues
+            return window.location.origin;
         };
 
         // Enhanced Filter Dropdown Variables
