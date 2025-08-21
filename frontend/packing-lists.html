@@ -736,13 +736,22 @@
 
                 // Billing status filter
                 if (billingStatus !== 'all') {
-                    const hasBilledRecords = packingList.lines && packingList.lines.some(line => 
-                        line.billing_group_id !== null
-                    );
+                    console.log('🔍 Checking billing status for PL:', packingList.packing_list_serial, 'Status:', billingStatus);
+                    console.log('📋 Lines data:', packingList.lines);
+                    
+                    const hasBilledRecords = packingList.lines && packingList.lines.some(line => {
+                        console.log('🔍 Line billing_group_id:', line.billing_group_id, 'Type:', typeof line.billing_group_id);
+                        return line.billing_group_id !== null && line.billing_group_id !== undefined;
+                    });
+                    
+                    console.log('🔍 Has billed records:', hasBilledRecords);
+                    
                     if (billingStatus === 'billed' && !hasBilledRecords) {
+                        console.log('❌ Filtering out - billed status but no billed records');
                         return false;
                     }
                     if (billingStatus === 'unbilled' && hasBilledRecords) {
+                        console.log('❌ Filtering out - unbilled status but has billed records');
                         return false;
                     }
                 }

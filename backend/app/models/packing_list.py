@@ -101,5 +101,6 @@ class PackingListLine(db.Model):
             'total_qty': sum(self.stitching_invoice.get_size_qty().values()) if self.stitching_invoice else 0,
             'price': float(self.stitching_invoice.price) if self.stitching_invoice else 0,
             'total_value': float(self.stitching_invoice.total_value) if self.stitching_invoice else 0,
+            'billing_group_id': self.stitching_invoice.billing_group_id if self.stitching_invoice else None,
             'created_at': self.stitching_invoice.created_at.isoformat() if self.stitching_invoice and self.stitching_invoice.created_at else None
         }
