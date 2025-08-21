@@ -15,6 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #212121;
             color: #eceff1;
+            font-size: 13px;
         }
 
         /* Navigation Bar */
@@ -44,7 +45,7 @@
             color: #eceff1;
             padding: 15px 25px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
@@ -70,20 +71,7 @@
             min-height: calc(100vh - 60px);
         }
 
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #5c6bc0;
-        }
-
-        .section-description {
-            color: #b0bec5;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-
-        /* Filter Controls */
+        /* Filter Controls - Compact Design */
         .filter-controls {
             background: #2c2c2c;
             border-radius: 8px;
@@ -110,27 +98,108 @@
             font-weight: 500;
         }
 
-        .filter-select, .filter-input {
+        .filter-input {
             background: #424242;
             border: 1px solid #555;
             color: #eceff1;
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             min-width: 120px;
         }
 
-        .filter-select:focus, .filter-input:focus {
+        .filter-input:focus {
             outline: none;
             border-color: #5c6bc0;
         }
 
-        /* Table Styles */
-        .table-container {
+        .filter-select {
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .radio-option input[type="radio"] {
+            margin: 0;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: #5c6bc0;
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background: #546e7a;
+            color: #eceff1;
+        }
+
+        .btn-danger {
+            background: #d32f2f;
+            color: #ffffff;
+        }
+
+        .btn-warning {
+            background: #ffb74d;
+            color: #ffffff;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: #ffffff;
+        }
+
+        /* Data Table */
+        .data-table-container {
             background: #2c2c2c;
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: auto;
         }
 
         .data-table {
@@ -140,258 +209,229 @@
         }
 
         .data-table th {
-            background: #424242;
+            background: #3949ab;
             color: #eceff1;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            border-bottom: 1px solid #555;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #424242;
-            color: #eceff1;
+            border-bottom: 1px solid #444;
         }
 
-        .data-table tbody tr:hover {
+        /* Specific column styling for better readability */
+        .data-table td:nth-child(1) { /* Checkbox column */
+            width: 30px;
+            text-align: center;
+        }
+
+        .data-table td:nth-child(2) { /* PL # */
+            width: 80px;
+        }
+
+        .data-table td:nth-child(3) { /* Serial # */
+            width: 100px;
+        }
+
+        .data-table td:nth-child(4) { /* Garment */
+            width: 80px;
+        }
+
+        .data-table td:nth-child(5) { /* Fabric */
+            width: 100px;
+        }
+
+        .data-table td:nth-child(6) { /* Color */
+            width: 80px;
+        }
+
+        .data-table td:nth-child(7) { /* Customer */
+            width: 120px;
+        }
+
+        .data-table td:nth-child(8) { /* Tax Inv # */
+            width: 100px;
+        }
+
+        .data-table td:nth-child(9) { /* Fabric Inv */
+            width: 100px;
+        }
+
+        .data-table td:nth-child(10) { /* Fabric DN */
+            width: 100px;
+        }
+
+        .data-table td:nth-child(11) { /* Fab Used */
+            width: 70px;
+            text-align: right;
+        }
+
+        .data-table td:nth-child(12) { /* Fab Cost */
+            width: 70px;
+            text-align: right;
+        }
+
+        .data-table td:nth-child(13) { /* Fab Value */
+            width: 80px;
+            text-align: right;
+        }
+
+        .data-table td:nth-child(14),
+        .data-table td:nth-child(15),
+        .data-table td:nth-child(16),
+        .data-table td:nth-child(17),
+        .data-table td:nth-child(18),
+        .data-table td:nth-child(19) { /* Size columns */
+            width: 40px;
+            text-align: center;
+        }
+
+        .data-table td:nth-child(20) { /* Total Qty */
+            width: 70px;
+            text-align: center;
+        }
+
+        .data-table td:nth-child(21) { /* Sew Cost */
+            width: 70px;
+            text-align: right;
+        }
+
+        .data-table td:nth-child(22) { /* Sew Value */
+            width: 80px;
+            text-align: right;
+        }
+
+        .data-table td:nth-child(23) { /* Created At */
+            width: 80px;
+        }
+
+        .data-table tr:hover {
+            background: #424242 !important;
+        }
+
+        .data-table tr:hover td {
+            background: #424242 !important;
+        }
+
+        .parent-row {
             background: #424242;
-        }
-
-        .data-table tbody tr.selected {
-            background: #5c6bc0;
-            color: #fff;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #3949ab;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #5c6bc0;
-        }
-
-        .btn-secondary {
-            background: #757575;
-            color: #fff;
-        }
-
-        .btn-secondary:hover {
-            background: #9e9e9e;
-        }
-
-        .btn-success {
-            background: #388e3c;
-            color: #fff;
-        }
-
-        .btn-success:hover {
-            background: #4caf50;
-        }
-
-        .btn-warning {
-            background: #f57c00;
-            color: #fff;
-        }
-
-        .btn-warning:hover {
-            background: #ff9800;
-        }
-
-        .btn-danger {
-            background: #d32f2f;
-            color: #fff;
-        }
-
-        .btn-danger:hover {
-            background: #f44336;
-        }
-
-        .btn-info {
-            background: #1976d2;
-            color: #fff;
-        }
-
-        .btn-info:hover {
-            background: #2196f3;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background: #2c2c2c;
-            margin: 5% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 800px;
-            color: #eceff1;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #555;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #5c6bc0;
-        }
-
-        .close {
-            color: #aaa;
-            font-size: 28px;
             font-weight: bold;
-            cursor: pointer;
         }
 
-        .close:hover {
-            color: #eceff1;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #b0bec5;
-            font-size: 14px;
-        }
-
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px;
+        .parent-row td {
             background: #424242;
-            border: 1px solid #555;
-            border-radius: 4px;
-            color: #eceff1;
-            font-size: 14px;
-        }
-
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #5c6bc0;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #555;
-        }
-
-        /* Status Badges */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .status-pending {
-            background: #ff9800;
-            color: #000;
-        }
-
-        .status-in_progress {
-            background: #2196f3;
-            color: #fff;
-        }
-
-        .status-completed {
-            background: #4caf50;
-            color: #fff;
-        }
-
-        .status-shipped {
-            background: #9c27b0;
-            color: #fff;
-        }
-
-        /* Stitching Records Selection */
-        .stitching-selection {
-            background: #1e1e1e;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-
-        .stitching-item {
-            background: #2c2c2c;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #424242;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-        }
-
-        .stitching-item:hover {
-            border-color: #5c6bc0;
-        }
-
-        .stitching-item.selected {
-            border-color: #5c6bc0;
-            background: #3949ab;
-        }
-
-        .stitching-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .stitching-item-title {
-            font-weight: 500;
             color: #5c6bc0;
         }
 
-        .stitching-item-details {
-            font-size: 12px;
+        .parent-row td:first-child {
+            cursor: default;
+        }
+
+        .child-row {
+            background: #2c2c2c;
+            display: none;
+        }
+
+        .child-row.expanded {
+            display: table-row;
+        }
+
+        .child-row td {
+            padding-left: 20px;
+            background: #2c2c2c;
+        }
+
+        .child-row td:first-child {
+            cursor: default;
+        }
+
+        .sub-child-row {
+            background: #1e1e1e;
+            display: none;
+        }
+
+        .sub-child-row.expanded {
+            display: table-row;
+        }
+
+        .sub-child-row td {
+            padding-left: 40px;
+            background: #1e1e1e;
             color: #b0bec5;
+        }
+
+        /* Expand/Collapse indicator */
+        .expand-indicator {
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            color: #5c6bc0;
+        }
+
+        .expand-indicator:hover {
+            color: #ffffff;
+        }
+
+        /* Checkbox styling */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #5c6bc0;
+        }
+
+        /* Make it clear that rows are not clickable */
+        .data-table tr {
+            cursor: default;
+        }
+
+        .data-table tr:hover {
+            background: #424242 !important;
+        }
+
+        .data-table tr:hover td {
+            background: #424242 !important;
+        }
+
+        /* Loading and Error States */
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: #b0bec5;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 40px;
+            color: #e57373;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .data-table-container {
+                overflow-x: auto;
+            }
         }
     </style>
 </head>
@@ -399,378 +439,856 @@
     <!-- Navigation Bar -->
     <nav class="nav-bar">
         <ul class="nav-tabs">
-            <li><a href="/dashboard" class="nav-tab">Dashboard</a></li>
-            <li><a href="/fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
-            <li><a href="/stitching-records.html" class="nav-tab">Stitching Records</a></li>
-            <li><a href="/packing-lists.html" class="nav-tab active">Packing Lists</a></li>
-            <li><a href="/group-bills.html" class="nav-tab">Group Bills</a></li>
+            <li><a href="fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
+            <li><a href="stitching-records.html" class="nav-tab">Stitching Records</a></li>
+            <li><a href="packing-lists.html" class="nav-tab active">Packing Lists</a></li>
+            <li><a href="group-bills.html" class="nav-tab">Group Bills</a></li>
         </ul>
     </nav>
 
     <!-- Main Content -->
-    <main class="main-content">
-        <h1 class="section-title">Packing Lists</h1>
-        <p class="section-description">
-            Generate packing lists from stitching records and manage delivery information.
-        </p>
-        
-        <!-- Filter Controls -->
+    <div class="main-content">
+        <!-- Filter Controls - Compact Design -->
         <div class="filter-controls">
             <div class="filter-row">
                 <div class="filter-group">
-                    <label>Customer:</label>
-                    <select id="filterCustomer" class="filter-select">
-                        <option value="">All Customers</option>
-                    </select>
+                    <label class="filter-label">PL#:</label>
+                    <input type="text" class="filter-input" id="plFilter" placeholder="PL#">
                 </div>
-                
                 <div class="filter-group">
-                    <label>Status:</label>
-                    <select id="filterStatus" class="filter-select">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="shipped">Shipped</option>
-                    </select>
+                    <label class="filter-label">Serial#:</label>
+                    <input type="text" class="filter-input" id="serialFilter" placeholder="Serial #">
                 </div>
-                
+                <div class="filter-group">
+                    <label class="filter-label">Fab.:</label>
+                    <input type="text" class="filter-input" id="fabricFilter" placeholder="Fabric">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Cust.:</label>
+                    <input type="text" class="filter-input" id="customerFilter" placeholder="Customer">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Tax Inv #:</label>
+                    <input type="text" class="filter-input" id="taxInvFilter" placeholder="Tax Inv #">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Fab. Inv:</label>
+                    <input type="text" class="filter-input" id="fabInvFilter" placeholder="Fabric Inv">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Fab. DN:</label>
+                    <input type="text" class="filter-input" id="fabDnFilter" placeholder="Fabric DN">
+                </div>
                 <div class="filter-group">
                     <label>From:</label>
-                    <input type="date" id="filterDateFrom" class="filter-input">
+                    <input type="text" class="filter-input" id="dateFromFilter" placeholder="DD/MM/YY">
                 </div>
-                
                 <div class="filter-group">
                     <label>To:</label>
-                    <input type="date" id="filterDateTo" class="filter-input">
+                    <input type="text" class="filter-input" id="dateToFilter" placeholder="DD/MM/YY">
                 </div>
-                
-                <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
+                <div class="filter-group">
+                    <label class="filter-label">Show:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="billingStatus" value="unbilled" checked>
+                            <span>Unbilled</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="billingStatus" value="billed">
+                            <span>Billed</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="billingStatus" value="all">
+                            <span>All</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
+                </div>
             </div>
-        </div>
-        
-        <!-- Packing Lists Table -->
-        <div class="table-container">
-            <table id="packingTable" class="data-table">
+    </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-success" onclick="downloadPDF(false)">
+                <i class="fas fa-download"></i> Save PDF
+            </button>
+            <button class="btn btn-warning" onclick="downloadPDF(true)">
+                <i class="fas fa-download"></i> Save PDF with Cost
+            </button>
+            <button class="btn btn-primary" onclick="createGroupBillingNote()">
+                <i class="fas fa-file-invoice"></i> Group and Create Billing Note
+            </button>
+            <button class="btn btn-secondary" onclick="refreshPackingListTable()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+            <button class="btn btn-warning" onclick="assignTaxInvoice()">
+                <i class="fas fa-tag"></i> Apply MSK Tax #
+            </button>
+            <div style="flex-grow: 1;"></div>
+            <span style="color: #b0bec5; font-size: 12px; align-self: center;">
+                Tip: Use checkboxes to select packing lists, then click 'Save PDF' to download PDFs or 'Group and Create Billing Note' to create billing notes.
+            </span>
+            <button class="btn btn-danger" onclick="deleteSelectedPackingList()">
+                <i class="fas fa-trash"></i> Delete Selected Packing List
+        </button>
+    </div>
+
+        <!-- Data Table -->
+        <div class="data-table-container">
+            <table class="data-table" id="packingListTable">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Customer</th>
-                        <th>Packing List #</th>
-                        <th>Order Numbers</th>
-                        <th>Total Items</th>
-                        <th>Status</th>
-                        <th>Delivery Date</th>
-                        <th>Actions</th>
+                        <th style="width: 30px;">
+                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                        </th>
+                        <th style="width: 80px;">PL #</th>
+                        <th style="width: 100px;">Serial #</th>
+                        <th style="width: 80px;">Garment</th>
+                        <th style="width: 100px;">Fabric</th>
+                        <th style="width: 80px;">Color</th>
+                        <th style="width: 120px;">Customer</th>
+                        <th style="width: 100px;">Tax Inv #</th>
+                        <th style="width: 100px;">Group Bill #</th>
+                        <th style="width: 100px;">Fabric Inv.</th>
+                        <th style="width: 100px;">Fabric DN.</th>
+                        <th style="width: 70px;">Fab Used</th>
+                        <th style="width: 70px;">Fab Cost</th>
+                        <th style="width: 80px;">Fab Value</th>
+                        <th style="width: 40px;">S</th>
+                        <th style="width: 40px;">M</th>
+                        <th style="width: 40px;">L</th>
+                        <th style="width: 40px;">XL</th>
+                        <th style="width: 40px;">XXL</th>
+                        <th style="width: 40px;">XXXL</th>
+                        <th style="width: 70px;">Total Qty</th>
+                        <th style="width: 70px;">Sew Cost</th>
+                        <th style="width: 80px;">Sew Value</th>
+                        <th style="width: 80px;">Created At</th>
                     </tr>
                 </thead>
-                <tbody id="packingTableBody">
-                    <!-- Data will be loaded here -->
+                <tbody id="packingListTableBody">
+                    <tr>
+                        <td colspan="24" class="loading-state">Loading packing lists...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-        
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="btn btn-primary" onclick="openCreatePackingListDialog()">Create Packing List</button>
-            <button class="btn btn-secondary" onclick="refreshPackingTable()">Refresh</button>
-            <button class="btn btn-success" onclick="exportPackingData()">Export Data</button>
-            <button class="btn btn-info" onclick="generatePDF()">Generate PDF</button>
-            <button class="btn btn-warning" onclick="bulkUpdateStatus()">Bulk Update Status</button>
-        </div>
-    </main>
+    </div>
 
     <script>
-        // Packing Lists Functions
-        let packingData = [];
-        let selectedRows = [];
-        let stitchingRecords = [];
+        let packingListData = [];
 
-        // Load data when page loads
+        function getApiBaseUrl() {
+            const hostname = window.location.hostname;
+            const baseUrl = (hostname === 'localhost' || hostname === '127.0.0.1') 
+                ? 'http://localhost:8000' 
+                : 'https://garment-management-system-production.up.railway.app';
+            console.log('🌐 getApiBaseUrl - hostname:', hostname, 'baseUrl:', baseUrl);
+            return baseUrl;
+        }
+
         window.addEventListener('load', async () => {
             console.log('🔄 Packing Lists page loaded');
-            await loadPackingData();
-            await loadStitchingRecords();
+            setupFilters();
+            await loadPackingListsData();
+            // Default to unbilled and apply filter automatically
+            document.querySelector('input[name="billingStatus"][value="unbilled"]').checked = true;
+            filterData();
         });
 
-        async function loadPackingData() {
-            console.log('🔄 loadPackingData called');
+        function setupFilters() {
+            // Setup filter event listeners
+            document.getElementById('plFilter').addEventListener('input', filterData);
+            document.getElementById('serialFilter').addEventListener('input', filterData);
+            document.getElementById('fabricFilter').addEventListener('input', filterData);
+            document.getElementById('customerFilter').addEventListener('input', filterData);
+            document.getElementById('taxInvFilter').addEventListener('input', filterData);
+            document.getElementById('fabInvFilter').addEventListener('input', filterData);
+            document.getElementById('fabDnFilter').addEventListener('input', filterData);
+            document.getElementById('dateFromFilter').addEventListener('input', filterData);
+            document.getElementById('dateToFilter').addEventListener('input', filterData);
             
-            const tbody = document.getElementById('packingTableBody');
-            if (!tbody) {
-                console.error('❌ Packing table body not found');
-                return;
+            // Add date input formatting
+            const dateFromInput = document.getElementById('dateFromFilter');
+            const dateToInput = document.getElementById('dateToFilter');
+            
+            if (dateFromInput) {
+                dateFromInput.addEventListener('input', () => formatDateInput(dateFromInput));
+            }
+            if (dateToInput) {
+                dateToInput.addEventListener('input', () => formatDateInput(dateToInput));
             }
             
-            console.log('✅ Found packing table body, showing loading state');
-            // Show loading state
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #b0bec5;">Loading packing list data...</td></tr>';
+            // Radio button listeners
+            document.querySelectorAll('input[name="billingStatus"]').forEach(radio => {
+                radio.addEventListener('change', filterData);
+            });
+        }
+
+        function formatDateInput(input) {
+            // Auto-format date input to DD/MM/YY format (like old Qt app)
+            let text = input.value;
+            // Remove any non-digit characters
+            let digitsOnly = text.replace(/\D/g, '');
             
+            // Format as DD/MM/YY
+            let formatted = "";
+            if (digitsOnly.length >= 1) {
+                formatted += digitsOnly.slice(0, 2);
+            }
+            if (digitsOnly.length >= 3) {
+                formatted += "/" + digitsOnly.slice(2, 4);
+            }
+            if (digitsOnly.length >= 5) {
+                formatted += "/" + digitsOnly.slice(4, 6);
+            }
+            
+            // Update text if different
+            if (formatted !== text) {
+                input.value = formatted;
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('plFilter').value = '';
+            document.getElementById('serialFilter').value = '';
+            document.getElementById('fabricFilter').value = '';
+            document.getElementById('customerFilter').value = '';
+            document.getElementById('taxInvFilter').value = '';
+            document.getElementById('fabInvFilter').value = '';
+            document.getElementById('fabDnFilter').value = '';
+            document.getElementById('dateFromFilter').value = '';
+            document.getElementById('dateToFilter').value = '';
+            document.querySelector('input[name="billingStatus"][value="unbilled"]').checked = true;
+            filterData();
+        }
+
+        function filterData() {
+            const plFilter = document.getElementById('plFilter').value.toLowerCase();
+            const serialFilter = document.getElementById('serialFilter').value.toLowerCase();
+            const fabricFilter = document.getElementById('fabricFilter').value.toLowerCase();
+            const customerFilter = document.getElementById('customerFilter').value.toLowerCase();
+            const taxInvFilter = document.getElementById('taxInvFilter').value.toLowerCase();
+            const fabInvFilter = document.getElementById('fabInvFilter').value.toLowerCase();
+            const fabDnFilter = document.getElementById('fabDnFilter').value.toLowerCase();
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+            const billingStatus = document.querySelector('input[name="billingStatus"]:checked').value;
+
+            const filteredData = packingListData.filter(packingList => {
+                // PL Serial filter
+                if (plFilter && !packingList.packing_list_serial.toLowerCase().includes(plFilter)) {
+                    return false;
+                }
+
+                // Customer filter
+                if (customerFilter && !packingList.customer_name.toLowerCase().includes(customerFilter)) {
+                    return false;
+                }
+
+                // Date range filter
+                if (dateFrom || dateTo) {
+                    const createdDate = new Date(packingList.created_at);
+                    if (dateFrom && !isDateInRange(createdDate, dateFrom, 'from')) {
+                        return false;
+                    }
+                    if (dateTo && !isDateInRange(createdDate, dateTo, 'to')) {
+                        return false;
+                    }
+                }
+
+                // Check if any lines match the other filters
+                const hasMatchingLines = packingList.lines && packingList.lines.some(line => {
+                    // Serial filter
+                    if (serialFilter && !line.stitching_invoice_number.toLowerCase().includes(serialFilter)) {
+                        return false;
+                    }
+
+                    // Fabric filter
+                    if (fabricFilter && !line.fabric_name.toLowerCase().includes(fabricFilter)) {
+                        return false;
+                    }
+
+                    // Tax invoice filter
+                    if (taxInvFilter && !(line.tax_invoice_number || '').toLowerCase().includes(taxInvFilter)) {
+                        return false;
+                    }
+
+                    // Fabric invoice filter
+                    if (fabInvFilter && !(line.fabric_invoice_number || '').toLowerCase().includes(fabInvFilter)) {
+                        return false;
+                    }
+
+                    // Fabric DN filter
+                    if (fabDnFilter && !(line.delivery_note || '').toLowerCase().includes(fabDnFilter)) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                if (!hasMatchingLines) {
+                    return false;
+                }
+
+                // Billing status filter
+                if (billingStatus !== 'all') {
+                    const hasBilledRecords = packingList.lines && packingList.lines.some(line => 
+                        line.billing_group_id !== null
+                    );
+                    if (billingStatus === 'billed' && !hasBilledRecords) {
+                        return false;
+                    }
+                    if (billingStatus === 'unbilled' && hasBilledRecords) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            populatePackingListTable(filteredData);
+        }
+
+        function isDateInRange(date, filterDate, type) {
+            if (!filterDate || filterDate.length !== 8 || filterDate.split('/').length !== 3) {
+                return true;
+            }
+
             try {
-                console.log('🌐 Fetching /api/packing-lists...');
-                const response = await fetch('/api/packing-lists');
+                const [day, month, year] = filterDate.split('/');
+                const fullYear = year.length === 2 ? (parseInt(year) < 50 ? '20' + year : '19' + year) : year;
+                const filterDateObj = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                
+                if (type === 'from') {
+                    return date >= filterDateObj;
+                } else {
+                    return date <= filterDateObj;
+                }
+            } catch (error) {
+                return true;
+            }
+        }
+
+        async function refreshPackingListTable() {
+            try {
+                const tableBody = document.getElementById('packingListTableBody');
+                if (!tableBody) {
+                    console.error('❌ Could not find packing table body');
+                    return;
+                }
+                
+                tableBody.innerHTML = '<tr><td colspan="23" class="loading-state">Loading packing lists...</td></tr>';
+                
+                const apiUrl = getApiBaseUrl();
+                const requestUrl = `${apiUrl}/api/packing-lists`;
+                console.log('🌐 Fetching', requestUrl);
+                
+                const response = await fetch(requestUrl);
                 console.log('📡 Response status:', response.status);
                 
-                if (response.ok) {
-                    packingData = await response.json();
-                    console.log('📊 Received packing data:', packingData.length, 'records');
-                    populatePackingTable();
-                    populateFilters();
-                } else {
+                if (!response.ok) {
+                    const errorText = await response.text();
                     console.error('❌ Failed to load packing data, status:', response.status);
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Failed to load packing list data. Please try refreshing the page.</td></tr>';
+                    tableBody.innerHTML = `<tr><td colspan="23" class="error-state">Failed to load packing lists: ${errorText}</td></tr>`;
+                    return;
                 }
+                
+                const data = await response.json();
+                console.log('📊 Received packing list data:', data.length, 'records');
+                
+                packingListData = data;
+                populatePackingListTable(data);
+                console.log('✅ Packing list data loaded successfully');
+                
             } catch (error) {
-                console.error('❌ Error loading packing data:', error);
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Error loading packing list data. Please check your connection and try again.</td></tr>';
+                console.error('❌ Error loading packing list data:', error);
+                const tableBody = document.getElementById('packingListTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `<tr><td colspan="23" class="error-state">Error loading packing lists: ${error.message}</td></tr>`;
+                }
             }
         }
 
-        async function loadStitchingRecords() {
-            try {
-                const response = await fetch('/api/stitching');
-                if (response.ok) {
-                    stitchingRecords = await response.json();
-                    console.log('📊 Loaded stitching records for packing list creation:', stitchingRecords.length, 'records');
-                }
-            } catch (error) {
-                console.error('❌ Error loading stitching records:', error);
-            }
-        }
-
-        function populatePackingTable() {
-            console.log('🔄 populatePackingTable called with', packingData.length, 'records');
-            const tbody = document.getElementById('packingTableBody');
-            tbody.innerHTML = '';
-
-            if (packingData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #b0bec5;">No packing lists found. Create your first packing list to get started.</td></tr>';
+        function populatePackingListTable(data) {
+            const tableBody = document.getElementById('packingListTableBody');
+            if (!tableBody) {
+                console.error('❌ Could not find table body for population');
                 return;
             }
-
-            packingData.forEach((packing, index) => {
-                const row = document.createElement('tr');
-                row.onclick = () => toggleRowSelection(row, index);
-                
-                row.innerHTML = `
-                    <td>${formatDate(packing.created_date)}</td>
-                    <td>${packing.customer?.short_name || ''}</td>
-                    <td>${packing.packing_list_number || ''}</td>
-                    <td>${packing.order_numbers?.join(', ') || ''}</td>
-                    <td>${packing.total_items || 0}</td>
-                    <td><span class="status-badge status-${packing.status || 'pending'}">${packing.status || 'Pending'}</span></td>
-                    <td>${formatDate(packing.delivery_date)}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="editPackingList(${index})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deletePackingList(${index})">Delete</button>
-                        <button class="btn btn-sm btn-success" onclick="viewPackingList(${index})">View</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-            console.log('✅ Packing table populated with', packingData.length, 'rows');
-        }
-
-        function populateFilters() {
-            console.log('🔄 Populating filters with', packingData.length, 'records');
             
-            // Populate customer filter
-            const customers = [...new Set(packingData.map(packing => packing.customer?.short_name).filter(Boolean))];
-            const customerSelect = document.getElementById('filterCustomer');
-            if (customerSelect) {
-                customerSelect.innerHTML = '<option value="">All Customers</option>';
-                customers.forEach(customer => {
-                    const option = document.createElement('option');
-                    option.value = customer;
-                    option.textContent = customer;
-                    customerSelect.appendChild(option);
-                });
-                console.log(`✅ Populated customer filter with ${customers.length} options`);
+            if (data.length === 0) {
+                console.log('📭 No packing lists found');
+                tableBody.innerHTML = '<tr><td colspan="24" class="loading-state">No packing lists found.</td></tr>';
+                return;
+            }
+            
+            console.log('📋 Populating table with', data.length, 'packing lists');
+            let html = '';
+            
+            data.forEach((packingList, index) => {
+                console.log('📦 Processing packing list', index + 1, ':', packingList.packing_list_serial);
+                
+                // Create parent row (packing list summary)
+                html += `
+                    <tr class="parent-row" data-packing-list-id="${packingList.id}">
+                        <td class="checkbox-wrapper">
+                            <input type="checkbox" class="packing-list-checkbox" data-packing-list-id="${packingList.id}" onclick="togglePackingListSelection(${packingList.id})">
+                        </td>
+                        <td onclick="toggleExpansion(${packingList.id})">
+                            <span class="expand-indicator">▶</span> ${packingList.packing_list_serial || ''}
+                        </td>
+                        <td>Summary (${packingList.total_records || 0} records)</td>
+                        <td>Total Items: ${packingList.total_items || 0}</td>
+                        <td></td>
+                        <td></td>
+                        <td>${packingList.customer_name || ''}</td>
+                        <td>${packingList.tax_invoice_number || ''}</td>
+                        <td>${packingList.group_bill_number || ''}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>${formatInteger(packingList.total_items || 0)}</td>
+                        <td></td>
+                        <td></td>
+                        <td>${formatDate(packingList.delivery_date || packingList.created_at)}</td>
+                    </tr>
+                `;
+                
+                // Add child rows (stitching records)
+                if (packingList.lines && packingList.lines.length > 0) {
+                    console.log('📄 Adding', packingList.lines.length, 'child rows for', packingList.packing_list_serial);
+                    packingList.lines.forEach(line => {
+                        const sizeQty = line.size_qty || {};
+                        const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+                        
+                        // Calculate fabric values
+                        const fabricUnitPrice = parseFloat(line.fabric_unit_price || 0);
+                        const yardsConsumed = parseFloat(line.yards_consumed || 0);
+                        const fabricCost = fabricUnitPrice;
+                        const fabricValue = fabricUnitPrice * yardsConsumed;
+                        
+                        // Calculate VAT-inclusive price
+                        const basePrice = parseFloat(line.price || 0);
+                        const addVat = line.add_vat || false;
+                        const vatInclusivePrice = addVat ? basePrice * 1.07 : basePrice;
+                        
+                        html += `
+                            <tr class="child-row" data-packing-list-id="${packingList.id}" data-stitching-id="${line.stitching_invoice_id}">
+                                <td></td>
+                                <td>${packingList.packing_list_serial || ''}</td>
+                                <td>${line.stitching_invoice_number || ''}</td>
+                                <td>${line.stitched_item || ''}</td>
+                                <td>${line.fabric_name || ''}</td>
+                                <td>${line.color || ''}</td>
+                                <td>${packingList.customer_name || ''}</td>
+                                <td>${line.tax_invoice_number || ''}</td>
+                                <td>${line.group_bill_number || ''}</td>
+                                <td>${line.fabric_invoice_number || ''}</td>
+                                <td>${line.delivery_note || ''}</td>
+                                <td>${formatNumber(yardsConsumed)}</td>
+                                <td>${formatNumber(fabricCost)}</td>
+                                <td>${formatNumber(fabricValue)}</td>
+                                <td>${formatInteger(sizeQty.S || 0)}</td>
+                                <td>${formatInteger(sizeQty.M || 0)}</td>
+                                <td>${formatInteger(sizeQty.L || 0)}</td>
+                                <td>${formatInteger(sizeQty.XL || 0)}</td>
+                                <td>${formatInteger(sizeQty.XXL || 0)}</td>
+                                <td>${formatInteger(sizeQty.XXXL || 0)}</td>
+                                <td>${formatInteger(totalQty)}</td>
+                                <td>${formatNumber(vatInclusivePrice)}</td>
+                                <td>${formatNumber(line.total_value || 0)}</td>
+                                <td>${formatDate(line.created_at)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+            
+            tableBody.innerHTML = html;
+            console.log('✅ Table population completed');
+        }
+
+        function toggleExpansion(packingListId) {
+            const childRows = document.querySelectorAll(`tr[data-packing-list-id="${packingListId}"].child-row`);
+            const parentRow = document.querySelector(`tr[data-packing-list-id="${packingListId}"].parent-row`);
+            const expandIndicator = parentRow.querySelector('.expand-indicator');
+            
+            const isExpanded = childRows[0] && childRows[0].classList.contains('expanded');
+            
+            childRows.forEach(row => {
+                if (isExpanded) {
+                    row.classList.remove('expanded');
+                } else {
+                    row.classList.add('expanded');
+                }
+            });
+            
+            // Update expand indicator
+            if (isExpanded) {
+                expandIndicator.textContent = '▶';
+            } else {
+                expandIndicator.textContent = '▼';
             }
         }
 
-        function toggleRowSelection(row, index) {
-            row.classList.toggle('selected');
-            if (row.classList.contains('selected')) {
-                selectedRows.push(index);
-            } else {
-                selectedRows = selectedRows.filter(i => i !== index);
-            }
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const isChecked = selectAllCheckbox.checked;
+            
+            // Select/deselect all packing list checkboxes
+            document.querySelectorAll('.packing-list-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        }
+
+        function togglePackingListSelection(packingListId) {
+            console.log('🔄 togglePackingListSelection called with packingListId:', packingListId);
+            const checkbox = document.querySelector(`input[data-packing-list-id="${packingListId}"].packing-list-checkbox`);
+            const isChecked = checkbox.checked;
+            console.log('📋 Checkbox checked state:', isChecked);
+            
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const allCheckboxes = document.querySelectorAll('.packing-list-checkbox');
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+            
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+        }
+
+        function getSelectedPackingListIds() {
+            const selectedCheckboxes = document.querySelectorAll('.packing-list-checkbox:checked');
+            const ids = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-packing-list-id'));
+            console.log('🔍 getSelectedPackingListIds found:', ids.length, 'selected checkboxes');
+            console.log('📋 Selected IDs:', ids);
+            return ids;
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00';
+            return parseFloat(num).toFixed(2);
+        }
+
+        function formatInteger(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0';
+            return parseInt(num).toString();
         }
 
         function formatDate(dateString) {
             if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB');
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                });
+            } catch (error) {
+                return dateString;
+            }
         }
 
-        // Filter functions
-        function clearFilters() {
-            document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            populatePackingTable(); // Show all data
-        }
-
-        // Action button functions
-        function openCreatePackingListDialog() {
-            openModal('createPackingListModal', 'Create Packing List');
-            populateStitchingSelection();
-        }
-
-        function refreshPackingTable() {
-            loadPackingData();
-        }
-
-        function exportPackingData() {
-            // TODO: Implement export functionality
-            alert('Export functionality will be implemented next.');
-        }
-
-        function generatePDF() {
-            if (selectedRows.length === 0) {
-                alert('Please select at least one packing list to generate PDF.');
+        function downloadPDF(showCost = false) {
+            const selectedPackingListIds = getSelectedPackingListIds();
+            if (selectedPackingListIds.length === 0) {
+                alert('Select a packing list to download its PDF.');
                 return;
             }
-            // TODO: Implement PDF generation
-            alert('PDF generation functionality will be implemented next.');
-        }
 
-        function bulkUpdateStatus() {
-            if (selectedRows.length === 0) {
-                alert('Please select at least one packing list for bulk status update.');
+            if (selectedPackingListIds.length > 1) {
+                alert('Please select only one packing list to download PDF.');
                 return;
             }
-            // TODO: Implement bulk status update
-            alert('Bulk status update functionality will be implemented next.');
+
+            const packingListId = selectedPackingListIds[0];
+            const costParam = showCost ? '?show_cost=true' : '';
+            const url = `${getApiBaseUrl()}/api/packing-lists/${packingListId}/pdf${costParam}`;
+            window.open(url, '_blank');
         }
 
-        function editPackingList(index) {
-            // TODO: Implement edit functionality
-            alert('Edit functionality will be implemented next.');
-        }
-
-        function deletePackingList(index) {
-            if (confirm('Are you sure you want to delete this packing list?')) {
-                // TODO: Implement delete functionality
-                alert('Delete functionality will be implemented next.');
-            }
-        }
-
-        function viewPackingList(index) {
-            // TODO: Implement view functionality
-            alert('View functionality will be implemented next.');
-        }
-
-        // Modal functions
-        function openModal(modalId, title) {
-            const modal = document.getElementById(modalId);
-            if (!modal) {
-                createModal(modalId, title);
-            }
-            document.getElementById(modalId).style.display = 'block';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function createModal(modalId, title) {
-            const modal = document.createElement('div');
-            modal.id = modalId;
-            modal.className = 'modal';
+        function createGroupBillingNote() {
+            console.log('🔄 createGroupBillingNote called');
+            const selectedPackingListIds = getSelectedPackingListIds();
+            console.log('📋 Selected packing list IDs:', selectedPackingListIds);
             
-            if (modalId === 'createPackingListModal') {
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2 class="modal-title">${title}</h2>
-                            <span class="close" onclick="closeModal('${modalId}')">&times;</span>
+            if (selectedPackingListIds.length === 0) {
+                alert('Please select one or more packing lists to create a group billing note.');
+                return;
+            }
+            
+            // Show group bill creation dialog
+            showGroupBillDialog(selectedPackingListIds);
+        }
+
+        function showGroupBillDialog(packingListIds) {
+            console.log('🔄 showGroupBillDialog called with packingListIds:', packingListIds);
+            
+            // Create modal dialog
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.style.position = 'fixed';
+            modal.style.zIndex = '1000';
+            modal.style.left = '0';
+            modal.style.top = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            
+            modal.innerHTML = `
+                <div style="background: #2c2c2c; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; color: #eceff1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #555;">
+                        <h2 style="font-size: 18px; font-weight: 600;">Create Group Billing Note</h2>
+                        <span style="color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer;" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Invoice Date:</label>
+                            <input type="text" id="invoiceDate" placeholder="DD/MM/YY" style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px;" required>
                         </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="customerSelect">Customer:</label>
-                                <select id="customerSelect" required>
-                                    <option value="">Select Customer</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="deliveryDate">Delivery Date:</label>
-                                <input type="date" id="deliveryDate" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="deliveryAddress">Delivery Address:</label>
-                                <textarea id="deliveryAddress" rows="3"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="specialInstructions">Special Instructions:</label>
-                                <textarea id="specialInstructions" rows="2"></textarea>
-                            </div>
-                            
-                            <div class="stitching-selection">
-                                <h4 style="color: #5c6bc0; margin-bottom: 10px;">Select Stitching Records</h4>
-                                <div id="stitchingSelectionList">
-                                    <!-- Stitching records will be listed here -->
-                                </div>
-                            </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Stitching Invoice Comments (optional):</label>
+                            <textarea id="stitchingComments" placeholder="Enter comments for the stitching invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick="closeModal('${modalId}')">Cancel</button>
-                            <button class="btn btn-primary" onclick="createPackingList()">Create</button>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Fabric Invoice Comments (optional):</label>
+                            <textarea id="fabricComments" placeholder="Enter comments for the fabric invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                            <input type="checkbox" id="applyWithholdingTax" checked style="width: auto; margin: 0;">
+                            <label for="applyWithholdingTax" style="color: #b0bec5;">Apply Withholding Tax (3%)</label>
                         </div>
                     </div>
-                `;
-            }
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid #555;">
+                        <button id="cancelBtn" style="padding: 8px 16px; background: #757575; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Cancel</button>
+                        <button id="createBtn" style="padding: 8px 16px; background: #3949ab; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Create Group Bill</button>
+                    </div>
+                </div>
+            `;
             
             document.body.appendChild(modal);
+            
+            // Set default date to today in DD/MM/YY format
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const year = String(today.getFullYear()).slice(-2);
+            document.getElementById('invoiceDate').value = `${day}/${month}/${year}`;
+            
+            // Add date formatting to the invoice date input
+            const invoiceDateInput = document.getElementById('invoiceDate');
+            if (invoiceDateInput) {
+                invoiceDateInput.addEventListener('input', () => formatDateInput(invoiceDateInput));
+            }
+            
+            // Add event listeners to buttons
+            const cancelBtn = document.getElementById('cancelBtn');
+            const createBtn = document.getElementById('createBtn');
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    modal.remove();
+                });
+            }
+            
+            if (createBtn) {
+                createBtn.addEventListener('click', () => {
+                    console.log('🔄 Create Group Bill button clicked');
+                    submitGroupBill(packingListIds);
+                });
+            }
         }
 
-        function populateStitchingSelection() {
-            const stitchingList = document.getElementById('stitchingSelectionList');
-            if (!stitchingList) return;
+        async function submitGroupBill(packingListIds) {
+            console.log('🔄 submitGroupBill called with packingListIds:', packingListIds);
+            console.log('🔄 submitGroupBill type:', typeof packingListIds);
+            console.log('🔄 submitGroupBill length:', packingListIds ? packingListIds.length : 'undefined');
+            
+            const invoiceDateInput = document.getElementById('invoiceDate').value;
+            const stitchingComments = document.getElementById('stitchingComments').value;
+            const fabricComments = document.getElementById('fabricComments').value;
+            const applyWithholdingTax = document.getElementById('applyWithholdingTax').checked;
+            
+            console.log('📋 Form data:', {
+                invoiceDateInput,
+                stitchingComments,
+                fabricComments,
+                applyWithholdingTax
+            });
+            
+            if (!invoiceDateInput) {
+                alert('Please enter an invoice date.');
+                return;
+            }
+            
+            // Convert DD/MM/YY to YYYY-MM-DD
+            let invoiceDate;
+            try {
+                const parts = invoiceDateInput.split('/');
+                if (parts.length === 3) {
+                    const day = parts[0];
+                    const month = parts[1];
+                    const year = '20' + parts[2]; // Assume 20xx for YY format
+                    invoiceDate = `${year}-${month}-${day}`;
+                } else {
+                    throw new Error('Invalid date format');
+                }
+            } catch (error) {
+                alert('Please enter a valid date in DD/MM/YY format.');
+                return;
+            }
+            
+            try {
+                const requestData = {
+                    packing_list_ids: packingListIds,
+                    invoice_date: invoiceDate,
+                    stitching_comments: stitchingComments,
+                    fabric_comments: fabricComments,
+                    apply_withholding_tax: applyWithholdingTax
+                };
+                
+                const apiUrl = `${getApiBaseUrl()}/api/group-bills/create`;
+                console.log('🌐 Sending request to:', apiUrl);
+                console.log('📤 Request data:', requestData);
+                console.log('📤 Request data JSON:', JSON.stringify(requestData));
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Success response:', result);
+                    alert(`Group bill ${result.group_bill.group_number} created successfully!`);
+                    
+                    // Close modal
+                    document.querySelector('.modal').remove();
+                    
+                    // Refresh the packing list table
+                    refreshPackingListTable();
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Error response:', errorText);
+                    let errorMessage = 'Unknown error';
+                    try {
+                        const error = JSON.parse(errorText);
+                        errorMessage = error.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText;
+                    }
+                    alert(`Failed to create group bill: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('❌ Error creating group bill:', error);
+                alert('Error creating group bill: ' + error.message);
+            }
+        }
 
-            stitchingList.innerHTML = '';
-
-            if (stitchingRecords.length === 0) {
-                stitchingList.innerHTML = '<p style="color: #b0bec5; text-align: center;">No stitching records available for packing list creation.</p>';
+        function assignTaxInvoice() {
+            const selectedPackingListIds = getSelectedPackingListIds();
+            if (selectedPackingListIds.length === 0) {
+                alert('Please select one or more packing lists to assign a Tax Invoice Number.');
                 return;
             }
 
-            stitchingRecords.forEach((record, index) => {
-                const item = document.createElement('div');
-                item.className = 'stitching-item';
-                item.onclick = () => toggleStitchingSelection(item, record.id);
-                
-                item.innerHTML = `
-                    <div class="stitching-item-header">
-                        <span class="stitching-item-title">${record.order_number || 'No Order Number'}</span>
-                        <span class="status-badge status-${record.status || 'pending'}">${record.status || 'Pending'}</span>
-                    </div>
-                    <div class="stitching-item-details">
-                        Customer: ${record.customer?.short_name || 'N/A'} | 
-                        Style: ${record.style || 'N/A'} | 
-                        Quantity: ${record.quantity || 0}
-                    </div>
-                `;
-                
-                stitchingList.appendChild(item);
-            });
-        }
+            // Prompt for Tax Invoice Number
+            const taxInvoiceNumber = prompt('Enter Tax Invoice Number:');
+            if (taxInvoiceNumber === null) {
+                return; // User cancelled
+            }
 
-        function toggleStitchingSelection(item, recordId) {
-            item.classList.toggle('selected');
-            // TODO: Track selected stitching records for packing list creation
-        }
+            const taxInv = taxInvoiceNumber.trim();
+            if (taxInv === '') {
+                alert('Please enter a valid Tax Invoice Number.');
+                return;
+            }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
+            // Update in database
+            const updateData = {
+                packing_list_ids: selectedPackingListIds,
+                tax_invoice_number: taxInv === '0' ? null : taxInv
+            };
+
+            fetch(`${getApiBaseUrl()}/api/packing-lists/assign-tax-invoice`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(`${taxInv === '0' ? 'Removed' : 'Assigned'} Tax Invoice # for ${selectedPackingListIds.length} packing list(s).`);
+                    refreshPackingListTable();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
                 }
+            })
+            .catch(error => {
+                alert('Error assigning Tax Invoice #: ' + error.message);
             });
+        }
+
+        function deleteSelectedPackingList() {
+            const selectedPackingListIds = getSelectedPackingListIds();
+            if (selectedPackingListIds.length === 0) {
+                alert('Please select a packing list to delete.');
+                return;
+            }
+
+            if (selectedPackingListIds.length > 1) {
+                alert('Please select only one packing list to delete.');
+                return;
+            }
+
+            const packingListId = selectedPackingListIds[0];
+            const packingList = packingListData.find(pl => pl.id == packingListId);
+            const confirmMessage = `Are you sure you want to delete packing list ${packingList ? packingList.packing_list_serial : packingListId}?`;
+            
+            if (confirm(confirmMessage)) {
+                fetch(`${getApiBaseUrl()}/api/packing-lists/${packingListId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.message) {
+                        alert(result.message);
+                        refreshPackingListTable();
+                    } else {
+                        alert('Error: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error deleting packing list: ' + error.message);
+                });
+            }
         }
     </script>
 </body>

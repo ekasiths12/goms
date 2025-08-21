@@ -15,6 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #212121;
             color: #eceff1;
+            font-size: 13px;
         }
 
         /* Navigation Bar */
@@ -44,7 +45,7 @@
             color: #eceff1;
             padding: 15px 25px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
@@ -70,18 +71,7 @@
             min-height: calc(100vh - 60px);
         }
 
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #5c6bc0;
-        }
 
-        .section-description {
-            color: #b0bec5;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
 
         /* Filter Controls */
         .filter-controls {
@@ -110,19 +100,115 @@
             font-weight: 500;
         }
 
-        .filter-select, .filter-input {
+        .filter-input {
             background: #424242;
             border: 1px solid #555;
             color: #eceff1;
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             min-width: 120px;
         }
 
-        .filter-select:focus, .filter-input:focus {
+        .filter-input:focus {
             outline: none;
             border-color: #5c6bc0;
+        }
+
+        .filter-select {
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .radio-group label {
+            color: #b0bec5;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #5c6bc0;
+            color: #eceff1;
+        }
+
+        .btn-primary:hover {
+            background: #3949ab;
+        }
+
+        .btn-secondary {
+            background: #666;
+            color: #eceff1;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: #eceff1;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: #eceff1;
+        }
+
+        .btn-success:hover {
+            background: #388e3c;
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: #eceff1;
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
         }
 
         /* Table Styles */
@@ -131,6 +217,8 @@
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
+            max-height: 600px;
+            overflow-y: auto;
         }
 
         .data-table {
@@ -140,124 +228,130 @@
         }
 
         .data-table th {
-            background: #424242;
+            background: #3949ab;
             color: #eceff1;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            border-bottom: 1px solid #555;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #424242;
-            color: #eceff1;
+            border-bottom: 1px solid #444;
         }
 
-        .data-table tbody tr:hover {
-            background: #424242;
+        .data-table tr:hover {
+            background: #3c3c3c;
         }
 
-        .data-table tbody tr.selected {
-            background: #5c6bc0;
-            color: #fff;
+        .data-table tr.selected {
+            background: #5c6bc0 !important;
+            color: #ffffff;
         }
 
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+        /* Pagination */
+        .pagination-controls {
+            background: #2c2c2c;
+            border-radius: 8px;
+            padding: 15px;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
+        .pagination-info {
+            color: #b0bec5;
             font-size: 14px;
-            font-weight: 500;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
+            font-size: 14px;
         }
 
-        .btn-primary {
-            background: #3949ab;
-            color: #fff;
+        .pagination-btn:hover {
+            background: #555;
         }
 
-        .btn-primary:hover {
+        .pagination-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
             background: #5c6bc0;
+            border-color: #5c6bc0;
         }
 
-        .btn-secondary {
-            background: #757575;
-            color: #fff;
+        /* Status badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
         }
 
-        .btn-secondary:hover {
-            background: #9e9e9e;
-        }
-
-        .btn-success {
-            background: #388e3c;
-            color: #fff;
-        }
-
-        .btn-success:hover {
+        .status-billed {
             background: #4caf50;
+            color: #ffffff;
         }
 
-        .btn-warning {
-            background: #f57c00;
-            color: #fff;
-        }
-
-        .btn-warning:hover {
+        .status-unbilled {
             background: #ff9800;
+            color: #ffffff;
         }
 
-        .btn-danger {
-            background: #d32f2f;
-            color: #fff;
+        /* Image preview */
+        .image-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 1px solid #555;
         }
 
-        .btn-danger:hover {
-            background: #f44336;
+        .image-preview:hover {
+            transform: scale(1.1);
+            transition: transform 0.2s ease;
         }
 
-        .btn-info {
-            background: #1976d2;
-            color: #fff;
-        }
-
-        .btn-info:hover {
-            background: #2196f3;
-        }
-
-        /* Modal Styles */
+        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: 10000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0,0,0,0.8);
         }
 
         .modal-content {
-            background: #2c2c2c;
+            background-color: #2c2c2c;
             margin: 5% auto;
             padding: 20px;
             border-radius: 8px;
             width: 80%;
             max-width: 800px;
-            color: #eceff1;
-            max-height: 80vh;
+            max-height: 80%;
             overflow-y: auto;
         }
 
@@ -271,13 +365,13 @@
         }
 
         .modal-title {
-            font-size: 18px;
-            font-weight: 600;
             color: #5c6bc0;
+            font-size: 20px;
+            font-weight: 600;
         }
 
         .close {
-            color: #aaa;
+            color: #888;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
@@ -287,139 +381,214 @@
             color: #eceff1;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #b0bec5;
-            font-size: 14px;
-        }
-
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            background: #424242;
-            border: 1px solid #555;
-            border-radius: 4px;
-            color: #eceff1;
-            font-size: 14px;
-        }
-
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #5c6bc0;
+        .modal-body {
+            margin-bottom: 20px;
         }
 
         .modal-footer {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
-            margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid #555;
         }
 
-        /* Fabric Items */
-        .fabric-items {
-            background: #1e1e1e;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 15px;
+        /* Detail sections */
+        .detail-section {
+            margin-bottom: 20px;
         }
 
-        .fabric-item {
-            background: #2c2c2c;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #424242;
-        }
-
-        .fabric-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .fabric-item-title {
-            font-weight: 500;
+        .detail-section h3 {
             color: #5c6bc0;
+            margin-bottom: 10px;
+            font-size: 16px;
         }
 
-        .remove-fabric {
-            background: #d32f2f;
-            color: #fff;
-            border: none;
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: #424242;
+            padding: 10px;
             border-radius: 4px;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 12px;
         }
 
-        .remove-fabric:hover {
-            background: #f44336;
-        }
-
-        /* Image Upload */
-        .image-upload {
-            border: 2px dashed #555;
-            border-radius: 6px;
-            padding: 20px;
-            text-align: center;
-            margin-top: 10px;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-        }
-
-        .image-upload:hover {
-            border-color: #5c6bc0;
-        }
-
-        .image-upload input[type="file"] {
-            display: none;
-        }
-
-        .upload-text {
+        .detail-label {
             color: #b0bec5;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            color: #eceff1;
+            font-weight: 500;
+        }
+
+        /* Size quantities */
+        .size-quantities {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .size-item {
+            background: #424242;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .size-label {
+            color: #b0bec5;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .size-value {
+            color: #eceff1;
+            font-weight: bold;
             font-size: 14px;
         }
 
-        .uploaded-images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
+        /* Treeview Styles */
+        .treeview-container {
+            background: #2c2c2c;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
         }
 
-        .uploaded-image {
-            position: relative;
-            width: 100px;
-            height: 100px;
+        .treeview-header {
+            overflow-x: auto;
         }
 
-        .uploaded-image img {
+        .treeview-table {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 4px;
+            border-collapse: collapse;
+            background: #2c2c2c;
+            font-size: 12px;
         }
 
-        .remove-image {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #d32f2f;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
+        .treeview-table th {
+            background: #555;
+            color: #eceff1;
+            padding: 8px 4px;
+            text-align: left;
+            border-bottom: 1px solid #666;
+            font-weight: 600;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .treeview-table td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #444;
+            color: #eceff1;
+            white-space: nowrap;
+        }
+
+        .treeview-table tbody tr:hover {
+            background: #424242;
+        }
+
+        .treeview-table tbody tr.selected {
+            background: #3949ab;
+        }
+
+        /* Parent row styling */
+        .treeview-parent {
+            background: #3c3c3c;
+            font-weight: 500;
+        }
+
+        .treeview-parent:hover {
+            background: #4a4a4a;
+        }
+
+        /* Child row styling */
+        .treeview-child {
+            background: #2a2a2a;
+            font-size: 11px;
+        }
+
+        .treeview-child:hover {
+            background: #353535;
+        }
+
+        .treeview-child td {
+            padding-left: 20px;
+            color: #b0bec5;
+        }
+
+        /* Expand/collapse indicator */
+        .expand-indicator {
             cursor: pointer;
-            font-size: 12px;
+            color: #5c6bc0;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .expand-indicator:hover {
+            color: #7986cb;
+        }
+
+        /* Column widths matching Qt app */
+        .treeview-table th:nth-child(1), .treeview-table td:nth-child(1) { width: 30px; } /* Checkbox */
+        .treeview-table th:nth-child(2), .treeview-table td:nth-child(2) { width: 70px; } /* PL # */
+        .treeview-table th:nth-child(3), .treeview-table td:nth-child(3) { width: 90px; } /* Serial # */
+        .treeview-table th:nth-child(4), .treeview-table td:nth-child(4) { width: 110px; } /* Garment */
+        .treeview-table th:nth-child(5), .treeview-table td:nth-child(5) { width: 90px; } /* Fabric */
+        .treeview-table th:nth-child(6), .treeview-table td:nth-child(6) { width: 60px; } /* Color */
+        .treeview-table th:nth-child(7), .treeview-table td:nth-child(7) { width: 100px; } /* Customer */
+        .treeview-table th:nth-child(8), .treeview-table td:nth-child(8) { width: 90px; } /* Tax Inv # */
+        .treeview-table th:nth-child(9), .treeview-table td:nth-child(9) { width: 90px; } /* Fabric Inv */
+        .treeview-table th:nth-child(10), .treeview-table td:nth-child(10) { width: 90px; } /* Fabric DN */
+        .treeview-table th:nth-child(11), .treeview-table td:nth-child(11) { width: 80px; } /* Fab Used */
+        .treeview-table th:nth-child(12), .treeview-table td:nth-child(12) { width: 80px; } /* Fab Cost */
+        .treeview-table th:nth-child(13), .treeview-table td:nth-child(13) { width: 120px; } /* Fab Value */
+        .treeview-table th:nth-child(14), .treeview-table td:nth-child(14) { width: 32px; } /* S */
+        .treeview-table th:nth-child(15), .treeview-table td:nth-child(15) { width: 32px; } /* M */
+        .treeview-table th:nth-child(16), .treeview-table td:nth-child(16) { width: 32px; } /* L */
+        .treeview-table th:nth-child(17), .treeview-table td:nth-child(17) { width: 36px; } /* XL */
+        .treeview-table th:nth-child(18), .treeview-table td:nth-child(18) { width: 38px; } /* XXL */
+        .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 40px; } /* XXXL */
+        .treeview-table th:nth-child(20), .treeview-table td:nth-child(20) { width: 60px; } /* Total Qty */
+        .treeview-table th:nth-child(21), .treeview-table td:nth-child(21) { width: 80px; } /* Sew Cost */
+        .treeview-table th:nth-child(22), .treeview-table td:nth-child(22) { width: 110px; } /* Sew Value */
+        .treeview-table th:nth-child(23), .treeview-table td:nth-child(23) { width: 60px; } /* Yd/Pcs */
+        .treeview-table th:nth-child(24), .treeview-table td:nth-child(24) { width: 80px; } /* Grmt Cost */
+        .treeview-table th:nth-child(25), .treeview-table td:nth-child(25) { width: 110px; } /* Created At */
+        .treeview-table th:nth-child(26), .treeview-table td:nth-child(26) { width: 100px; } /* Actions */
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .pagination-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .size-quantities {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
     </style>
 </head>
@@ -427,90 +596,157 @@
     <!-- Navigation Bar -->
     <nav class="nav-bar">
         <ul class="nav-tabs">
-            <li><a href="/dashboard" class="nav-tab">Dashboard</a></li>
-            <li><a href="/fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
-            <li><a href="/stitching-records.html" class="nav-tab active">Stitching Records</a></li>
-            <li><a href="/packing-lists.html" class="nav-tab">Packing Lists</a></li>
-            <li><a href="/group-bills.html" class="nav-tab">Group Bills</a></li>
+            <li><a href="fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
+            <li><a href="stitching-records.html" class="nav-tab active">Stitching Records</a></li>
+            <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
+            <li><a href="group-bills.html" class="nav-tab">Group Bills</a></li>
         </ul>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content">
-        <h1 class="section-title">Stitching Records</h1>
-        <p class="section-description">
-            Create and manage stitching records with multi-fabric support and image uploads.
-        </p>
-        
-        <!-- Filter Controls -->
+
+        <!-- Enhanced Filter Controls like Qt App -->
         <div class="filter-controls">
             <div class="filter-row">
                 <div class="filter-group">
+                    <label>PL#:</label>
+                    <input type="text" id="filterPLNumber" class="filter-input" placeholder="Filter by PL#">
+                </div>
+                <div class="filter-group">
+                    <label>Serial#:</label>
+                    <input type="text" id="filterSerialNumber" class="filter-input" placeholder="Filter by Serial#">
+                </div>
+                <div class="filter-group">
+                    <label>Fabric:</label>
+                    <input type="text" id="filterFabricName" class="filter-input" placeholder="Filter by Fabric">
+                </div>
+                <div class="filter-group">
                     <label>Customer:</label>
-                    <select id="filterCustomer" class="filter-select">
-                        <option value="">All Customers</option>
-                    </select>
+                    <input type="text" id="filterCustomer" class="filter-input" placeholder="Filter by Customer">
                 </div>
-                
                 <div class="filter-group">
-                    <label>Status:</label>
-                    <select id="filterStatus" class="filter-select">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label>From:</label>
+                    <label>Date From:</label>
                     <input type="date" id="filterDateFrom" class="filter-input">
                 </div>
-                
                 <div class="filter-group">
-                    <label>To:</label>
+                    <label>Date To:</label>
                     <input type="date" id="filterDateTo" class="filter-input">
                 </div>
-                
-                <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
+                <div class="filter-group">
+                    <label>Delivery Status:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="showAllRecords" name="deliveryStatus" value="all" checked onchange="loadStitchingData()">
+                        <label for="showAllRecords">All Records</label>
+                        <input type="radio" id="showDelivered" name="deliveryStatus" value="delivered" onchange="loadStitchingData()">
+                        <label for="showDelivered">Delivered Only</label>
+                        <input type="radio" id="showUndelivered" name="deliveryStatus" value="undelivered" onchange="loadStitchingData()">
+                        <label for="showUndelivered">Undelivered Only</label>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
+                    <button onclick="clearFilters()" class="btn btn-secondary">Clear</button>
+                </div>
             </div>
         </div>
-        
-        <!-- Stitching Records Table -->
-        <div class="table-container">
-            <table id="stitchingTable" class="data-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Customer</th>
-                        <th>Order Number</th>
-                        <th>Style</th>
-                        <th>Quantity</th>
-                        <th>Status</th>
-                        <th>Fabric Count</th>
-                        <th>Images</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="stitchingTableBody">
-                    <!-- Data will be loaded here -->
-                </tbody>
-            </table>
-        </div>
-        
+
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button class="btn btn-primary" onclick="openCreateStitchingDialog()">Create Stitching Record</button>
-            <button class="btn btn-secondary" onclick="refreshStitchingTable()">Refresh</button>
-            <button class="btn btn-success" onclick="exportStitchingData()">Export Data</button>
-            <button class="btn btn-info" onclick="openBulkActionsDialog()">Bulk Actions</button>
+            <button class="btn btn-primary" onclick="refreshStitchingTable()">Refresh</button>
+            <button class="btn btn-success" onclick="exportStitchingRecords()">Export</button>
+            <button class="btn btn-warning" onclick="generatePackingList()">Generate Packing List</button>
+
+            <button class="btn btn-danger" onclick="deleteSelectedStitchingRecords()">Delete Selected</button>
+        </div>
+
+        <!-- Stitching Records Treeview -->
+        <div class="treeview-container">
+            <div class="treeview-header">
+                <table class="treeview-table" id="stitchingTreeview">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllTree" onchange="toggleSelectAllTree()"></th>
+                            <th>PL #</th>
+                            <th>Serial #</th>
+                            <th>Garment</th>
+                            <th>Fabric</th>
+                            <th>Color</th>
+                            <th>Customer</th>
+                            <th>Tax Inv #</th>
+                            <th>Fabric Inv.</th>
+                            <th>Fabric DN.</th>
+                            <th>Fab Used</th>
+                            <th>Fab Cost</th>
+                            <th>Fab Value</th>
+                            <th>S</th>
+                            <th>M</th>
+                            <th>L</th>
+                            <th>XL</th>
+                            <th>XXL</th>
+                            <th>XXXL</th>
+                            <th>Total Qty</th>
+                            <th>Sew Cost</th>
+                            <th>Sew Value</th>
+                            <th>Yd/Pcs</th>
+                            <th>Grmt Cost</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stitchingTreeviewBody">
+                        <tr>
+                            <td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">Loading stitching records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                Showing <span id="currentPageInfo">0-0</span> of <span id="totalRecords">0</span> records
+            </div>
+            <div class="pagination-buttons">
+                <button class="pagination-btn" onclick="goToPage(1)" id="firstPage">First</button>
+                <button class="pagination-btn" onclick="goToPage(currentPage - 1)" id="prevPage">Previous</button>
+                <span id="pageNumbers"></span>
+                <button class="pagination-btn" onclick="goToPage(currentPage + 1)" id="nextPage">Next</button>
+                <button class="pagination-btn" onclick="goToPage(totalPages)" id="lastPage">Last</button>
+            </div>
         </div>
     </main>
+
+    <!-- Stitching Record Detail Modal -->
+    <div id="stitchingDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Stitching Record Details</h2>
+                <span class="close" onclick="closeStitchingDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="stitchingDetailContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeStitchingDetailModal()">Close</button>
+                <button class="btn btn-warning" onclick="toggleAmendMode()">Amend</button>
+                <button class="btn btn-primary" onclick="confirmAmendStitchingRecord()" style="display: none;">Confirm Amendment</button>
+                <button class="btn btn-danger" onclick="deleteStitchingRecord()">Delete Record</button>
+            </div>
+        </div>
+    </div>
+
+
 
     <script>
         // Stitching Records Functions
         let stitchingData = [];
         let selectedRows = [];
+        let currentPage = 1;
+        const itemsPerPage = 30;
+        let currentStitchingRecord = null;
+
 
         // Load data when page loads
         window.addEventListener('load', async () => {
@@ -518,267 +754,1123 @@
             await loadStitchingData();
         });
 
+        function formatDateForAPI(dateString) {
+            if (!dateString) return '';
+            // Convert DD/MM/YY to YYYY-MM-DD
+            const parts = dateString.split('/');
+            if (parts.length === 3) {
+                const day = parts[0];
+                const month = parts[1];
+                const year = parts[2];
+                return `20${year}-${month}-${day}`;
+            }
+            return dateString;
+        }
+
         async function loadStitchingData() {
             console.log('🔄 loadStitchingData called');
             
-            const tbody = document.getElementById('stitchingTableBody');
+            const tbody = document.getElementById('stitchingTreeviewBody');
             if (!tbody) {
                 console.error('❌ Stitching table body not found');
                 return;
             }
             
             console.log('✅ Found stitching table body, showing loading state');
-            // Show loading state
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #b0bec5;">Loading stitching data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">Loading stitching records...</td></tr>';
             
             try {
-                console.log('🌐 Fetching /api/stitching...');
-                const response = await fetch('/api/stitching');
+                // Build query parameters from filters
+                const params = new URLSearchParams();
+                
+                const plNumberFilter = document.getElementById('filterPLNumber')?.value;
+                const serialNumberFilter = document.getElementById('filterSerialNumber')?.value;
+                const fabricNameFilter = document.getElementById('filterFabricName')?.value;
+                const customerFilter = document.getElementById('filterCustomer')?.value;
+                const dateFrom = document.getElementById('filterDateFrom')?.value;
+                const dateTo = document.getElementById('filterDateTo')?.value;
+                const deliveryStatusFilter = document.querySelector('input[name="deliveryStatus"]:checked')?.value;
+                
+                if (plNumberFilter) params.append('pl_number', plNumberFilter);
+                if (serialNumberFilter) params.append('serial_number', serialNumberFilter);
+                if (fabricNameFilter) params.append('fabric_name', fabricNameFilter);
+                if (customerFilter) params.append('customer', customerFilter);
+                if (dateFrom) params.append('date_from', formatDateForAPI(dateFrom));
+                if (dateTo) params.append('date_to', formatDateForAPI(dateTo));
+                if (deliveryStatusFilter === 'delivered') params.append('delivered_only', 'true');
+                if (deliveryStatusFilter === 'undelivered') params.append('undelivered_only', 'true');
+                
+                console.log('🌐 Fetching /api/stitching with filters...');
+                const apiBaseUrl = getApiBaseUrl();
+                const apiUrl = `${apiBaseUrl}/api/stitching?${params.toString()}`;
+                console.log('🌐 Full API URL:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
                 console.log('📡 Response status:', response.status);
                 
                 if (response.ok) {
                     stitchingData = await response.json();
                     console.log('📊 Received stitching data:', stitchingData.length, 'records');
-                    populateStitchingTable();
-                    populateFilters();
+                    currentPage = 1; // Reset to first page when new data is loaded
+                    populateStitchingTreeview();
                 } else {
                     console.error('❌ Failed to load stitching data, status:', response.status);
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #f44336;">Failed to load stitching data. Please try refreshing the page.</td></tr>';
+                    const errorText = await response.text();
+                    console.error('❌ Error response:', errorText);
+                    tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #f44336;">Failed to load stitching data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading stitching data:', error);
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #f44336;">Error loading stitching data. Please check your connection and try again.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #f44336;">Error loading stitching data. Please check your connection and try again.</td></tr>';
             }
         }
 
-        function populateStitchingTable() {
-            console.log('🔄 populateStitchingTable called with', stitchingData.length, 'records');
-            const tbody = document.getElementById('stitchingTableBody');
+        function populateStitchingTreeview() {
+            console.log('🔄 populateStitchingTreeview called with', stitchingData.length, 'records');
+            const tbody = document.getElementById('stitchingTreeviewBody');
             tbody.innerHTML = '';
 
             if (stitchingData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #b0bec5;">No stitching records found. Create your first stitching record to get started.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
+                updatePaginationControls();
                 return;
             }
 
-            stitchingData.forEach((record, index) => {
-                const row = document.createElement('tr');
-                row.onclick = () => toggleRowSelection(row, index);
+            // Calculate pagination
+            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, stitchingData.length);
+            const pageData = stitchingData.slice(startIndex, endIndex);
+
+            // Populate treeview
+            pageData.forEach((record, pageIndex) => {
+                const actualIndex = startIndex + pageIndex;
                 
-                row.innerHTML = `
-                    <td>${formatDate(record.created_date)}</td>
-                    <td>${record.customer?.short_name || ''}</td>
-                    <td>${record.order_number || ''}</td>
-                    <td>${record.style || ''}</td>
-                    <td>${record.quantity || 0}</td>
-                    <td><span class="status-badge status-${record.status || 'pending'}">${record.status || 'Pending'}</span></td>
-                    <td>${record.fabric_items?.length || 0}</td>
-                    <td>${record.images?.length || 0} images</td>
+                // Create parent row
+                const parentRow = document.createElement('tr');
+                parentRow.className = 'treeview-parent';
+                parentRow.setAttribute('data-record-id', record.id);
+
+                
+                // Calculate values like Qt app
+                const sizeQty = record.size_qty || {};
+                const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+                const fabricUnitPrice = parseFloat(record.fabric_unit_price) || 0;
+                const yardsConsumed = record.yard_consumed || 0;
+                const fabricValue = fabricUnitPrice * yardsConsumed;
+                
+                // Calculate VAT-inclusive price
+                const basePrice = record.price || 0;
+                const addVat = record.add_vat || false;
+                const vatInclusivePrice = addVat ? basePrice * 1.07 : basePrice;
+                
+                // Calculate yards per piece
+                const yardsPerPiece = totalQty > 0 ? yardsConsumed / totalQty : 0;
+                
+                // Calculate garment cost per piece (like Qt app)
+                // Get main fabric cost
+                const mainFabricCost = fabricValue;
+                
+                // Get multi-fabric costs
+                const multiFabricCost = record.garment_fabrics ? 
+                    record.garment_fabrics.reduce((sum, fabric) => sum + (parseFloat(fabric.total_fabric_cost) || 0), 0) : 0;
+                
+                // Get lining costs
+                const liningCost = record.lining_fabrics ? 
+                    record.lining_fabrics.reduce((sum, lining) => sum + (parseFloat(lining.total_cost) || 0), 0) : 0;
+                
+                // Calculate total fabric cost (main + multi + lining)
+                const totalFabricCost = mainFabricCost + multiFabricCost + liningCost;
+                
+                // Calculate fabric cost per piece
+                const fabricCostPerGarment = totalQty > 0 ? totalFabricCost / totalQty : 0;
+                
+                // Stitching cost per piece (with VAT if applicable)
+                const sewingPrice = record.price || 0;
+                let sewingCostPerGarment;
+                if (record.add_vat) {
+                    const baseSewingCost = parseFloat(sewingPrice);
+                    const vatAmount = baseSewingCost * 0.07;
+                    sewingCostPerGarment = baseSewingCost + vatAmount;
+                } else {
+                    sewingCostPerGarment = parseFloat(sewingPrice);
+                }
+                
+                // Total cost per piece
+                const garmentCostPerPiece = fabricCostPerGarment + sewingCostPerGarment;
+                
+                // Format date
+                const createdDate = record.created_at ? new Date(record.created_at).toLocaleDateString('en-GB') : '';
+                
+                // Check if record has multi-fabrics or lining
+                const hasMultiFabrics = record.garment_fabrics && record.garment_fabrics.length > 0;
+                const hasLining = record.lining_fabrics && record.lining_fabrics.length > 0;
+                const isExpandable = hasMultiFabrics || hasLining;
+                
+                // Create expand indicator
+                const expandIndicator = isExpandable ? 
+                    `<span class="expand-indicator" onclick="event.stopPropagation(); toggleRecordExpansion(${record.id})">▶</span>` : '';
+                
+                parentRow.innerHTML = `
+                    <td><input type="checkbox" onchange="event.stopPropagation(); toggleRowSelection(${actualIndex})" ${selectedRows.includes(actualIndex) ? 'checked' : ''}></td>
+                    <td>${record.packing_list_number || ''}</td>
+                    <td>${expandIndicator}${record.stitching_invoice_number || ''}</td>
+                    <td>${record.stitched_item || ''}</td>
+                    <td>${record.item_name || ''}</td>
+                    <td>${record.color || ''}</td>
+                    <td>${record.customer_name || ''}</td>
+                    <td>${record.tax_invoice_number || ''}</td>
+                    <td>${record.fabric_invoice_number || ''}</td>
+                    <td>${record.delivery_note || ''}</td>
+                    <td>${yardsConsumed.toFixed(2)}</td>
+                    <td>${fabricUnitPrice.toFixed(2)}</td>
+                    <td>${fabricValue.toFixed(2)}</td>
+                    <td>${sizeQty.S || 0}</td>
+                    <td>${sizeQty.M || 0}</td>
+                    <td>${sizeQty.L || 0}</td>
+                    <td>${sizeQty.XL || 0}</td>
+                    <td>${sizeQty.XXL || 0}</td>
+                    <td>${sizeQty.XXXL || 0}</td>
+                    <td>${totalQty}</td>
+                    <td>${vatInclusivePrice.toFixed(2)}</td>
+                    <td>${record.total_value.toFixed(2)}</td>
+                    <td>${yardsPerPiece.toFixed(3)}</td>
+                    <td>${garmentCostPerPiece.toFixed(2)}</td>
+                    <td>${createdDate}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="editStitchingRecord(${index})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteStitchingRecord(${index})">Delete</button>
+                        <button onclick="event.stopPropagation(); viewStitchingDetail(${record.id})" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;">View</button>
+                        <button onclick="event.stopPropagation(); deleteStitchingRecord(${record.id})" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">Delete</button>
                     </td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(parentRow);
+                
+                // Add child rows for multi-fabrics and lining (initially hidden)
+                if (isExpandable) {
+                    // Add multi-fabric child rows
+                    if (hasMultiFabrics) {
+                        record.garment_fabrics.forEach(fabric => {
+                            const childRow = createFabricChildRow(record, fabric, 'multi_fabric');
+                            childRow.style.display = 'none';
+                            childRow.setAttribute('data-parent-id', record.id);
+                            tbody.appendChild(childRow);
+                        });
+                    }
+                    
+                    // Add lining child rows
+                    if (hasLining) {
+                        record.lining_fabrics.forEach(lining => {
+                            const childRow = createLiningChildRow(record, lining);
+                            childRow.style.display = 'none';
+                            childRow.setAttribute('data-parent-id', record.id);
+                            tbody.appendChild(childRow);
+                        });
+                    }
+                }
             });
-            console.log('✅ Stitching table populated with', stitchingData.length, 'rows');
-        }
 
-        function populateFilters() {
-            console.log('🔄 Populating filters with', stitchingData.length, 'records');
+            console.log('✅ Stitching treeview populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
+            updatePaginationControls();
+        }
+        
+        function createFabricChildRow(parentRecord, fabric, type) {
+            const childRow = document.createElement('tr');
+            childRow.className = 'treeview-child';
+            childRow.setAttribute('data-type', type);
             
-            // Populate customer filter
-            const customers = [...new Set(stitchingData.map(record => record.customer?.short_name).filter(Boolean))];
-            const customerSelect = document.getElementById('filterCustomer');
-            if (customerSelect) {
-                customerSelect.innerHTML = '<option value="">All Customers</option>';
-                customers.forEach(customer => {
-                    const option = document.createElement('option');
-                    option.value = customer;
-                    option.textContent = customer;
-                    customerSelect.appendChild(option);
+            const sizeQty = parentRecord.size_qty || {};
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+            const yardsPerPiece = totalQty > 0 ? fabric.consumption_yards / totalQty : 0;
+            
+            childRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td>  └─ ${fabric.fabric_name || ''}</td>
+                <td></td>
+                <td>${fabric.fabric_name || ''}</td>
+                <td>${fabric.color || ''}</td>
+                <td></td>
+                <td></td>
+                <td>${fabric.invoice_number || ''}</td>
+                <td></td>
+                <td>${parseFloat(fabric.consumption_yards).toFixed(2)}</td>
+                <td>${parseFloat(fabric.unit_price).toFixed(2)}</td>
+                <td>${parseFloat(fabric.total_fabric_cost).toFixed(2)}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>${yardsPerPiece.toFixed(3)}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            `;
+            
+            return childRow;
+        }
+        
+        function createLiningChildRow(parentRecord, lining) {
+            const childRow = document.createElement('tr');
+            childRow.className = 'treeview-child';
+            childRow.setAttribute('data-type', 'lining');
+            
+            const sizeQty = parentRecord.size_qty || {};
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+            const yardsPerPiece = totalQty > 0 ? lining.consumption_yards / totalQty : 0;
+            
+            childRow.innerHTML = `
+                <td></td>
+                <td></td>
+                <td>  └─ ${lining.lining_name || ''}</td>
+                <td></td>
+                <td>${lining.lining_name || ''}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>${parseFloat(lining.consumption_yards).toFixed(2)}</td>
+                <td>${parseFloat(lining.unit_price).toFixed(2)}</td>
+                <td>${parseFloat(lining.total_cost).toFixed(2)}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>${yardsPerPiece.toFixed(3)}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            `;
+            
+            return childRow;
+        }
+        
+        function toggleRecordExpansion(recordId) {
+            const parentRow = document.querySelector(`tr[data-record-id="${recordId}"]`);
+            const childRows = document.querySelectorAll(`tr[data-parent-id="${recordId}"]`);
+            const expandIndicator = parentRow.querySelector('.expand-indicator');
+            
+            const isExpanded = childRows[0] && childRows[0].style.display !== 'none';
+            
+            childRows.forEach(row => {
+                row.style.display = isExpanded ? 'none' : '';
+            });
+            
+            if (expandIndicator) {
+                expandIndicator.textContent = isExpanded ? '▶' : '▼';
+            }
+        }
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+        async function confirmAmendStitchingRecord() {
+            if (!currentStitchingRecord) {
+                alert('No stitching record selected for amendment.');
+                return;
+            }
+            
+            // Validate inputs
+            const stitchedItem = document.getElementById('amendStitchedItem').value.trim();
+            const price = parseFloat(document.getElementById('amendPrice').value) || 0;
+            
+            if (!stitchedItem) {
+                alert('Please enter a stitched item name.');
+                return;
+            }
+            
+            if (price <= 0) {
+                alert('Please enter a valid price.');
+                return;
+            }
+            
+            // Collect size quantities
+            const sizeQty = {};
+            ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'].forEach(size => {
+                const qty = parseInt(document.getElementById(`amendSize${size}`).value) || 0;
+                if (qty > 0) sizeQty[size] = qty;
+            });
+            
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + qty, 0);
+            if (totalQty === 0) {
+                alert('Please enter quantities for at least one size.');
+                return;
+            }
+            
+            // Collect fabric consumption
+            const fabricConsumption = {};
+            if (document.getElementById('amendMainFabricConsumption')) {
+                fabricConsumption.main = parseFloat(document.getElementById('amendMainFabricConsumption').value) || 0;
+            }
+            
+            // Collect multi-fabric consumption
+            const multiFabricConsumption = [];
+            if (currentStitchingRecord.garment_fabrics) {
+                currentStitchingRecord.garment_fabrics.forEach((fabric, index) => {
+                    const consumption = parseFloat(document.getElementById(`amendMultiFabric${index}`).value) || 0;
+                    multiFabricConsumption.push({
+                        id: fabric.id,
+                        consumption_yards: consumption
+                    });
                 });
-                console.log(`✅ Populated customer filter with ${customers.length} options`);
+            }
+            
+            // Collect lining consumption
+            const liningConsumption = [];
+            if (currentStitchingRecord.lining_fabrics) {
+                currentStitchingRecord.lining_fabrics.forEach((lining, index) => {
+                    const consumption = parseFloat(document.getElementById(`amendLining${index}`).value) || 0;
+                    liningConsumption.push({
+                        id: lining.id,
+                        consumption_yards: consumption
+                    });
+                });
+            }
+            
+            // Prepare amendment data
+            const amendmentData = {
+                stitched_item: stitchedItem,
+                price: price,
+                add_vat: document.getElementById('amendAddVat').checked,
+                size_qty: sizeQty,
+                fabric_consumption: fabricConsumption,
+                multi_fabric_consumption: multiFabricConsumption,
+                lining_consumption: liningConsumption
+            };
+            
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/stitching/${currentStitchingRecord.id}/amend`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(amendmentData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Stitching record amended successfully!');
+                    closeStitchingDetailModal();
+                    loadStitchingData(); // Refresh the data
+                } else {
+                    const error = await response.json();
+                    alert(`Error amending stitching record: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Error amending stitching record:', error);
+                alert('Error amending stitching record.');
             }
         }
 
-        function toggleRowSelection(row, index) {
-            row.classList.toggle('selected');
-            if (row.classList.contains('selected')) {
-                selectedRows.push(index);
-            } else {
-                selectedRows = selectedRows.filter(i => i !== index);
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
+            const startRecord = (currentPage - 1) * itemsPerPage + 1;
+            const endRecord = Math.min(currentPage * itemsPerPage, stitchingData.length);
+            
+            // Update info
+            document.getElementById('currentPageInfo').textContent = `${startRecord}-${endRecord}`;
+            document.getElementById('totalRecords').textContent = stitchingData.length;
+            
+            // Update buttons
+            document.getElementById('firstPage').disabled = currentPage === 1;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+            document.getElementById('lastPage').disabled = currentPage === totalPages;
+            
+            // Update page numbers
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+            
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pageNumbers.appendChild(pageBtn);
             }
         }
 
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB');
+        function goToPage(page) {
+            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                populateStitchingTable();
+            }
         }
 
-        // Filter functions
+
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('#stitchingTableBody input[type="checkbox"]');
+            
+            checkboxes.forEach((checkbox, index) => {
+                const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                if (selectAllCheckbox.checked) {
+                    checkbox.checked = true;
+                    if (!selectedRows.includes(actualIndex)) {
+                        selectedRows.push(actualIndex);
+                    }
+                } else {
+                    checkbox.checked = false;
+                    selectedRows = selectedRows.filter(i => i !== actualIndex);
+                }
+            });
+        }
+      
+        function toggleSelectAllTree() {
+            const selectAllCheckbox = document.getElementById('selectAllTree');
+            const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
+            
+            checkboxes.forEach((checkbox, index) => {
+                const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                if (selectAllCheckbox.checked) {
+                    checkbox.checked = true;
+                    if (!selectedRows.includes(actualIndex)) {
+                        selectedRows.push(actualIndex);
+                    }
+                } else {
+                    checkbox.checked = false;
+                    selectedRows = selectedRows.filter(i => i !== actualIndex);
+                }
+            });
+        }
+
+        function applyFilters() {
+            loadStitchingData();
+        }
+
         function clearFilters() {
+            document.getElementById('filterPLNumber').value = '';
+            document.getElementById('filterSerialNumber').value = '';
+            document.getElementById('filterFabricName').value = '';
             document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterStatus').value = '';
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
-            populateStitchingTable(); // Show all data
-        }
-
-        // Action button functions
-        function openCreateStitchingDialog() {
-            openModal('createStitchingModal', 'Create Stitching Record');
+            document.getElementById('showAllRecords').checked = true;
+            loadStitchingData();
         }
 
         function refreshStitchingTable() {
             loadStitchingData();
         }
 
-        function exportStitchingData() {
+        function exportStitchingRecords() {
             // TODO: Implement export functionality
-            alert('Export functionality will be implemented next.');
+            alert('Export functionality will be implemented soon.');
         }
 
-        function openBulkActionsDialog() {
+        function groupAndBill() {
             if (selectedRows.length === 0) {
-                alert('Please select at least one stitching record for bulk actions.');
+                alert('Please select one or more unbilled stitching records to group and bill.');
                 return;
             }
-            // TODO: Implement bulk actions dialog
-            alert('Bulk actions dialog will be implemented next.');
-        }
-
-        function editStitchingRecord(index) {
-            // TODO: Implement edit functionality
-            alert('Edit functionality will be implemented next.');
-        }
-
-        function deleteStitchingRecord(index) {
-            if (confirm('Are you sure you want to delete this stitching record?')) {
-                // TODO: Implement delete functionality
-                alert('Delete functionality will be implemented next.');
-            }
-        }
-
-        // Modal functions
-        function openModal(modalId, title) {
-            const modal = document.getElementById(modalId);
-            if (!modal) {
-                createModal(modalId, title);
-            }
-            document.getElementById(modalId).style.display = 'block';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function createModal(modalId, title) {
-            const modal = document.createElement('div');
-            modal.id = modalId;
-            modal.className = 'modal';
             
-            if (modalId === 'createStitchingModal') {
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2 class="modal-title">${title}</h2>
-                            <span class="close" onclick="closeModal('${modalId}')">&times;</span>
+            // TODO: Implement group and bill functionality
+            alert('Group and Bill functionality will be implemented soon.');
+        }
+
+        function deleteSelectedRecords() {
+            if (selectedRows.length === 0) {
+                alert('Please select one or more stitching records to delete.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete ${selectedRows.length} selected stitching record(s)?`)) {
+                // TODO: Implement bulk delete
+                alert('Bulk delete functionality will be implemented soon.');
+            }
+        }
+
+        let isAmendMode = false;
+        
+        async function viewStitchingDetail(recordId) {
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/stitching/${recordId}`);
+                if (response.ok) {
+                    const record = await response.json();
+                    currentStitchingRecord = record;
+                    showStitchingDetailModal(record);
+                } else {
+                    alert('Error loading stitching record details.');
+                }
+            } catch (error) {
+                console.error('Error loading stitching record:', error);
+                alert('Error loading stitching record details.');
+            }
+        }
+
+        function showStitchingDetailModal(record) {
+            const modal = document.getElementById('stitchingDetailModal');
+            const content = document.getElementById('stitchingDetailContent');
+            
+            // Format size quantities
+            const sizeQty = record.size_qty || {};
+            const sizeQuantitiesHtml = Object.entries(sizeQty).map(([size, qty]) => `
+                <div class="size-item">
+                    <div class="size-label">${size}</div>
+                    <div class="size-value">${qty}</div>
+                </div>
+            `).join('');
+            
+            // Format lining fabrics
+            const liningFabricsHtml = record.lining_fabrics && record.lining_fabrics.length > 0 ? 
+                record.lining_fabrics.map(lining => `
+                    <tr>
+                        <td>${lining.lining_name}</td>
+                        <td>${lining.consumption_yards.toFixed(2)}</td>
+                        <td>${lining.unit_price.toFixed(2)}</td>
+                        <td>${lining.total_cost.toFixed(2)}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="4" style="text-align: center; color: #666;">No lining fabrics</td></tr>';
+            
+            // Format garment fabrics
+            const garmentFabricsHtml = record.garment_fabrics && record.garment_fabrics.length > 0 ? 
+                record.garment_fabrics.map(fabric => `
+                    <tr>
+                        <td>${fabric.fabric_name || 'N/A'}</td>
+                        <td>${fabric.color || 'N/A'}</td>
+                        <td>${fabric.invoice_number || 'N/A'}</td>
+                        <td>${fabric.consumption_yards.toFixed(2)}</td>
+                        <td>${fabric.unit_price.toFixed(2)}</td>
+                        <td>${fabric.total_fabric_cost.toFixed(2)}</td>
+                    </tr>
+                `).join('') : '<tr><td colspan="6" style="text-align: center; color: #666;">No additional fabrics</td></tr>';
+            
+            content.innerHTML = `
+                <div class="detail-section">
+                    <h3>Basic Information</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Stitching Number</div>
+                            <div class="detail-value">${record.stitching_invoice_number}</div>
                         </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="customerSelect">Customer:</label>
-                                <select id="customerSelect" required>
-                                    <option value="">Select Customer</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="orderNumber">Order Number:</label>
-                                <input type="text" id="orderNumber" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="style">Style:</label>
-                                <input type="text" id="style" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="quantity">Quantity:</label>
-                                <input type="number" id="quantity" min="1" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="description">Description:</label>
-                                <textarea id="description" rows="3"></textarea>
-                            </div>
-                            
-                            <div class="fabric-items">
-                                <h4 style="color: #5c6bc0; margin-bottom: 10px;">Fabric Items</h4>
-                                <div id="fabricItemsList">
-                                    <!-- Fabric items will be added here -->
-                                </div>
-                                <button type="button" class="btn btn-secondary" onclick="addFabricItem()">Add Fabric Item</button>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Images:</label>
-                                <div class="image-upload" onclick="document.getElementById('imageUpload').click()">
-                                    <input type="file" id="imageUpload" multiple accept="image/*">
-                                    <div class="upload-text">Click to upload images</div>
-                                </div>
-                                <div id="uploadedImages" class="uploaded-images">
-                                    <!-- Uploaded images will be shown here -->
-                                </div>
-                            </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Created Date</div>
+                            <div class="detail-value">${new Date(record.created_at).toLocaleString()}</div>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick="closeModal('${modalId}')">Cancel</button>
-                            <button class="btn btn-primary" onclick="createStitchingRecord()">Create</button>
+                        <div class="detail-item">
+                            <div class="detail-label">Customer</div>
+                            <div class="detail-value">${record.customer_name || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Fabric Item</div>
+                            <div class="detail-value">${record.item_name}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Stitched Item</div>
+                            <div class="detail-value">${record.stitched_item}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Yards Consumed</div>
+                            <div class="detail-value">${record.yard_consumed.toFixed(2)}</div>
                         </div>
                     </div>
-                `;
-            }
-            
-            document.body.appendChild(modal);
-        }
-
-        function addFabricItem() {
-            const fabricItemsList = document.getElementById('fabricItemsList');
-            const fabricItemId = Date.now();
-            
-            const fabricItem = document.createElement('div');
-            fabricItem.className = 'fabric-item';
-            fabricItem.innerHTML = `
-                <div class="fabric-item-header">
-                    <span class="fabric-item-title">Fabric Item</span>
-                    <button type="button" class="remove-fabric" onclick="removeFabricItem(${fabricItemId})">Remove</button>
                 </div>
-                <div class="form-group">
-                    <label>Fabric Invoice:</label>
-                    <select id="fabricInvoice_${fabricItemId}" required>
-                        <option value="">Select Fabric Invoice</option>
-                    </select>
+                
+                <div class="detail-section">
+                    <h3>Size Quantities</h3>
+                    <div class="size-quantities">
+                        ${sizeQuantitiesHtml}
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Quantity Used:</label>
-                    <input type="number" id="quantityUsed_${fabricItemId}" step="0.01" required>
+                
+                <div class="detail-section">
+                    <h3>Pricing Information</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Unit Price</div>
+                            <div class="detail-value">${record.price.toFixed(2)} THB</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Value</div>
+                            <div class="detail-value">${record.total_value.toFixed(2)} THB</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">VAT Included</div>
+                            <div class="detail-value">${record.add_vat ? 'Yes (7%)' : 'No'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Lining Cost</div>
+                            <div class="detail-value">${record.total_lining_cost.toFixed(2)} THB</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Fabric Cost</div>
+                            <div class="detail-value">${record.total_fabric_cost.toFixed(2)} THB</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Billing Status</div>
+                            <div class="detail-value">${record.billing_group_id ? 'Billed' : 'Unbilled'}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Lining Fabrics</h3>
+                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                        <thead>
+                            <tr style="background: #555;">
+                                <th style="padding: 8px; text-align: left;">Lining Name</th>
+                                <th style="padding: 8px; text-align: left;">Consumption (yards)</th>
+                                <th style="padding: 8px; text-align: left;">Unit Price (THB)</th>
+                                <th style="padding: 8px; text-align: left;">Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${liningFabricsHtml}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Additional Fabrics</h3>
+                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                        <thead>
+                            <tr style="background: #555;">
+                                <th style="padding: 8px; text-align: left;">Fabric Name</th>
+                                <th style="padding: 8px; text-align: left;">Color</th>
+                                <th style="padding: 8px; text-align: left;">Invoice</th>
+                                <th style="padding: 8px; text-align: left;">Consumption (yards)</th>
+                                <th style="padding: 8px; text-align: left;">Unit Price (THB)</th>
+                                <th style="padding: 8px; text-align: left;">Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${garmentFabricsHtml}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="detail-section" id="amendFields" style="display: none;">
+                    <h3>Amend Fields</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Stitched Item</div>
+                            <input type="text" id="amendStitchedItem" value="${record.stitched_item}" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Price (THB)</div>
+                            <input type="number" id="amendPrice" value="${record.price}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Add VAT</div>
+                            <input type="checkbox" id="amendAddVat" ${record.add_vat ? 'checked' : ''} style="width: 16px; height: 16px;">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Size Quantities</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">S</div>
+                                <input type="number" id="amendSizeS" value="${record.size_qty.S || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">M</div>
+                                <input type="number" id="amendSizeM" value="${record.size_qty.M || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">L</div>
+                                <input type="number" id="amendSizeL" value="${record.size_qty.L || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">XL</div>
+                                <input type="number" id="amendSizeXL" value="${record.size_qty.XL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">XXL</div>
+                                <input type="number" id="amendSizeXXL" value="${record.size_qty.XXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">XXXL</div>
+                                <input type="number" id="amendSizeXXXL" value="${record.size_qty.XXXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Fabric Consumption</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Main Fabric Yards</div>
+                                <input type="number" id="amendMainFabricConsumption" value="${record.yard_consumed}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Multi-Fabric Consumption</h4>
+                        <div id="amendMultiFabricConsumption">
+                            ${record.garment_fabrics ? record.garment_fabrics.map((fabric, index) => `
+                                <div class="detail-item" style="margin-bottom: 10px;">
+                                    <div class="detail-label">${fabric.fabric_name}</div>
+                                    <input type="number" id="amendMultiFabric${index}" value="${fabric.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                </div>
+                            `).join('') : '<p style="color: #b0bec5;">No multi-fabrics found</p>'}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Lining Consumption</h4>
+                        <div id="amendLiningConsumption">
+                            ${record.lining_fabrics ? record.lining_fabrics.map((lining, index) => `
+                                <div class="detail-item" style="margin-bottom: 10px;">
+                                    <div class="detail-label">${lining.lining_name}</div>
+                                    <input type="number" id="amendLining${index}" value="${lining.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                </div>
+                            `).join('') : '<p style="color: #b0bec5;">No lining fabrics found</p>'}
+                        </div>
+                    </div>
                 </div>
             `;
             
-            fabricItemsList.appendChild(fabricItem);
+            // Reset amend mode when showing modal
+            console.log('🔄 Resetting amend mode to false when showing modal');
+            isAmendMode = false;
+            
+            // Ensure amend fields are hidden initially
+            const amendFields = document.getElementById('amendFields');
+            if (amendFields) {
+                amendFields.style.display = 'none';
+                console.log('📝 Amend fields hidden on modal show');
+            }
+            
+            modal.style.display = 'block';
+            
+            // Reset button states after modal is displayed
+            setTimeout(() => {
+                const amendButton = document.querySelector('button[onclick="toggleAmendMode()"]');
+                const confirmButton = document.querySelector('button[onclick="confirmAmendStitchingRecord()"]');
+                
+                console.log('🔄 Resetting button states after modal display');
+                
+                if (amendButton) {
+                    amendButton.textContent = 'Amend';
+                    amendButton.className = 'btn btn-warning';
+                    console.log('🔘 Reset amend button to: Amend');
+                } else {
+                    console.log('❌ Amend button not found');
+                }
+                
+                if (confirmButton) {
+                    confirmButton.style.display = 'none';
+                    console.log('✅ Hidden confirm button');
+                } else {
+                    console.log('❌ Confirm button not found');
+                }
+            }, 10);
         }
 
-        function removeFabricItem(fabricItemId) {
-            const fabricItem = document.querySelector(`[onclick="removeFabricItem(${fabricItemId})"]`).closest('.fabric-item');
-            fabricItem.remove();
+        function closeStitchingDetailModal() {
+            const modal = document.getElementById('stitchingDetailModal');
+            modal.style.display = 'none';
+            currentStitchingRecord = null;
+            isAmendMode = false;
+        }
+        
+        function toggleAmendMode() {
+            isAmendMode = !isAmendMode;
+            const amendFields = document.getElementById('amendFields');
+            const amendButton = document.querySelector('button[onclick="toggleAmendMode()"]');
+            const confirmButton = document.querySelector('button[onclick="confirmAmendStitchingRecord()"]');
+            
+            console.log('🔄 Toggling amend mode to:', isAmendMode);
+            
+            if (amendFields) {
+                amendFields.style.display = isAmendMode ? 'block' : 'none';
+                console.log('📝 Amend fields display set to:', amendFields.style.display);
+            }
+            
+            if (amendButton) {
+                amendButton.textContent = isAmendMode ? 'Cancel Amend' : 'Amend';
+                amendButton.className = isAmendMode ? 'btn btn-secondary' : 'btn btn-warning';
+                console.log('🔘 Amend button text set to:', amendButton.textContent);
+            }
+            
+            if (confirmButton) {
+                confirmButton.style.display = isAmendMode ? 'inline-block' : 'none';
+                console.log('✅ Confirm button display set to:', confirmButton.style.display);
+            }
+        }
+
+        function deleteStitchingRecord(recordId) {
+            if (!recordId && currentStitchingRecord) {
+                recordId = currentStitchingRecord.id;
+            }
+            
+            if (!recordId) {
+                alert('No record selected for deletion.');
+                return;
+            }
+            
+            const confirmMessage = `Are you sure you want to delete this stitching record?\n\nThis will:\n• Revert fabric inventory changes\n• Remove associated images\n• Remove from packing lists (if any)\n• Remove from group bills (if any)\n\nThis action cannot be undone.`;
+            
+            if (confirm(confirmMessage)) {
+                fetch(`${getApiBaseUrl()}/api/stitching/${recordId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || 'Failed to delete record');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.message) {
+                        alert(result.message);
+                        closeStitchingDetailModal();
+                        loadStitchingData(); // Refresh the table
+                    } else {
+                        alert('Error: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error deleting stitching record: ' + error.message);
+                });
+            }
+        }
+
+        function deleteSelectedStitchingRecords() {
+            if (selectedRows.length === 0) {
+                alert('Please select one or more stitching records to delete.');
+                return;
+            }
+            
+            const selectedRecords = selectedRows.map(index => stitchingData[index]);
+            const recordIds = selectedRecords.map(record => record.id);
+            
+            const confirmMessage = `Are you sure you want to delete ${selectedRecords.length} stitching record(s)?\n\nThis will:\n• Revert fabric inventory changes\n• Remove associated images\n• Remove from packing lists (if any)\n• Remove from group bills (if any)\n\nThis action cannot be undone.`;
+            
+            if (confirm(confirmMessage)) {
+                fetch(`${getApiBaseUrl()}/api/stitching/bulk-delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ record_ids: recordIds })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || 'Failed to delete records');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.message) {
+                        alert(result.message);
+                        selectedRows = []; // Clear selection
+                        loadStitchingData(); // Refresh the table
+                    } else {
+                        alert('Error: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error deleting stitching records: ' + error.message);
+                });
+            }
+        }
+
+        function viewImage(imageId) {
+            // TODO: Implement image viewer
+            alert('Image viewer will be implemented soon.');
+        }
+
+        function getApiBaseUrl() {
+            // Use dynamic API base URL for local development vs Railway
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:8000';
+            } else {
+                return 'https://garment-management-system-production.up.railway.app';
+            }
+        }
+
+
+
+        function applyFilters() {
+            loadStitchingData();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterPLNumber').value = '';
+            document.getElementById('filterSerialNumber').value = '';
+            document.getElementById('filterFabricName').value = '';
+            document.getElementById('filterCustomer').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            document.getElementById('showAllRecords').checked = true;
+            loadStitchingData();
+        }
+
+        function refreshStitchingTable() {
+            loadStitchingData();
+        }
+
+        function exportStitchingRecords() {
+            // TODO: Implement export functionality
+            alert('Export functionality will be implemented soon.');
+        }
+
+
+
+        function generatePackingList() {
+            if (selectedRows.length === 0) {
+                alert('Please select one or more stitching records to generate a packing list.');
+                return;
+            }
+            
+            // Get selected records
+            const selectedRecords = selectedRows.map(index => stitchingData[index]);
+            const stitchingIds = selectedRecords.map(record => record.id);
+            
+            // Create dialog for packing list options
+            const dialogHtml = `
+                <div id="packingListDialog" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title">Create Packing List</h2>
+                            <span class="close" onclick="closePackingListDialog()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div style="margin-bottom: 15px;">
+                                <label for="deliveryDate" style="display: block; margin-bottom: 5px; font-weight: bold;">Delivery Date:</label>
+                                <input type="date" id="deliveryDate" value="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label for="packingComments" style="display: block; margin-bottom: 5px; font-weight: bold;">Comments (optional):</label>
+                                <textarea id="packingComments" placeholder="Enter any comments that will appear in the packing list header..." style="width: 100%; height: 80px; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closePackingListDialog()">Cancel</button>
+                            <button class="btn btn-primary" onclick="confirmPackingListCreation()">Create Packing List</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add dialog to page
+            document.body.insertAdjacentHTML('beforeend', dialogHtml);
+            
+            // Store selected IDs globally for later use
+            window.selectedStitchingIds = stitchingIds;
+        }
+        
+        function closePackingListDialog() {
+            const dialog = document.getElementById('packingListDialog');
+            if (dialog) {
+                dialog.remove();
+            }
+            window.selectedStitchingIds = null;
+        }
+        
+        function confirmPackingListCreation() {
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            const comments = document.getElementById('packingComments').value.trim();
+            
+            if (!window.selectedStitchingIds) {
+                alert('No stitching records selected.');
+                return;
+            }
+            
+            const packingListData = {
+                stitching_ids: window.selectedStitchingIds,
+                delivery_date: deliveryDate,
+                comments: comments
+            };
+            
+            // Call the packing list generation API
+            fetch(`${getApiBaseUrl()}/api/packing-lists/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(packingListData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || 'Failed to create packing list');
+                    });
+                }
+                return response.json();
+            })
+            .then(result => {
+                if (result.message) {
+                    alert(result.message);
+                    selectedRows = []; // Clear selection
+                    loadStitchingData(); // Refresh the table
+                    closePackingListDialog();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error generating packing list: ' + error.message);
+            });
+        }
+
+        function deleteSelectedRecords() {
+            if (selectedRows.length === 0) {
+                alert('Please select one or more stitching records to delete.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete ${selectedRows.length} selected stitching record(s)?`)) {
+                // TODO: Implement bulk delete
+                alert('Bulk delete functionality will be implemented soon.');
+            }
         }
 
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
+            const modal = document.getElementById('stitchingDetailModal');
+            if (event.target === modal) {
+                closeStitchingDetailModal();
+            }
         }
     </script>
 </body>

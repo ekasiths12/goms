@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from datetime import datetime
 
 class Invoice(db.Model):
@@ -113,3 +113,61 @@ class InvoiceLine(db.Model):
     def get_by_item_name(cls, item_name):
         """Get invoice lines by item name"""
         return cls.query.filter_by(item_name=item_name).all()
+
+
+class FabricInventory(db.Model):
+    """FabricInventory model for tracking fabric consumption and inventory"""
+    __tablename__ = 'fabric_inventory'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(100), nullable=True)
+    total_delivered = db.Column(db.Numeric(10, 2), default=0)
+    total_consumed = db.Column(db.Numeric(10, 2), default=0)
+    total_defective = db.Column(db.Numeric(10, 2), default=0)
+    pending_amount = db.Column(db.Numeric(10, 2), default=0)
+    
+    def __repr__(self):
+        return f'<FabricInventory {self.item_name}>'
+    
+    def to_dict(self):
+        """Convert fabric inventory to dictionary"""
+        return {
+            'id': self.id,
+            'item_name': self.item_name,
+            'total_delivered': float(self.total_delivered) if self.total_delivered else 0,
+            'total_consumed': float(self.total_consumed) if self.total_consumed else 0,
+            'total_defective': float(self.total_defective) if self.total_defective else 0,
+            'pending_amount': float(self.pending_amount) if self.pending_amount else 0
+        }
+    
+    @property
+    def available_yards(self):
+        """Calculate available yards"""
+        return (self.total_delivered or 0) - (self.total_consumed or 0) - (self.total_defective or 0)
+    
+    @classmethod
+    def get_by_item_name(cls, item_name):
+        """Get fabric inventory by item name"""
+        return cls.query.filter_by(item_name=item_name).first()
+    
+    @classmethod
+    def update_inventory(cls, item_name, delivered=0, consumed=0, defective=0):
+        """Update fabric inventory for an item"""
+        inventory = cls.get_by_item_name(item_name)
+        
+        if not inventory:
+            inventory = cls(
+                item_name=item_name,
+                total_delivered=delivered,
+                total_consumed=consumed,
+                total_defective=defective,
+                pending_amount=delivered - consumed - defective
+            )
+            db.session.add(inventory)
+        else:
+            inventory.total_delivered = float(inventory.total_delivered or 0) + delivered
+            inventory.total_consumed = float(inventory.total_consumed or 0) + consumed
+            inventory.total_defective = float(inventory.total_defective or 0) + defective
+            inventory.pending_amount = float(inventory.total_delivered or 0) - float(inventory.total_consumed or 0) - float(inventory.total_defective or 0)
+        
+        return inventory

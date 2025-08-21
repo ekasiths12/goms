@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from datetime import datetime
 
 class StitchingInvoiceGroup(db.Model):
@@ -73,9 +73,8 @@ class StitchingInvoiceGroupLine(db.Model):
     """StitchingInvoiceGroupLine model for storing group bill line items"""
     __tablename__ = 'stitching_invoice_group_lines'
     
-    id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('stitching_invoice_groups.id'), nullable=False)
-    stitching_invoice_id = db.Column(db.Integer, db.ForeignKey('stitching_invoices.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('stitching_invoice_groups.id'), primary_key=True)
+    stitching_invoice_id = db.Column(db.Integer, db.ForeignKey('stitching_invoices.id'), primary_key=True)
     
     def __repr__(self):
         return f'<StitchingInvoiceGroupLine {self.id}>'
@@ -83,7 +82,6 @@ class StitchingInvoiceGroupLine(db.Model):
     def to_dict(self):
         """Convert group bill line to dictionary"""
         return {
-            'id': self.id,
             'group_id': self.group_id,
             'stitching_invoice_id': self.stitching_invoice_id,
             'group_number': self.group.group_number if self.group else None,

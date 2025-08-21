@@ -1,24 +1,20 @@
 from flask import Flask, request, redirect
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from config.config import Config
+from extensions import db
 import os
 import sys
 
 # Add the current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Initialize extensions
-db = SQLAlchemy()
-
-# Make db available to other modules
-def get_db():
-    return db
-
 def create_app(config_class=Config):
     """Application factory pattern"""
     app = Flask(__name__)
     app.config.from_object(config_class)
+    
+    # Disable automatic trailing slash redirects to prevent CORS issues
+    app.url_map.strict_slashes = False
     
     # Initialize extensions
     db.init_app(app)
@@ -26,7 +22,7 @@ def create_app(config_class=Config):
     # Configure CORS for local development
     if app.debug:
         # Allow all origins in development mode
-        CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True)
+        CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True, methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
     else:
         # Production CORS settings
         CORS(app)
@@ -53,9 +49,13 @@ def create_app(config_class=Config):
     def test():
         return {'message': 'Flask app is working', 'status': 'ok'}
     
-    # Force HTTPS redirects in production
+    # Force HTTPS redirects in production only
     @app.before_request
     def force_https():
+        # Skip HTTPS redirect for OPTIONS requests (CORS preflight)
+        if request.method == 'OPTIONS':
+            return None
+        # Only redirect in production, not in development
         if not app.debug and request.headers.get('X-Forwarded-Proto') == 'http':
             url = request.url.replace('http://', 'https://', 1)
             return redirect(url, code=301)

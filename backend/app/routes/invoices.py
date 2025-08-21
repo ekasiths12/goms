@@ -7,9 +7,8 @@ from sqlalchemy import or_, and_
 from datetime import datetime
 import traceback
 
-# Get db instance from current app
-def get_db():
-    return current_app.extensions['sqlalchemy'].db
+# Import db from extensions
+from extensions import db
 
 invoices_bp = Blueprint('invoices', __name__)
 
@@ -25,7 +24,6 @@ def test_invoices():
 def count_invoices():
     """Count endpoint to check database tables"""
     try:
-        db = get_db()
         invoice_count = db.session.query(Invoice).count()
         invoice_line_count = db.session.query(InvoiceLine).count()
         customer_count = db.session.query(Customer).count()
@@ -62,9 +60,6 @@ def get_invoices():
 
         print("DEBUG: About to execute query")
 
-        # Get database instance
-        db = get_db()
-        
         # Build query
         query = db.session.query(InvoiceLine).join(Invoice).join(Customer)
         
@@ -333,7 +328,10 @@ def assign_delivered_location():
         return {'message': message}, 200
         
     except Exception as e:
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except:
+            pass
         return {'error': str(e)}, 500
 
 @invoices_bp.route('/assign-tax-invoice', methods=['POST'])
@@ -370,7 +368,10 @@ def assign_tax_invoice_number():
             return {'message': f'Tax invoice number "{tax_invoice_number}" assigned to {affected_rows} invoices starting with {base_invoice_number}'}, 200
         
     except Exception as e:
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except:
+            pass
         return {'error': str(e)}, 500
 
 

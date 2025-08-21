@@ -73,61 +73,6 @@
             margin-bottom: 20px;
         }
 
-        /* Action Buttons */
-        .action-buttons {
-            background: #2c2c2c;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .action-buttons button {
-            background: #5c6bc0;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.3s ease;
-        }
-
-        .action-buttons button:hover {
-            background: #3949ab;
-        }
-
-        .action-buttons button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-
-        .action-buttons .btn-danger {
-            background: #f44336;
-        }
-
-        .action-buttons .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        .action-buttons .btn-warning {
-            background: #ff9800;
-        }
-
-        .action-buttons .btn-warning:hover {
-            background: #f57c00;
-        }
-
-        .action-buttons .btn-info {
-            background: #2196f3;
-        }
-
-        .action-buttons .btn-info:hover {
-            background: #1976d2;
-        }
-
         .filter-row {
             display: flex;
             flex-wrap: wrap;
@@ -523,23 +468,14 @@
                 <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
             </div>
         </div>
-
+        
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button id="downloadStitchingBtn" class="btn-info" onclick="downloadSelectedStitchingPDF()" disabled>
-                Download Stitching PDF
-            </button>
-            <button id="downloadFabricBtn" class="btn-warning" onclick="downloadSelectedFabricPDF()" disabled>
-                Download Fabric PDF
-            </button>
-            <button id="deleteBtn" class="btn-danger" onclick="deleteSelectedGroupBill()" disabled>
-                Delete Group Bill
-            </button>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
+
             <button class="btn btn-secondary" onclick="refreshGroupBillsTable()">Refresh</button>
             <button class="btn btn-success" onclick="exportGroupBillsData()">Export Data</button>
+
+
         </div>
 
         <!-- Group Bills Table -->
@@ -728,7 +664,11 @@
                     <td></td>
                     <td></td>
                     <td>${formatDate(groupBill.invoice_date || groupBill.created_at)}</td>
-                    <td></td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="downloadStitchingPDF(${groupBill.id})">Stitching PDF</button>
+                        <button class="btn btn-warning btn-sm" onclick="downloadFabricPDF(${groupBill.id})">Fabric PDF</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteGroupBill(${groupBill.id})">Delete</button>
+                    </td>
                 `;
                 tbody.appendChild(parentRow);
                 
@@ -769,45 +709,6 @@
                     `;
                     tbody.appendChild(fabricRow);
                     
-                    // Level 3: Fabric Invoice Details (under Fabric Invoice)
-                    if (groupBill.details.individual_records && groupBill.details.individual_records.length > 0) {
-                        // Fabric Detail Rows (for records with fabric invoices)
-                        groupBill.details.individual_records.filter(record => record.fabric_invoice_number).forEach(record => {
-                            const fabricDetailRow = document.createElement('tr');
-                            fabricDetailRow.className = 'detail-row fabric-detail-row';
-                            fabricDetailRow.setAttribute('data-group-id', groupBill.id);
-                            fabricDetailRow.setAttribute('data-pl-serial', record.packing_list_serial || 'No PL');
-                            fabricDetailRow.style.display = 'none';
-                            fabricDetailRow.innerHTML = `
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>${record.item_name || ''}</td>
-                                <td>${record.color || ''}</td>
-                                <td>${record.customer || ''}</td>
-                                <td>${record.tax_invoice_number || ''}</td>
-                                <td>${record.fabric_invoice_number || ''}</td>
-                                <td>${record.delivery_note || ''}</td>
-                                <td>${formatNumber(record.yard_consumed || 0)}</td>
-                                <td>${formatNumber(record.fabric_unit_price || 0)}</td>
-                                <td>${formatCurrency((record.yard_consumed || 0) * (record.fabric_unit_price || 0))}</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>${formatDate(record.created_at)}</td>
-                                <td></td>
-                            `;
-                            tbody.appendChild(fabricDetailRow);
-                        });
-                    }
-                    
                     // Stitching Invoice Summary Row
                     const stitchingRow = document.createElement('tr');
                     stitchingRow.className = 'child-row stitching-summary-row';
@@ -843,10 +744,119 @@
                     `;
                     tbody.appendChild(stitchingRow);
                     
-                    // Level 3: Stitching Invoice Details (under Stitching Invoice)
+                    // Level 3: Packing List Rows
+                    if (groupBill.packing_lists && Object.keys(groupBill.packing_lists).length > 0) {
+                        Object.entries(groupBill.packing_lists).forEach(([plSerial, plData]) => {
+                            // Packing List Fabric Row
+                            const plFabricRow = document.createElement('tr');
+                            plFabricRow.className = 'sub-child-row pl-fabric-row';
+                            plFabricRow.setAttribute('data-group-id', groupBill.id);
+                            plFabricRow.setAttribute('data-pl-serial', plSerial);
+                            plFabricRow.style.display = 'none';
+                            plFabricRow.innerHTML = `
+                                <td></td>
+                                <td></td>
+                                <td>PL: ${plSerial}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>${formatNumber(plData.fabric_used || 0)}</td>
+                                <td></td>
+                                <td>${formatCurrency(plData.fabric_value || 0)}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>${formatDate(plData.created_at)}</td>
+                                <td></td>
+                            `;
+                            tbody.appendChild(plFabricRow);
+                            
+                            // Packing List Stitching Row
+                            const plStitchingRow = document.createElement('tr');
+                            plStitchingRow.className = 'sub-child-row pl-stitching-row';
+                            plStitchingRow.setAttribute('data-group-id', groupBill.id);
+                            plStitchingRow.setAttribute('data-pl-serial', plSerial);
+                            plStitchingRow.style.display = 'none';
+                            plStitchingRow.innerHTML = `
+                                <td></td>
+                                <td></td>
+                                <td>PL: ${plSerial}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>${formatInteger(plData.size_totals?.S || 0)}</td>
+                                <td>${formatInteger(plData.size_totals?.M || 0)}</td>
+                                <td>${formatInteger(plData.size_totals?.L || 0)}</td>
+                                <td>${formatInteger(plData.size_totals?.XL || 0)}</td>
+                                <td>${formatInteger(plData.size_totals?.XXL || 0)}</td>
+                                <td>${formatInteger(plData.size_totals?.XXXL || 0)}</td>
+                                <td>${formatInteger(plData.total_items || 0)}</td>
+                                <td></td>
+                                <td>${formatCurrency(plData.stitching_value || 0)}</td>
+                                <td>${formatDate(plData.created_at)}</td>
+                                <td></td>
+                            `;
+                            tbody.appendChild(plStitchingRow);
+                        });
+
+                    
+                    // Level 4: Individual Records
                     if (groupBill.details.individual_records && groupBill.details.individual_records.length > 0) {
-                        // Stitching Detail Rows (for all records)
                         groupBill.details.individual_records.forEach(record => {
+                            // Fabric Detail Row (if has fabric invoice)
+                            if (record.fabric_invoice_number) {
+                                const fabricDetailRow = document.createElement('tr');
+                                fabricDetailRow.className = 'detail-row fabric-detail-row';
+                                fabricDetailRow.setAttribute('data-group-id', groupBill.id);
+                                fabricDetailRow.setAttribute('data-pl-serial', record.packing_list_serial || 'No PL');
+                                fabricDetailRow.style.display = 'none';
+                                fabricDetailRow.innerHTML = `
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>${record.item_name || ''}</td>
+                                    <td>${record.color || ''}</td>
+                                    <td>${record.customer || ''}</td>
+                                    <td>${record.tax_invoice_number || ''}</td>
+                                    <td>${record.fabric_invoice_number || ''}</td>
+                                    <td>${record.delivery_note || ''}</td>
+                                    <td>${formatNumber(record.yard_consumed || 0)}</td>
+                                    <td>${formatNumber(record.fabric_unit_price || 0)}</td>
+                                    <td>${formatCurrency((record.yard_consumed || 0) * (record.fabric_unit_price || 0))}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>${formatDate(record.created_at)}</td>
+                                    <td></td>
+                                `;
+                                tbody.appendChild(fabricDetailRow);
+                            }
+                            
+                            // Stitching Detail Row
                             const stitchingDetailRow = document.createElement('tr');
                             stitchingDetailRow.className = 'detail-row stitching-detail-row';
                             stitchingDetailRow.setAttribute('data-group-id', groupBill.id);
@@ -881,7 +891,6 @@
                             tbody.appendChild(stitchingDetailRow);
                         });
                     }
-
                 }
             });
         }
@@ -890,69 +899,39 @@
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
             const checkboxes = document.querySelectorAll('.group-bill-checkbox');
             
-            // For single selection, uncheck all others when one is selected
-            if (selectAllCheckbox.checked) {
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                selectAllCheckbox.checked = false;
-            }
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                if (selectAllCheckbox.checked) {
+                    selectedGroupBillIds.push(parseInt(checkbox.dataset.groupId));
+                } else {
+                    selectedGroupBillIds = [];
+                }
+            });
             
-            updateSelectedGroupBillIds();
+            selectedGroupBillIds = [...new Set(selectedGroupBillIds)]; // Remove duplicates
         }
 
         function toggleGroupBillSelection(event, groupId) {
             event.stopPropagation();
             
-            // Single selection: uncheck all other checkboxes
-            const checkboxes = document.querySelectorAll('.group-bill-checkbox');
-            checkboxes.forEach(checkbox => {
-                if (checkbox.getAttribute('data-group-id') != groupId) {
-                    checkbox.checked = false;
+            if (event.target.checked) {
+                if (!selectedGroupBillIds.includes(groupId)) {
+                    selectedGroupBillIds.push(groupId);
                 }
-            });
-            
-            // Uncheck select all checkbox
-            document.getElementById('selectAllCheckbox').checked = false;
-            
-            updateSelectedGroupBillIds();
-        }
-
-        function updateSelectedGroupBillIds() {
-            selectedGroupBillIds = [];
-            const checkboxes = document.querySelectorAll('.group-bill-checkbox:checked');
-            
-            checkboxes.forEach(checkbox => {
-                selectedGroupBillIds.push(parseInt(checkbox.getAttribute('data-group-id')));
-            });
-            
-            updateActionButtons();
-        }
-
-        function updateActionButtons() {
-            const hasSelection = selectedGroupBillIds.length === 1;
-            
-            document.getElementById('downloadStitchingBtn').disabled = !hasSelection;
-            document.getElementById('downloadFabricBtn').disabled = !hasSelection;
-            document.getElementById('deleteBtn').disabled = !hasSelection;
-        }
-
-        function downloadSelectedStitchingPDF() {
-            if (selectedGroupBillIds.length === 1) {
-                downloadStitchingPDF(selectedGroupBillIds[0]);
+            } else {
+                selectedGroupBillIds = selectedGroupBillIds.filter(id => id !== groupId);
             }
+            
+            updateSelectAllCheckbox();
         }
 
-        function downloadSelectedFabricPDF() {
-            if (selectedGroupBillIds.length === 1) {
-                downloadFabricPDF(selectedGroupBillIds[0]);
-            }
-        }
-
-        function deleteSelectedGroupBill() {
-            if (selectedGroupBillIds.length === 1) {
-                deleteGroupBill(selectedGroupBillIds[0]);
-            }
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.group-bill-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.group-bill-checkbox:checked');
+            
+            selectAllCheckbox.checked = checkboxes.length > 0 && checkboxes.length === checkedCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkboxes.length !== checkedCheckboxes.length;
         }
 
         function getSelectedGroupBillIds() {
@@ -1231,6 +1210,50 @@
             }
         }
 
+        // Checkbox functions
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.group-bill-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            
+            updateSelectedGroupBillIds();
+        }
+
+        function toggleGroupBillSelection(event, groupId) {
+            event.stopPropagation();
+            updateSelectedGroupBillIds();
+        }
+
+        function updateSelectedGroupBillIds() {
+            selectedGroupBillIds = [];
+            const checkboxes = document.querySelectorAll('.group-bill-checkbox:checked');
+            
+            checkboxes.forEach(checkbox => {
+                selectedGroupBillIds.push(parseInt(checkbox.getAttribute('data-group-id')));
+            });
+            
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.group-bill-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.group-bill-checkbox:checked');
+            
+            if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
     </script>
 </body>
 </html>

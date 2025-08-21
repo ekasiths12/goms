@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filter Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #212121;
+            color: #eceff1;
+            padding: 20px;
+        }
+        
+        .filter-container {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .filter-select-enhanced {
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 120px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        .filter-select-enhanced:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        .filter-select-enhanced::after {
+            content: '▼';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #424242;
+            border: 1px solid #555;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .filter-dropdown.show {
+            display: block;
+        }
+
+        .filter-input-search {
+            width: 100%;
+            background: #424242;
+            border: none;
+            color: #eceff1;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid #555;
+        }
+
+        .filter-input-search:focus {
+            outline: none;
+            background: #4a4a4a;
+        }
+
+        .filter-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #eceff1;
+            font-size: 12px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .filter-option:hover {
+            background: #5c6bc0;
+        }
+
+        .filter-option.selected {
+            background: #3949ab;
+        }
+
+        .filter-option.empty {
+            color: #888;
+            font-style: italic;
+        }
+
+        .filter-option:first-child {
+            font-weight: bold;
+            color: #5c6bc0;
+            border-bottom: 2px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Filter Test</h1>
+    
+    <div class="filter-group">
+        <label>Customer:</label>
+        <div class="filter-container">
+            <input type="text" id="testFilter" class="filter-select-enhanced" placeholder="All Customers" readonly>
+            <div id="testDropdown" class="filter-dropdown">
+                <input type="text" class="filter-input-search" placeholder="Type to search...">
+                <div class="filter-options"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <p>Selected value: <span id="selectedValue">None</span></p>
+    </div>
+
+    <script>
+        // Test data
+        const testData = [
+            'Klangsombut 789 Company',
+            'Beta Textiles',
+            'Gamma Fabrics',
+            'Delta Manufacturing',
+            'Epsilon Industries'
+        ];
+
+        const filterInput = document.getElementById('testFilter');
+        const dropdown = document.getElementById('testDropdown');
+        const searchInput = dropdown.querySelector('.filter-input-search');
+        const optionsContainer = dropdown.querySelector('.filter-options');
+        const selectedValueSpan = document.getElementById('selectedValue');
+
+        // Toggle dropdown on input click
+        filterInput.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdown.classList.add('show');
+            searchInput.focus();
+            populateOptions('');
+        });
+
+        // Handle search input
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            populateOptions(searchTerm);
+        });
+
+        // Handle option selection
+        optionsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-option')) {
+                const value = e.target.dataset.value;
+                const text = e.target.textContent;
+                
+                filterInput.value = text;
+                filterInput.dataset.value = value;
+                selectedValueSpan.textContent = text;
+                
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!filterInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Handle keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const firstOption = optionsContainer.querySelector('.filter-option:not(.empty)');
+                if (firstOption) {
+                    firstOption.click();
+                }
+            } else if (e.key === 'Escape') {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        function populateOptions(searchTerm) {
+            let options = testData;
+            
+            // Filter options based on search term
+            if (searchTerm) {
+                options = options.filter(option => 
+                    option.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Clear existing options
+            optionsContainer.innerHTML = '';
+
+            // Add "All" option
+            const allOption = document.createElement('div');
+            allOption.className = 'filter-option';
+            allOption.dataset.value = '';
+            allOption.textContent = 'All Customers';
+            optionsContainer.appendChild(allOption);
+
+            // Add filtered options
+            if (options.length === 0) {
+                const emptyOption = document.createElement('div');
+                emptyOption.className = 'filter-option empty';
+                emptyOption.textContent = 'No matches found';
+                optionsContainer.appendChild(emptyOption);
+            } else {
+                options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'filter-option';
+                    optionElement.dataset.value = option;
+                    optionElement.textContent = option;
+                    optionsContainer.appendChild(optionElement);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from datetime import datetime
 import json
 
@@ -111,6 +111,10 @@ class GarmentFabric(db.Model):
     
     def to_dict(self):
         """Convert garment fabric to dictionary"""
+        pending_yards = 0
+        if self.invoice_line:
+            pending_yards = (self.invoice_line.yards_sent or 0) - (self.invoice_line.yards_consumed or 0)
+        
         return {
             'id': self.id,
             'stitching_invoice_id': self.stitching_invoice_id,
@@ -121,7 +125,8 @@ class GarmentFabric(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'fabric_name': self.invoice_line.item_name if self.invoice_line else None,
             'color': self.invoice_line.color if self.invoice_line else None,
-            'invoice_number': self.invoice_line.invoice.invoice_number if self.invoice_line and self.invoice_line.invoice else None
+            'invoice_number': self.invoice_line.invoice.invoice_number if self.invoice_line and self.invoice_line.invoice else None,
+            'pending_yards': pending_yards
         }
     
     def calculate_total_cost(self):

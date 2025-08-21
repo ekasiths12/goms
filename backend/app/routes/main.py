@@ -10,13 +10,8 @@ def test():
 
 @main_bp.route('/')
 def index():
-    """Redirect to dashboard"""
-    return redirect('/dashboard')
-
-@main_bp.route('/dashboard')
-def dashboard():
-    """Serve the dashboard page"""
-    return send_from_directory('../frontend', 'dashboard.html')
+    """Redirect to fabric invoices"""
+    return redirect('/fabric-invoices')
 
 @main_bp.route('/fabric-invoices')
 def fabric_invoices():

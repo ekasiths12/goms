@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from datetime import datetime
 
 class PackingList(db.Model):
@@ -23,6 +23,13 @@ class PackingList(db.Model):
     
     def to_dict(self):
         """Convert packing list to dictionary"""
+        # Get group bill number from any line that has a billing group
+        group_bill_number = None
+        for line in self.packing_list_lines:
+            if line.stitching_invoice and line.stitching_invoice.billing_group:
+                group_bill_number = line.stitching_invoice.billing_group.group_number
+                break
+        
         return {
             'id': self.id,
             'packing_list_serial': self.packing_list_serial,
@@ -34,6 +41,7 @@ class PackingList(db.Model):
             'total_items': self.total_items,
             'comments': self.comments,
             'tax_invoice_number': self.tax_invoice_number,
+            'group_bill_number': group_bill_number,
             'line_count': len(self.packing_list_lines)
         }
     
@@ -83,6 +91,7 @@ class PackingListLine(db.Model):
             'color': self.stitching_invoice.invoice_line.color if self.stitching_invoice and self.stitching_invoice.invoice_line else None,
             'customer_name': self.packing_list.customer.short_name if self.packing_list and self.packing_list.customer else None,
             'tax_invoice_number': self.packing_list.tax_invoice_number if self.packing_list else None,
+            'group_bill_number': self.stitching_invoice.billing_group.group_number if self.stitching_invoice and self.stitching_invoice.billing_group else None,
             'fabric_invoice_number': self.stitching_invoice.invoice_line.invoice.invoice_number if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.invoice_line.invoice else None,
             'delivery_note': self.stitching_invoice.invoice_line.delivery_note if self.stitching_invoice and self.stitching_invoice.invoice_line else None,
             'yards_consumed': float(self.stitching_invoice.yard_consumed) if self.stitching_invoice else 0,
