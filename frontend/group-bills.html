@@ -58,6 +58,33 @@
             background: #1e1e1e;
         }
 
+        .nav-user {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-user span {
+            color: #b0bec5;
+            font-size: 12px;
+        }
+
+        .logout-btn {
+            background: #d32f2f;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #f44336;
+        }
+
         /* Main Content */
         .main-content {
             margin-top: 60px;
@@ -493,6 +520,10 @@
             <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
             <li><a href="group-bills.html" class="nav-tab active">Group Bills</a></li>
         </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
     </nav>
 
     <!-- Main Content -->
@@ -604,8 +635,28 @@
         };
 
         // Load data when page loads
+        // Check authentication
+        function checkAuth() {
+            const isLoggedIn = localStorage.getItem('gms_logged_in');
+            if (isLoggedIn !== 'true') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
         window.addEventListener('load', async () => {
             console.log('🔄 Group Bills page loaded');
+            
+            // Check authentication first
+            if (!checkAuth()) {
+                return;
+            }
+            
+            // Display current user
+            const username = localStorage.getItem('gms_username');
+            document.getElementById('currentUser').textContent = `Welcome, ${username}`;
+            
             await loadGroupBillsData();
         });
 
@@ -1229,6 +1280,12 @@
                 plStitchingRows.forEach(row => row.style.display = 'table-row');
                 stitchingDetailRows.forEach(row => row.style.display = 'table-row');
             }
+        }
+
+        function logout() {
+            localStorage.removeItem('gms_logged_in');
+            localStorage.removeItem('gms_username');
+            window.location.href = 'login.html';
         }
 
     </script>

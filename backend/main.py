@@ -81,7 +81,7 @@ def create_app(config_class=Config):
     # Frontend routes - serve HTML pages
     @app.route('/')
     def index():
-        return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(app.static_folder, 'login.html')
     
     @app.route('/fabric-invoices.html')
     def fabric_invoices():
