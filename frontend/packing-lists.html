@@ -615,6 +615,7 @@
         function getApiBaseUrl() {
             const hostname = window.location.hostname;
             const port = window.location.port;
+            const protocol = window.location.protocol;
             
             // Local development - Flask backend runs on port 8000
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -630,7 +631,12 @@
                 return 'http://localhost:8000';
             }
             
-            // Railway deployment - use same domain
+            // Railway deployment - ensure HTTPS
+            if (hostname.includes('railway.app') || hostname.includes('up.railway.app')) {
+                return `https://${hostname}`;
+            }
+            
+            // Other deployments - use same protocol and domain
             return window.location.origin;
         }
 
