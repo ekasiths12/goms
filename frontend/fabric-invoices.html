@@ -16,6 +16,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #212121;
             color: #eceff1;
+            font-size: 13px;
         }
 
         /* Navigation Bar */
@@ -45,7 +46,7 @@
             color: #eceff1;
             padding: 15px 25px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
@@ -71,18 +72,7 @@
             min-height: calc(100vh - 60px);
         }
 
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #5c6bc0;
-        }
 
-        .section-description {
-            color: #b0bec5;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
 
         /* Filter Controls */
         .filter-controls {
@@ -117,13 +107,110 @@
             color: #eceff1;
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             min-width: 120px;
         }
 
         .filter-select:focus, .filter-input:focus {
             outline: none;
             border-color: #5c6bc0;
+        }
+
+        /* Enhanced Filter Dropdown Styles */
+        .filter-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .filter-select-enhanced {
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 120px;
+            cursor: text;
+            position: relative;
+            user-select: text;
+        }
+
+        .filter-select-enhanced:focus {
+            outline: none;
+            border-color: #5c6bc0;
+            background: #4a4a4a;
+        }
+
+        .filter-select-enhanced::after {
+            content: '▼';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #424242;
+            border: 1px solid #555;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .filter-dropdown.show {
+            display: block;
+        }
+
+        .filter-input-search {
+            width: 100%;
+            background: #424242;
+            border: none;
+            color: #eceff1;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid #555;
+        }
+
+        .filter-input-search:focus {
+            outline: none;
+            background: #4a4a4a;
+        }
+
+        .filter-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #eceff1;
+            font-size: 12px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .filter-option:hover {
+            background: #5c6bc0;
+        }
+
+        .filter-option.selected {
+            background: #3949ab;
+        }
+
+        .filter-option.empty {
+            color: #888;
+            font-style: italic;
+        }
+
+        .filter-option:first-child {
+            font-weight: bold;
+            color: #5c6bc0;
+            border-bottom: 2px solid #555;
         }
 
         .checkbox-label {
@@ -143,7 +230,7 @@
             background: #2c2c2c;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .data-table {
@@ -153,36 +240,37 @@
         }
 
         .data-table th {
-            background: #424242;
+            background: #3949ab;
             color: #eceff1;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            border-bottom: 1px solid #555;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #424242;
-            color: #eceff1;
+            border-bottom: 1px solid #444;
         }
 
-        .data-table tbody tr:hover {
-            background: #424242;
+        .data-table tr:hover {
+            background: #3c3c3c;
         }
 
-        .data-table tbody tr.selected {
-            background: #5c6bc0;
-            color: #fff;
+        .data-table tr.selected {
+            background: #5c6bc0 !important;
+            color: #ffffff;
         }
 
         /* Pagination Styles */
         .table-container {
-            max-height: 600px;
+            max-height: 500px;
             overflow-y: auto;
             background: #2c2c2c;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .table-container::-webkit-scrollbar {
@@ -208,9 +296,37 @@
             justify-content: space-between;
             align-items: center;
             background: #2c2c2c;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* Checkbox styling */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #5c6bc0;
+        }
+
+        /* Make it clear that rows are not clickable */
+        .data-table tr {
+            cursor: default;
+        }
+
+        .data-table tr:hover {
+            background: #424242 !important;
+        }
+
+        .data-table tr:hover td {
+            background: #424242 !important;
         }
 
         .pagination-info {
@@ -257,10 +373,10 @@
         }
 
         .btn {
-            padding: 10px 16px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -440,7 +556,6 @@
     <!-- Navigation Bar -->
     <nav class="nav-bar">
         <ul class="nav-tabs">
-            <li><a href="/index.html" class="nav-tab">Dashboard</a></li>
             <li><a href="/fabric-invoices.html" class="nav-tab active">Fabric Invoices</a></li>
             <li><a href="/stitching-records.html" class="nav-tab">Stitching Records</a></li>
             <li><a href="/packing-lists.html" class="nav-tab">Packing Lists</a></li>
@@ -450,54 +565,74 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <h1 class="section-title">Fabric Invoices</h1>
-        <p class="section-description">
-            Manage fabric invoices, import .dat files, assign locations and tax invoice numbers.
-        </p>
         
         <!-- Filter Controls -->
         <div class="filter-controls">
             <div class="filter-row">
                 <div class="filter-group">
                     <label>Customer:</label>
-                    <select id="filterCustomer" class="filter-select">
-                        <option value="">All Customers</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterCustomer" class="filter-select-enhanced" placeholder="Select Customer">
+                        <div id="filterCustomerDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
                     <label>Fab Inv:</label>
-                    <select id="filterFabInvoice" class="filter-select">
-                        <option value="">All Invoices</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterFabInvoice" class="filter-select-enhanced" placeholder="Select Invoice">
+                        <div id="filterFabInvoiceDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
                     <label>Tax Inv:</label>
-                    <select id="filterTaxInvoice" class="filter-select">
-                        <option value="">All Tax Invoices</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterTaxInvoice" class="filter-select-enhanced" placeholder="Select Tax Invoice">
+                        <div id="filterTaxInvoiceDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
                     <label>Item:</label>
-                    <select id="filterItemCode" class="filter-select">
-                        <option value="">All Items</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterItemCode" class="filter-select-enhanced" placeholder="Select Item">
+                        <div id="filterItemCodeDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
                     <label>DN:</label>
-                    <select id="filterDN" class="filter-select">
-                        <option value="">All DN</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterDN" class="filter-select-enhanced" placeholder="Select DN">
+                        <div id="filterDNDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
                     <label>Location:</label>
-                    <select id="filterLocation" class="filter-select">
-                        <option value="">All Locations</option>
-                    </select>
+                    <div class="filter-container">
+                        <input type="text" id="filterLocation" class="filter-select-enhanced" placeholder="Select Location">
+                        <div id="filterLocationDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
@@ -521,11 +656,26 @@
             </div>
         </div>
         
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="assignDeliveredLocation()">Assign Delivered Location</button>
+            <button class="btn btn-primary" onclick="assignTaxInvoiceNumber()">Assign Tax Invoice Number</button>
+            <button class="btn btn-secondary" onclick="refreshInvoiceTable()">Refresh</button>
+            <button class="btn btn-success" onclick="openStitchingRecordDialog()">Create Stitching Record</button>
+            <button class="btn btn-info" onclick="openCustomerIdDialog()">Customer IDs</button>
+            <button class="btn btn-warning" onclick="openAddInvoiceLineDialog()">Add Invoice Line</button>
+            <button class="btn btn-danger" onclick="deleteSelectedInvoice()">Delete Selected Invoice</button>
+            <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
+        </div>
+
         <!-- Invoice Table -->
         <div class="table-container">
             <table id="invoiceTable" class="data-table">
                 <thead>
                     <tr>
+                        <th style="width: 30px;">
+                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                        </th>
                         <th>Date</th>
                         <th>Short Name</th>
                         <th>Invoice Number</th>
@@ -562,18 +712,6 @@
             </div>
         </div>
         
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="btn btn-primary" onclick="assignDeliveredLocation()">Assign Delivered Location</button>
-            <button class="btn btn-primary" onclick="assignTaxInvoiceNumber()">Assign Tax Invoice Number</button>
-            <button class="btn btn-secondary" onclick="refreshInvoiceTable()">Refresh</button>
-            <button class="btn btn-success" onclick="openStitchingRecordDialog()">Create Stitching Record</button>
-            <button class="btn btn-info" onclick="openCustomerIdDialog()">Customer IDs</button>
-            <button class="btn btn-warning" onclick="openAddInvoiceLineDialog()">Add Invoice Line</button>
-            <button class="btn btn-danger" onclick="deleteSelectedInvoice()">Delete Selected Invoice</button>
-            <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
-        </div>
-        
         <!-- Import Progress -->
         <div id="importProgress" class="import-progress" style="display: none;">
             <div class="progress-bar">
@@ -604,10 +742,24 @@
             return '';
         };
 
+        // Enhanced Filter Dropdown Variables
+        let filterTimer = null;
+        let filterData = {
+            customers: [],
+            invoiceNumbers: [],
+            taxInvoices: [],
+            itemCodes: [],
+            deliveryNotes: [],
+            locations: []
+        };
+
         // Load data when page loads
         window.addEventListener('load', async () => {
             console.log('🔄 Fabric Invoices page loaded');
             await loadInvoiceData();
+            
+            // Initialize enhanced filter dropdowns
+            initializeEnhancedFilters();
             
             // Add date input formatting
             const dateFromInput = document.getElementById('filterDateFrom');
@@ -620,13 +772,31 @@
                 dateToInput.addEventListener('input', () => formatDateInput(dateToInput));
             }
             
-            // Add filter change listeners (only for checkbox, not real-time for text inputs)
+            // Add filter change listeners
             const filterCheckboxes = ['showConsumed'];
             
             filterCheckboxes.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.addEventListener('change', applyFilters);
+                }
+            });
+
+            // Add real-time filter listeners for text inputs
+            const filterInputs = ['filterCustomer', 'filterFabInvoice', 'filterTaxInvoice', 'filterItemCode', 'filterDN', 'filterLocation'];
+            filterInputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', () => {
+                        // Clear existing timer
+                        if (filterTimer) {
+                            clearTimeout(filterTimer);
+                        }
+                        // Set new timer for debounced update
+                        filterTimer = setTimeout(() => {
+                            applyFilters();
+                        }, 500);
+                    });
                 }
             });
         });
@@ -642,6 +812,11 @@
             }
             
             console.log('✅ Found invoice table body, showing loading state');
+            
+            // Clear selected rows when refreshing data
+            selectedRows = [];
+            console.log('🧹 Cleared selectedRows due to data refresh');
+            
             // Show loading state
             tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">Loading invoice data...</td></tr>';
             
@@ -649,12 +824,12 @@
                 // Build query parameters from filters
                 const params = new URLSearchParams();
                 
-                const customerFilter = document.getElementById('filterCustomer')?.value;
-                const invoiceFilter = document.getElementById('filterFabInvoice')?.value;
-                const taxInvoiceFilter = document.getElementById('filterTaxInvoice')?.value;
-                const itemFilter = document.getElementById('filterItemCode')?.value;
-                const dnFilter = document.getElementById('filterDN')?.value;
-                const locationFilter = document.getElementById('filterLocation')?.value;
+                const customerFilter = document.getElementById('filterCustomer')?.value?.trim();
+                const invoiceFilter = document.getElementById('filterFabInvoice')?.value?.trim();
+                const taxInvoiceFilter = document.getElementById('filterTaxInvoice')?.value?.trim();
+                const itemFilter = document.getElementById('filterItemCode')?.value?.trim();
+                const dnFilter = document.getElementById('filterDN')?.value?.trim();
+                const locationFilter = document.getElementById('filterLocation')?.value?.trim();
                 const dateFrom = document.getElementById('filterDateFrom')?.value;
                 const dateTo = document.getElementById('filterDateTo')?.value;
                 const showConsumed = document.getElementById('showConsumed')?.checked;
@@ -693,7 +868,6 @@
                         console.log('📊 Received invoice data:', invoiceData.length, 'records');
                         currentPage = 1; // Reset to first page when new data is loaded
                         populateInvoiceTable();
-                        populateFilters();
                     } catch (parseError) {
                         console.error('❌ JSON parse error:', parseError);
                         tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
@@ -716,7 +890,7 @@
             tbody.innerHTML = '';
 
             if (invoiceData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #b0bec5;">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
                 updatePaginationControls();
                 return;
             }
@@ -734,7 +908,6 @@
             pageData.forEach((invoice, pageIndex) => {
                 const actualIndex = startIndex + pageIndex; // Use actual index for selection
                 const row = document.createElement('tr');
-                row.onclick = () => toggleRowSelection(row, actualIndex);
                 
                 // Use yards_sent and yards_consumed like the old Qt app
                 const yardsSent = invoice.yards_sent || invoice.quantity || 0;
@@ -742,6 +915,9 @@
                 const pending = yardsSent - yardsConsumed;
                 
                 row.innerHTML = `
+                    <td class="checkbox-wrapper">
+                        <input type="checkbox" class="invoice-checkbox" data-invoice-id="${invoice.id}" onclick="toggleInvoiceSelection(event, ${invoice.id})">
+                    </td>
                     <td>${formatDate(invoice.invoice_date)}</td>
                     <td>${invoice.customer?.short_name || ''}</td>
                     <td>${invoice.invoice_number || ''}</td>
@@ -761,6 +937,10 @@
             });
             
             updatePaginationControls();
+            
+            // Update filter data for enhanced dropdowns
+            updateFilterData();
+            
             console.log('✅ Invoice table populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
         }
 
@@ -813,101 +993,42 @@
             }
         }
 
-        function populateFilters() {
-            console.log('🔄 Populating filters with', invoiceData.length, 'records');
+
+
+
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const isChecked = selectAllCheckbox.checked;
             
-            // Populate customer filter
-            const customers = [...new Set(invoiceData.map(inv => inv.customer?.short_name).filter(Boolean))];
-            const customerSelect = document.getElementById('filterCustomer');
-            if (customerSelect) {
-                customerSelect.innerHTML = '<option value="">All Customers</option>';
-                customers.forEach(customer => {
-                    const option = document.createElement('option');
-                    option.value = customer;
-                    option.textContent = customer;
-                    customerSelect.appendChild(option);
-                });
-                console.log(`✅ Populated customer filter with ${customers.length} options`);
-            }
-
-            // Populate invoice number filter
-            const invoiceNumbers = [...new Set(invoiceData.map(inv => inv.invoice_number).filter(Boolean))];
-            const fabInvoiceSelect = document.getElementById('filterFabInvoice');
-            if (fabInvoiceSelect) {
-                fabInvoiceSelect.innerHTML = '<option value="">All Invoices</option>';
-                invoiceNumbers.forEach(inv => {
-                    const option = document.createElement('option');
-                    option.value = inv;
-                    option.textContent = inv;
-                    fabInvoiceSelect.appendChild(option);
-                });
-                console.log(`✅ Populated invoice filter with ${invoiceNumbers.length} options`);
-            }
-
-            // Populate tax invoice filter
-            const taxInvoices = [...new Set(invoiceData.map(inv => inv.tax_invoice_number).filter(Boolean))];
-            const taxInvoiceSelect = document.getElementById('filterTaxInvoice');
-            if (taxInvoiceSelect) {
-                taxInvoiceSelect.innerHTML = '<option value="">All Tax Invoices</option>';
-                taxInvoices.forEach(tax => {
-                    const option = document.createElement('option');
-                    option.value = tax;
-                    option.textContent = tax;
-                    taxInvoiceSelect.appendChild(option);
-                });
-                console.log(`✅ Populated tax invoice filter with ${taxInvoices.length} options`);
-            }
-
-            // Populate item code filter
-            const itemCodes = [...new Set(invoiceData.map(inv => inv.item_name).filter(Boolean))];
-            const itemCodeSelect = document.getElementById('filterItemCode');
-            if (itemCodeSelect) {
-                itemCodeSelect.innerHTML = '<option value="">All Items</option>';
-                itemCodes.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item;
-                    option.textContent = item;
-                    itemCodeSelect.appendChild(option);
-                });
-                console.log(`✅ Populated item filter with ${itemCodes.length} options`);
-            }
-
-            // Populate DN filter
-            const deliveryNotes = [...new Set(invoiceData.map(inv => inv.delivery_note).filter(Boolean))];
-            const dnSelect = document.getElementById('filterDN');
-            if (dnSelect) {
-                dnSelect.innerHTML = '<option value="">All DN</option>';
-                deliveryNotes.forEach(dn => {
-                    const option = document.createElement('option');
-                    option.value = dn;
-                    option.textContent = dn;
-                    dnSelect.appendChild(option);
-                });
-                console.log(`✅ Populated DN filter with ${deliveryNotes.length} options`);
-            }
-
-            // Populate location filter
-            const locations = [...new Set(invoiceData.map(inv => inv.delivered_location).filter(Boolean))];
-            const locationSelect = document.getElementById('filterLocation');
-            if (locationSelect) {
-                locationSelect.innerHTML = '<option value="">All Locations</option>';
-                locations.forEach(location => {
-                    const option = document.createElement('option');
-                    option.value = location;
-                    option.textContent = location;
-                    locationSelect.appendChild(option);
-                });
-                console.log(`✅ Populated location filter with ${locations.length} options`);
-            }
+            // Select/deselect all invoice checkboxes
+            document.querySelectorAll('.invoice-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
         }
 
-        function toggleRowSelection(row, index) {
-            row.classList.toggle('selected');
-            if (row.classList.contains('selected')) {
-                selectedRows.push(index);
-            } else {
-                selectedRows = selectedRows.filter(i => i !== index);
-            }
+        function toggleInvoiceSelection(event, invoiceId) {
+            event.stopPropagation(); // Prevent row selection when clicking checkbox
+            
+            const checkbox = document.querySelector(`input[data-invoice-id="${invoiceId}"].invoice-checkbox`);
+            const isChecked = checkbox.checked;
+            
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const allCheckboxes = document.querySelectorAll('.invoice-checkbox');
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+            
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+        }
+
+        function getSelectedInvoiceIds() {
+            const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+            return Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-invoice-id'));
         }
 
         function formatDate(dateString) {
@@ -953,21 +1074,183 @@
 
         // Filter functions
         function clearFilters() {
-            document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterFabInvoice').value = '';
-            document.getElementById('filterTaxInvoice').value = '';
-            document.getElementById('filterItemCode').value = '';
-            document.getElementById('filterDN').value = '';
-            document.getElementById('filterLocation').value = '';
+            // Clear enhanced filter inputs
+            const enhancedFilters = ['filterCustomer', 'filterFabInvoice', 'filterTaxInvoice', 'filterItemCode', 'filterDN', 'filterLocation'];
+            enhancedFilters.forEach(filterId => {
+                const filterInput = document.getElementById(filterId);
+                if (filterInput) {
+                    filterInput.value = '';
+                    filterInput.dataset.selectedValue = '';
+                }
+            });
+            
+            // Clear date inputs
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
             document.getElementById('showConsumed').checked = false;
+            
+            // Close all dropdowns
+            closeAllDropdowns();
+            
             currentPage = 1; // Reset to first page when clearing filters
             loadInvoiceData(); // Show all data
         }
 
         function applyFilters() {
             loadInvoiceData();
+        }
+
+        // Enhanced Filter Functions
+        function initializeEnhancedFilters() {
+            console.log('🔄 Initializing enhanced filters');
+            
+            // Initialize each filter dropdown
+            const filters = [
+                { id: 'filterCustomer', dropdownId: 'filterCustomerDropdown', dataKey: 'customers' },
+                { id: 'filterFabInvoice', dropdownId: 'filterFabInvoiceDropdown', dataKey: 'invoiceNumbers' },
+                { id: 'filterTaxInvoice', dropdownId: 'filterTaxInvoiceDropdown', dataKey: 'taxInvoices' },
+                { id: 'filterItemCode', dropdownId: 'filterItemCodeDropdown', dataKey: 'itemCodes' },
+                { id: 'filterDN', dropdownId: 'filterDNDropdown', dataKey: 'deliveryNotes' },
+                { id: 'filterLocation', dropdownId: 'filterLocationDropdown', dataKey: 'locations' }
+            ];
+
+            filters.forEach(filter => {
+                initializeFilterDropdown(filter.id, filter.dropdownId, filter.dataKey);
+            });
+        }
+
+        function initializeFilterDropdown(filterId, dropdownId, dataKey) {
+            const filterInput = document.getElementById(filterId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = dropdown.querySelector('.filter-input-search');
+            const optionsContainer = dropdown.querySelector('.filter-options');
+
+            // Toggle dropdown on input click
+            filterInput.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeAllDropdowns();
+                dropdown.classList.add('show');
+                searchInput.focus();
+                populateFilterOptions(filterId, dataKey, '');
+            });
+
+            // Handle direct typing in the main filter input
+            filterInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                // Clear the selected value when user types
+                filterInput.dataset.selectedValue = '';
+            });
+
+            // Handle backspace and delete to clear the filter
+            filterInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    // Allow normal backspace/delete behavior
+                    // The main input listener will handle the filter update
+                }
+            });
+
+            // Handle search input in dropdown
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                populateFilterOptions(filterId, dataKey, searchTerm);
+            });
+
+            // Handle option selection
+            optionsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-option')) {
+                    const value = e.target.dataset.value;
+                    const text = e.target.textContent;
+                    
+                    filterInput.value = text;
+                    filterInput.dataset.selectedValue = value;
+                    
+                    dropdown.classList.remove('show');
+                    triggerFilterUpdate();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!filterInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            // Handle keyboard navigation in dropdown
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const firstOption = optionsContainer.querySelector('.filter-option:not(.empty)');
+                    if (firstOption) {
+                        firstOption.click();
+                    }
+                } else if (e.key === 'Escape') {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+
+        function populateFilterOptions(filterId, dataKey, searchTerm) {
+            const dropdown = document.getElementById(filterId.replace('filter', 'filter') + 'Dropdown');
+            const optionsContainer = dropdown.querySelector('.filter-options');
+            
+            let options = filterData[dataKey] || [];
+            
+            // Filter options based on search term
+            if (searchTerm) {
+                options = options.filter(option => 
+                    option.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Clear existing options
+            optionsContainer.innerHTML = '';
+
+            // Add filtered options (removed "All" option)
+            if (options.length === 0) {
+                const emptyOption = document.createElement('div');
+                emptyOption.className = 'filter-option empty';
+                emptyOption.textContent = 'No matches found';
+                optionsContainer.appendChild(emptyOption);
+            } else {
+                options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'filter-option';
+                    optionElement.dataset.value = option;
+                    optionElement.textContent = option;
+                    optionsContainer.appendChild(optionElement);
+                });
+            }
+        }
+
+        function closeAllDropdowns() {
+            const dropdowns = document.querySelectorAll('.filter-dropdown');
+            dropdowns.forEach(dropdown => dropdown.classList.remove('show'));
+        }
+
+        function triggerFilterUpdate() {
+            // Clear existing timer
+            if (filterTimer) {
+                clearTimeout(filterTimer);
+            }
+            
+            // Set new timer for debounced update
+            filterTimer = setTimeout(() => {
+                applyFilters();
+            }, 500); // 500ms delay like Qt app
+        }
+
+        function updateFilterData() {
+            console.log('🔄 Updating filter data from invoice data');
+            
+            // Extract unique values from invoice data
+            filterData.customers = [...new Set(invoiceData.map(inv => inv.customer?.short_name).filter(Boolean))];
+            filterData.invoiceNumbers = [...new Set(invoiceData.map(inv => inv.invoice_number).filter(Boolean))];
+            filterData.taxInvoices = [...new Set(invoiceData.map(inv => inv.tax_invoice_number).filter(Boolean))];
+            filterData.itemCodes = [...new Set(invoiceData.map(inv => inv.item_name).filter(Boolean))];
+            filterData.deliveryNotes = [...new Set(invoiceData.map(inv => inv.delivery_note).filter(Boolean))];
+            filterData.locations = [...new Set(invoiceData.map(inv => inv.delivered_location).filter(Boolean))];
+            
+            console.log('✅ Filter data updated:', filterData);
         }
 
         // Action button functions
@@ -1017,27 +1300,69 @@
                 return;
             }
             
-            // Get unique invoice numbers from selected rows (like old Qt app)
-            const invoiceNumbers = new Set();
+            // Get unique base invoice numbers from selected rows (like old Qt app)
+            const baseInvoiceNumbers = new Set();
             selectedRows.forEach(index => {
-                invoiceNumbers.add(invoiceData[index].invoice_number);
+                const invoiceNumber = invoiceData[index].invoice_number;
+                // Extract base invoice number (remove line number suffix like -01, -02, etc.)
+                let baseInvoiceNumber = invoiceNumber;
+                if (invoiceNumber.includes('-')) {
+                    baseInvoiceNumber = invoiceNumber.split('-')[0];
+                }
+                baseInvoiceNumbers.add(baseInvoiceNumber);
             });
             
-            if (invoiceNumbers.size > 1) {
-                alert('Please select lines from only one invoice at a time.');
+            // If multiple base invoice numbers, ask user which one to use
+            let baseInvoiceNumber;
+            if (baseInvoiceNumbers.size > 1) {
+                const baseNumbersArray = Array.from(baseInvoiceNumbers);
+                
+                // Create a simple dropdown selection instead of typing
+                let selectionHtml = `<div style="margin-bottom: 10px;">Multiple base invoice numbers detected. Please select one:</div>`;
+                selectionHtml += `<select id="baseInvoiceSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #424242; color: #eceff1; border: 1px solid #555;">`;
+                baseNumbersArray.forEach(baseNum => {
+                    selectionHtml += `<option value="${baseNum}">${baseNum}</option>`;
+                });
+                selectionHtml += `</select>`;
+                
+                // Create a custom dialog
+                const dialog = document.createElement('div');
+                dialog.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(0,0,0,0.7); z-index: 10000; display: flex; 
+                    align-items: center; justify-content: center;
+                `;
+                dialog.innerHTML = `
+                    <div style="background: #2c2c2c; padding: 20px; border-radius: 8px; min-width: 300px; border: 1px solid #555;">
+                        <h3 style="margin-top: 0; color: #eceff1;">Select Base Invoice Number</h3>
+                        ${selectionHtml}
+                        <div style="text-align: right; margin-top: 15px;">
+                            <button onclick="this.closest('.base-invoice-dialog').remove()" style="margin-right: 10px; padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                            <button onclick="confirmBaseInvoiceSelection()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">OK</button>
+                        </div>
+                    </div>
+                `;
+                dialog.className = 'base-invoice-dialog';
+                document.body.appendChild(dialog);
+                
+                // Store the base numbers for the confirmation function
+                window.tempBaseNumbers = baseNumbersArray;
+                window.tempBaseInvoiceCallback = (selectedBase) => {
+                    baseInvoiceNumber = selectedBase;
+                    continueWithTaxInvoiceAssignment();
+                };
+                return; // Exit early, will continue in callback
+            } else {
+                baseInvoiceNumber = Array.from(baseInvoiceNumbers)[0];
+                // Call the function directly for single base invoice number
+                continueWithTaxInvoiceAssignment();
                 return;
             }
             
-            const invoiceNumber = Array.from(invoiceNumbers)[0];
-            
-            // Extract base invoice number (remove line number suffix like -01, -02, etc.)
-            let baseInvoiceNumber = invoiceNumber;
-            if (invoiceNumber.includes('-')) {
-                baseInvoiceNumber = invoiceNumber.split('-')[0];
-            }
-            
-            const taxInvoiceNumber = prompt(`Enter tax invoice number for invoice ${baseInvoiceNumber} (will apply to all lines):\n\nEnter '0' to clear/remove the tax invoice number.`);
-            if (taxInvoiceNumber === null) return;
+            // Function to continue with tax invoice assignment
+            function continueWithTaxInvoiceAssignment() {
+                const taxInvoiceNumber = prompt(`Enter tax invoice number for base invoice ${baseInvoiceNumber} (will apply to all invoices starting with ${baseInvoiceNumber}):\n\nEnter '0' to clear/remove the tax invoice number.`);
+                if (taxInvoiceNumber === null) return;
             
             fetch(`${getApiBaseUrl()}/api/invoices/assign-tax-invoice`, {
                 method: 'POST',
@@ -1062,18 +1387,693 @@
                 alert('Error assigning tax invoice number: ' + error.message);
             });
         }
+        }
+        
+        // Helper function for base invoice selection
+        function confirmBaseInvoiceSelection() {
+            const select = document.getElementById('baseInvoiceSelect');
+            const selectedBase = select.value;
+            
+            // Remove the dialog
+            document.querySelector('.base-invoice-dialog').remove();
+            
+            // Call the callback with the selected base
+            if (window.tempBaseInvoiceCallback) {
+                window.tempBaseInvoiceCallback(selectedBase);
+            }
+        }
+        
+        // Stitching Record Dialog Functions
+        function createStitchingRecordDialog(selectedLines) {
+            // Remove any existing dialog
+            const existingDialog = document.querySelector('.stitching-record-dialog');
+            if (existingDialog) {
+                existingDialog.remove();
+            }
+            
+            // Create dialog container
+            const dialog = document.createElement('div');
+            dialog.className = 'stitching-record-dialog';
+            dialog.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center; overflow-y: auto;
+            `;
+            
+            // Create dialog content
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #2c2c2c; padding: 20px; border-radius: 8px; 
+                min-width: 600px; max-width: 90%; max-height: 90%; overflow-y: auto;
+                border: 1px solid #555;
+            `;
+            
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #5c6bc0;">Create Stitching Record</h2>
+                    <button onclick="closeStitchingRecordDialog()" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">×</button>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Enter yardage consumed for each selected fabric line:</h3>
+                    <div id="consumedInputs"></div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Stitched Item Details:</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Stitched Item:</label>
+                            <input type="text" id="stitchedItem" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;" placeholder="Enter stitched item name">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Price (THB):</label>
+                            <input type="number" id="price" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Size Quantities:</h3>
+                    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">S:</label><input type="number" id="sizeS" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">M:</label><input type="number" id="sizeM" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">L:</label><input type="number" id="sizeL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XL:</label><input type="number" id="sizeXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XXL:</label><input type="number" id="sizeXXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XXXL:</label><input type="number" id="sizeXXXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="addVat" checked style="width: 16px; height: 16px;">
+                        <label for="addVat" style="color: #b0bec5;">Add VAT 7%</label>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Total Value:</label>
+                        <div id="totalValue" style="padding: 8px; background: #424242; border: 1px solid #555; color: #5c6bc0; font-weight: bold; border-radius: 4px;">0.00</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Lining Fabrics (Stitcher-Purchased):</h3>
+                    <div id="liningTable" style="margin-bottom: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                            <thead>
+                                <tr style="background: #555;">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Lining Name</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Consumption (yards)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price (THB)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Total Cost</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liningTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 10px; align-items: end;">
+                        <input type="text" id="liningName" placeholder="Lining Name" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                        <input type="number" id="liningConsumption" step="0.01" min="0" placeholder="Consumption (yards)" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                        <input type="number" id="liningUnitPrice" step="0.01" min="0" placeholder="Unit Price (THB)" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                        <button onclick="addLiningFabric()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add Lining</button>
+                        <button onclick="removeSelectedLining()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Multi-Fabric Selection (Beta Weaving Fabrics):</h3>
+                    <div id="multiFabricTable" style="margin-bottom: 10px; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px; min-width: 800px;">
+                            <thead>
+                                <tr style="background: #555;">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Fabric Name</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Color</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Invoice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Customer</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Delivery Note</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Location</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Consumption (yards)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price (THB)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="multiFabricTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="openFabricSelectionDialog()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add Fabric</button>
+                        <button onclick="removeSelectedMultiFabric()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #eceff1; margin-bottom: 10px;">Garment Image:</h3>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <input type="file" id="garmentImage" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                        <button onclick="document.getElementById('garmentImage').click()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Upload Image</button>
+                        <div id="imagePreview" style="width: 120px; height: 120px; border: 1px solid #555; background: #222; display: flex; align-items: center; justify-content: center; color: #888;">No image</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="closeStitchingRecordDialog()" style="padding: 10px 20px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button onclick="submitStitchingRecord()" style="padding: 10px 20px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Create Stitching Record</button>
+                </div>
+            `;
+            
+            dialog.appendChild(content);
+            document.body.appendChild(dialog);
+            
+            // Initialize the dialog
+            initializeStitchingRecordDialog(selectedLines);
+        }
 
+        // Global variables for stitching record dialog
+        let stitchingSelectedLines = [];
+        let stitchingLiningFabrics = [];
+        let stitchingMultiFabrics = [];
+        let stitchingImagePath = null;
+        
+        function initializeStitchingRecordDialog(selectedLines) {
+            stitchingSelectedLines = selectedLines;
+            stitchingLiningFabrics = [];
+            stitchingMultiFabrics = [];
+            stitchingImagePath = null;
+            
+            // Populate consumed inputs
+            const consumedInputs = document.getElementById('consumedInputs');
+            consumedInputs.innerHTML = '';
+            
+            selectedLines.forEach((line, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #424242; border-radius: 4px;';
+                div.innerHTML = `
+                    <span style="color: #b0bec5; min-width: 200px;">Invoice #${line.invoice_number} | Item: ${line.item_name} | Pending: ${line.pending} yards</span>
+                    <input type="number" id="consumed${index}" step="0.01" min="0" max="${line.pending}" value="0" 
+                           style="padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; width: 100px;"
+                           onchange="updateStitchingSelectedLine(${index}, this.value)">
+                `;
+                consumedInputs.appendChild(div);
+            });
+            
+            // Add event listeners for total calculation
+            document.getElementById('price').addEventListener('input', updateTotalValue);
+            document.getElementById('addVat').addEventListener('change', updateTotalValue);
+            ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL', 'sizeXXXL'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateTotalValue);
+            });
+            
+            updateTotalValue();
+        }
+        
+        function updateStitchingSelectedLine(index, consumed) {
+            if (stitchingSelectedLines[index]) {
+                stitchingSelectedLines[index].consumed = parseFloat(consumed) || 0;
+            }
+        }
+        
+        function updateTotalValue() {
+            const price = parseFloat(document.getElementById('price').value) || 0;
+            const addVat = document.getElementById('addVat').checked;
+            const sizes = ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL', 'sizeXXXL'];
+            const totalQty = sizes.reduce((sum, id) => sum + (parseInt(document.getElementById(id).value) || 0), 0);
+            
+            const baseTotal = price * totalQty;
+            const total = addVat ? baseTotal * 1.07 : baseTotal;
+            
+            document.getElementById('totalValue').textContent = total.toFixed(2);
+        }
+        
+        function addLiningFabric() {
+            const name = document.getElementById('liningName').value.trim();
+            const consumption = parseFloat(document.getElementById('liningConsumption').value) || 0;
+            const unitPrice = parseFloat(document.getElementById('liningUnitPrice').value) || 0;
+            
+            if (!name) {
+                alert('Please enter a lining name.');
+                return;
+            }
+            if (consumption <= 0) {
+                alert('Consumption must be greater than 0.');
+                return;
+            }
+            if (unitPrice <= 0) {
+                alert('Unit price must be greater than 0.');
+                return;
+            }
+            
+            const totalCost = consumption * unitPrice;
+            const lining = {
+                name: name,
+                consumption: consumption,
+                unit_price: unitPrice,
+                total_cost: totalCost
+            };
+            
+            stitchingLiningFabrics.push(lining);
+            updateLiningTable();
+            
+            // Clear inputs
+            document.getElementById('liningName').value = '';
+            document.getElementById('liningConsumption').value = '';
+            document.getElementById('liningUnitPrice').value = '';
+        }
+        
+        function updateLiningTable() {
+            const tbody = document.getElementById('liningTableBody');
+            tbody.innerHTML = '';
+            
+            stitchingLiningFabrics.forEach((lining, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid #666;';
+                row.innerHTML = `
+                    <td style="padding: 8px;">${lining.name}</td>
+                    <td style="padding: 8px;">${lining.consumption.toFixed(2)}</td>
+                    <td style="padding: 8px;">${lining.unit_price.toFixed(2)}</td>
+                    <td style="padding: 8px;">${lining.total_cost.toFixed(2)}</td>
+                    <td style="padding: 8px;">
+                        <button onclick="removeLiningFabric(${index})" style="padding: 4px 8px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function removeLiningFabric(index) {
+            stitchingLiningFabrics.splice(index, 1);
+            updateLiningTable();
+        }
+        
+        function removeSelectedLining() {
+            // For simplicity, remove the last added lining
+            if (stitchingLiningFabrics.length > 0) {
+                stitchingLiningFabrics.pop();
+                updateLiningTable();
+            }
+        }
+        
+        function openFabricSelectionDialog() {
+            // Load available fabrics
+            fetch(`${getApiBaseUrl()}/api/stitching/available-fabrics`)
+                .then(response => response.json())
+                .then(fabrics => {
+                    createFabricSelectionDialog(fabrics);
+                })
+                .catch(error => {
+                    console.error('Error loading fabrics:', error);
+                    alert('Error loading available fabrics.');
+                });
+        }
+        
+        function createFabricSelectionDialog(fabrics) {
+            // Remove any existing dialog
+            const existingDialog = document.querySelector('.fabric-selection-dialog');
+            if (existingDialog) {
+                existingDialog.remove();
+            }
+            
+            const dialog = document.createElement('div');
+            dialog.className = 'fabric-selection-dialog';
+            dialog.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 10001; display: flex; 
+                align-items: center; justify-content: center;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #2c2c2c; padding: 20px; border-radius: 8px; 
+                min-width: 800px; max-width: 90%; max-height: 90%; overflow-y: auto;
+                border: 1px solid #555;
+            `;
+            
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #5c6bc0;">Select Fabric</h2>
+                    <button onclick="closeFabricSelectionDialog()" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">×</button>
+                </div>
+                
+                <!-- Enhanced Filters like Original Qt App -->
+                <div style="margin-bottom: 20px; background: #424242; padding: 15px; border-radius: 4px;">
+                    <h3 style="color: #eceff1; margin-bottom: 15px; font-size: 16px;">Filters</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Customer:</label>
+                            <input type="text" id="fabricFilterCustomer" placeholder="Filter by customer" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Invoice Number:</label>
+                            <input type="text" id="fabricFilterInvoice" placeholder="Filter by invoice number" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Item Name:</label>
+                            <input type="text" id="fabricFilterItem" placeholder="Filter by item name" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Color:</label>
+                            <input type="text" id="fabricFilterColor" placeholder="Filter by color" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Delivery Note:</label>
+                            <input type="text" id="fabricFilterDN" placeholder="Filter by delivery note" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Location:</label>
+                            <input type="text" id="fabricFilterLocation" placeholder="Filter by location" 
+                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   onkeyup="filterFabrics()">
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button onclick="clearFabricFilters()" style="padding: 6px 12px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Filters</button>
+                        <button onclick="refreshFabricList()" style="padding: 6px 12px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Refresh</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="fabricSearch" placeholder="Quick search all fields..." 
+                           style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"
+                           onkeyup="filterFabrics()">
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                        <thead>
+                            <tr style="background: #555;">
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Fabric Name</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Color</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Invoice</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Customer</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Delivery Note</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Location</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Pending Yards</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fabricSelectionTableBody">
+                            ${fabrics.map(fabric => `
+                                <tr style="border-bottom: 1px solid #666;" data-fabric-id="${fabric.id}">
+                                    <td style="padding: 8px;">${fabric.item_name || ''}</td>
+                                    <td style="padding: 8px;">${fabric.color || ''}</td>
+                                    <td style="padding: 8px;">${fabric.invoice_number || ''}</td>
+                                    <td style="padding: 8px;">${fabric.customer_name || ''}</td>
+                                    <td style="padding: 8px;">${fabric.delivery_note || ''}</td>
+                                    <td style="padding: 8px;">${fabric.delivered_location || ''}</td>
+                                    <td style="padding: 8px;">${fabric.pending_yards.toFixed(2)}</td>
+                                    <td style="padding: 8px;">${fabric.unit_price.toFixed(2)}</td>
+                                    <td style="padding: 8px;">
+                                        <button onclick="selectFabric(${fabric.id}, '${fabric.item_name || ''}', '${fabric.color || ''}', '${fabric.invoice_number || ''}', ${fabric.unit_price}, ${fabric.pending_yards})" 
+                                                style="padding: 4px 8px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Select</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button onclick="closeFabricSelectionDialog()" style="padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                </div>
+            `;
+            
+            dialog.appendChild(content);
+            document.body.appendChild(dialog);
+        }
+        
+        function filterFabrics() {
+            const searchTerm = document.getElementById('fabricSearch').value.toLowerCase();
+            const customerFilter = document.getElementById('fabricFilterCustomer').value.toLowerCase();
+            const invoiceFilter = document.getElementById('fabricFilterInvoice').value.toLowerCase();
+            const itemFilter = document.getElementById('fabricFilterItem').value.toLowerCase();
+            const colorFilter = document.getElementById('fabricFilterColor').value.toLowerCase();
+            const dnFilter = document.getElementById('fabricFilterDN').value.toLowerCase();
+            const locationFilter = document.getElementById('fabricFilterLocation').value.toLowerCase();
+            
+            const rows = document.querySelectorAll('#fabricSelectionTableBody tr');
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 8) return; // Skip if not enough columns
+                
+                const itemName = (cells[0]?.textContent || '').toLowerCase();
+                const color = (cells[1]?.textContent || '').toLowerCase();
+                const invoice = (cells[2]?.textContent || '').toLowerCase();
+                const customer = (cells[3]?.textContent || '').toLowerCase();
+                const deliveryNote = (cells[4]?.textContent || '').toLowerCase();
+                const location = (cells[5]?.textContent || '').toLowerCase();
+                
+                // Check all filters
+                const matchesSearch = !searchTerm || 
+                    itemName.includes(searchTerm) || 
+                    color.includes(searchTerm) || 
+                    invoice.includes(searchTerm) || 
+                    customer.includes(searchTerm) ||
+                    deliveryNote.includes(searchTerm) ||
+                    location.includes(searchTerm);
+                
+                const matchesCustomer = !customerFilter || customer.includes(customerFilter);
+                const matchesInvoice = !invoiceFilter || invoice.includes(invoiceFilter);
+                const matchesItem = !itemFilter || itemName.includes(itemFilter);
+                const matchesColor = !colorFilter || color.includes(colorFilter);
+                const matchesDN = !dnFilter || deliveryNote.includes(dnFilter);
+                const matchesLocation = !locationFilter || location.includes(locationFilter);
+                
+                const shouldShow = matchesSearch && matchesCustomer && matchesInvoice && 
+                                 matchesItem && matchesColor && matchesDN && matchesLocation;
+                
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        function clearFabricFilters() {
+            document.getElementById('fabricSearch').value = '';
+            document.getElementById('fabricFilterCustomer').value = '';
+            document.getElementById('fabricFilterInvoice').value = '';
+            document.getElementById('fabricFilterItem').value = '';
+            document.getElementById('fabricFilterColor').value = '';
+            document.getElementById('fabricFilterDN').value = '';
+            document.getElementById('fabricFilterLocation').value = '';
+            filterFabrics();
+        }
+        
+        function refreshFabricList() {
+            openFabricSelectionDialog();
+        }
+        
+        function selectFabric(id, name, color, invoice, unitPrice, pendingYards) {
+            // Add to multi-fabrics list
+            const fabric = {
+                invoice_line_id: id,
+                name: name,
+                color: color,
+                invoice: invoice,
+                unit_price: unitPrice,
+                pending_yards: pendingYards,
+                consumption: 0,
+                customer_name: '', // Will be populated from the row data
+                delivery_note: '', // Will be populated from the row data
+                delivered_location: '' // Will be populated from the row data
+            };
+            
+            // Get additional data from the selected row
+            const row = document.querySelector(`tr[data-fabric-id="${id}"]`);
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 6) {
+                    fabric.customer_name = cells[3]?.textContent || '';
+                    fabric.delivery_note = cells[4]?.textContent || '';
+                    fabric.delivered_location = cells[5]?.textContent || '';
+                }
+            }
+            
+            stitchingMultiFabrics.push(fabric);
+            updateMultiFabricTable();
+            closeFabricSelectionDialog();
+        }
+        
+        function updateMultiFabricTable() {
+            const tbody = document.getElementById('multiFabricTableBody');
+            tbody.innerHTML = '';
+            
+            stitchingMultiFabrics.forEach((fabric, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid #666;';
+                row.innerHTML = `
+                    <td style="padding: 8px;">${fabric.name}</td>
+                    <td style="padding: 8px;">${fabric.color}</td>
+                    <td style="padding: 8px;">${fabric.invoice}</td>
+                    <td style="padding: 8px;">${fabric.customer_name}</td>
+                    <td style="padding: 8px;">${fabric.delivery_note}</td>
+                    <td style="padding: 8px;">${fabric.delivered_location}</td>
+                    <td style="padding: 8px;">
+                        <input type="number" step="0.01" min="0" max="${fabric.pending_yards}" value="${fabric.consumption}" 
+                               style="padding: 4px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; width: 80px;"
+                               onchange="updateMultiFabricConsumption(${index}, this.value)">
+                    </td>
+                    <td style="padding: 8px;">${fabric.unit_price.toFixed(2)}</td>
+                    <td style="padding: 8px;">
+                        <button onclick="removeMultiFabric(${index})" style="padding: 4px 8px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateMultiFabricConsumption(index, consumption) {
+            if (stitchingMultiFabrics[index]) {
+                stitchingMultiFabrics[index].consumption = parseFloat(consumption) || 0;
+            }
+        }
+        
+        function removeMultiFabric(index) {
+            stitchingMultiFabrics.splice(index, 1);
+            updateMultiFabricTable();
+        }
+        
+        function removeSelectedMultiFabric() {
+            // For simplicity, remove the last added fabric
+            if (stitchingMultiFabrics.length > 0) {
+                stitchingMultiFabrics.pop();
+                updateMultiFabricTable();
+            }
+        }
+        
+        function closeFabricSelectionDialog() {
+            const dialog = document.querySelector('.fabric-selection-dialog');
+            if (dialog) {
+                dialog.remove();
+            }
+        }
+        
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">`;
+                    stitchingImagePath = file.name; // In a real app, you'd upload to server
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function submitStitchingRecord() {
+            // Validate inputs
+            const stitchedItem = document.getElementById('stitchedItem').value.trim();
+            const price = parseFloat(document.getElementById('price').value) || 0;
+            
+            if (!stitchedItem) {
+                alert('Please enter a stitched item name.');
+                return;
+            }
+            
+            if (price <= 0) {
+                alert('Please enter a valid price.');
+                return;
+            }
+            
+            // Check if any consumption is entered
+            const hasConsumption = stitchingSelectedLines.some(line => line.consumed > 0);
+            if (!hasConsumption) {
+                alert('Please enter consumption for at least one fabric line.');
+                return;
+            }
+            
+            // Prepare data
+            const sizeQty = {
+                'S': parseInt(document.getElementById('sizeS').value) || 0,
+                'M': parseInt(document.getElementById('sizeM').value) || 0,
+                'L': parseInt(document.getElementById('sizeL').value) || 0,
+                'XL': parseInt(document.getElementById('sizeXL').value) || 0,
+                'XXL': parseInt(document.getElementById('sizeXXL').value) || 0,
+                'XXXL': parseInt(document.getElementById('sizeXXXL').value) || 0
+            };
+            
+            const addVat = document.getElementById('addVat').checked;
+            
+            const data = {
+                selected_lines: stitchingSelectedLines,
+                stitched_item: stitchedItem,
+                size_qty: sizeQty,
+                price: price,
+                add_vat: addVat,
+                lining_fabrics: stitchingLiningFabrics,
+                garment_fabrics: stitchingMultiFabrics,
+                image_path: stitchingImagePath
+            };
+            
+            // Submit to server
+            fetch(`${getApiBaseUrl()}/api/stitching/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.message) {
+                    alert(result.message);
+                    closeStitchingRecordDialog();
+                    loadInvoiceData(); // Refresh the table
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error creating stitching record: ' + error.message);
+            });
+        }
+        
+        function closeStitchingRecordDialog() {
+            const dialog = document.querySelector('.stitching-record-dialog');
+            if (dialog) {
+                dialog.remove();
+            }
+        }
+        
         function refreshInvoiceTable() {
             loadInvoiceData();
         }
 
         function openStitchingRecordDialog() {
             if (selectedRows.length === 0) {
-                alert('Please select an invoice to create stitching record.');
+                alert('Please select one or more fabric invoice lines to create a stitching record.');
                 return;
             }
-            // TODO: Implement stitching record dialog
-            alert('Stitching record dialog will be implemented next.');
+            
+            // Get selected lines data
+            const selectedLines = selectedRows.map(index => {
+                const line = invoiceData[index];
+                const yardsSent = line.yards_sent || line.quantity || 0;
+                const yardsConsumed = line.yards_consumed || 0;
+                const pending = yardsSent - yardsConsumed;
+                
+                return {
+                    id: line.id,
+                    invoice_number: line.invoice_number,
+                    item_name: line.item_name,
+                    color: line.color,
+                    pending: pending,
+                    consumed: 0 // Will be set by user
+                };
+            });
+            
+            // Create and show the stitching record dialog
+            createStitchingRecordDialog(selectedLines);
         }
 
         function openCustomerIdDialog() {
@@ -1085,13 +2085,14 @@
         }
 
         function deleteSelectedInvoice() {
-            if (selectedRows.length === 0) {
+            const selectedInvoiceIds = getSelectedInvoiceIds();
+            if (selectedInvoiceIds.length === 0) {
                 alert('Please select at least one invoice to delete.');
                 return;
             }
-            if (confirm(`Are you sure you want to delete ${selectedRows.length} selected invoice line(s)?`)) {
+            if (confirm(`Are you sure you want to delete ${selectedInvoiceIds.length} selected invoice line(s)?`)) {
                 // Get the selected invoice line IDs
-                const lineIds = selectedRows.map(index => invoiceData[index].id);
+                const lineIds = selectedInvoiceIds;
                 
                 fetch(`${getApiBaseUrl()}/api/invoices/delete-multiple`, {
                     method: 'POST',
