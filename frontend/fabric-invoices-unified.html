@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>Fabric Invoices - Garment Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <ul class="nav-tabs">
+            <li><a href="fabric-invoices.html" class="nav-tab active">Fabric Invoices</a></li>
+            <li><a href="stitching-records.html" class="nav-tab">Stitching Records</a></li>
+            <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
+            <li><a href="group-bills.html" class="nav-tab">Group Bills</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Customer:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterCustomer" class="filter-select-enhanced" placeholder="Select Customer">
+                        <div id="filterCustomerDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Fab Inv:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterFabInvoice" class="filter-select-enhanced" placeholder="Select Invoice">
+                        <div id="filterFabInvoiceDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Tax Inv:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterTaxInvoice" class="filter-select-enhanced" placeholder="Select Tax Invoice">
+                        <div id="filterTaxInvoiceDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Item:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterItemCode" class="filter-select-enhanced" placeholder="Select Item">
+                        <div id="filterItemCodeDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">DN:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterDN" class="filter-select-enhanced" placeholder="Select DN">
+                        <div id="filterDNDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Location:</label>
+                    <div class="filter-container">
+                        <input type="text" id="filterLocation" class="filter-select-enhanced" placeholder="Select Location">
+                        <div id="filterLocationDropdown" class="filter-dropdown">
+                            <input type="text" class="filter-input-search" placeholder="Type to search...">
+                            <div class="filter-options"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">From:</label>
+                    <input type="text" id="filterDateFrom" class="filter-input" placeholder="DD/MM/YY">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">To:</label>
+                    <input type="text" id="filterDateTo" class="filter-input" placeholder="DD/MM/YY">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showConsumed">
+                        Show Consumed Items
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button onclick="clearFilters()" class="btn btn-secondary">Clear Filters</button>
+            <button onclick="refreshData()" class="btn btn-primary">Refresh Data</button>
+            <button onclick="openImportModal()" class="btn btn-success">Import .dat File</button>
+            <button onclick="createStitchingRecord()" class="btn btn-warning">Create Stitching Record</button>
+            <button onclick="openImageUploadDialog()" class="btn btn-info">Upload Image</button>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-wrapper">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                        </th>
+                        <th>Invoice #</th>
+                        <th>Tax Invoice #</th>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Customer</th>
+                        <th>DN</th>
+                        <th>Location</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total Value</th>
+                        <th>Invoice Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="invoiceTableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                Showing <span id="currentPageInfo">1-20</span> of <span id="totalRecords">0</span> records
+            </div>
+            <div class="pagination-buttons">
+                <button class="pagination-btn" onclick="previousPage()" id="prevBtn">Previous</button>
+                <button class="pagination-btn" onclick="nextPage()" id="nextBtn">Next</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Import .dat File</h2>
+                <span class="modal-close" onclick="closeImportModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select .dat file:</label>
+                    <input type="file" id="datFile" accept=".dat" class="form-input">
+                </div>
+                <div id="importProgress" class="import-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Processing...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeImportModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="importDatFile()" class="btn btn-primary">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div id="imageUploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Upload Garment Image</h2>
+                <span class="modal-close" onclick="closeImageUploadDialog()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Image:</label>
+                    <input type="file" id="imageFile" accept="image/*" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Garment Name:</label>
+                    <input type="text" id="garmentName" class="form-input" placeholder="Enter garment name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fabric Name:</label>
+                    <input type="text" id="fabricName" class="form-input" placeholder="Enter fabric name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fabric Color:</label>
+                    <input type="text" id="fabricColor" class="form-input" placeholder="Enter fabric color">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeImageUploadDialog()" class="btn btn-secondary">Cancel</button>
+                <button onclick="uploadImage()" class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Copy the JavaScript from the original fabric-invoices.html file here
+        // This would include all the functions for data loading, filtering, etc.
+    </script>
+</body>
+</html>
