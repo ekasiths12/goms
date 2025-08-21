@@ -13,49 +13,55 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1e1e1e;
+            background-color: #212121;
             color: #eceff1;
-            font-size: 12px;
+            font-size: 13px;
         }
 
         /* Navigation Bar */
         .nav-bar {
-            background: #2c2c2c;
-            border-bottom: 2px solid #5c6bc0;
+            background: #23272f;
+            border-bottom: 1px solid #3949ab;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
         }
 
         .nav-tabs {
             display: flex;
             list-style: none;
-            margin: 0;
-            padding: 0;
+            gap: 0;
         }
 
         .nav-tab {
-            display: block;
-            padding: 15px 20px;
-            color: #b0bec5;
-            text-decoration: none;
-            font-size: 12px;
+            background: transparent;
+            border: none;
+            color: #eceff1;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 13px;
             font-weight: 500;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .nav-tab:hover {
-            background: #424242;
+            background-color: #3949ab;
             color: #ffffff;
         }
 
         .nav-tab.active {
-            color: #5c6bc0;
+            background-color: #3949ab;
+            color: #ffffff;
             border-bottom-color: #5c6bc0;
-            background: #1e1e1e;
         }
 
         .nav-user {
@@ -118,7 +124,7 @@
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             transition: background 0.3s ease;
         }
 
@@ -169,7 +175,7 @@
         }
 
         .filter-group label {
-            font-size: 12px;
+            font-size: 13px;
             color: #b0bec5;
             font-weight: 500;
         }
@@ -180,7 +186,7 @@
             color: #eceff1;
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
             min-width: 120px;
         }
 
