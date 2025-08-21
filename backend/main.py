@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, send_from_directory
 from flask_cors import CORS
 from config.config import Config
 from extensions import db
@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def create_app(config_class=Config):
     """Application factory pattern"""
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../frontend', static_url_path='')
     app.config.from_object(config_class)
     
     # Disable automatic trailing slash redirects to prevent CORS issues
@@ -77,6 +77,32 @@ def create_app(config_class=Config):
             'message': 'Garment Management System API is running',
             'database': db_status
         }
+    
+    # Frontend routes - serve HTML pages
+    @app.route('/')
+    def index():
+        return send_from_directory(app.static_folder, 'index.html')
+    
+    @app.route('/fabric-invoices.html')
+    def fabric_invoices():
+        return send_from_directory(app.static_folder, 'fabric-invoices.html')
+    
+    @app.route('/stitching-records.html')
+    def stitching_records():
+        return send_from_directory(app.static_folder, 'stitching-records.html')
+    
+    @app.route('/packing-lists.html')
+    def packing_lists():
+        return send_from_directory(app.static_folder, 'packing-lists.html')
+    
+    @app.route('/group-bills.html')
+    def group_bills():
+        return send_from_directory(app.static_folder, 'group-bills.html')
+    
+    # Catch-all route for any other frontend files
+    @app.route('/<path:filename>')
+    def serve_frontend(filename):
+        return send_from_directory(app.static_folder, filename)
     
     # Database initialization endpoint
     @app.route('/api/init-db')
