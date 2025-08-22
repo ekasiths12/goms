@@ -14,19 +14,19 @@ RUN apt-get update && \
     && apt-get clean
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY backend/ .
 
 # Create necessary directories (these will be mounted as volumes in Railway)
 RUN mkdir -p static/uploads static/pdfs static/images
 
 # Set environment variables
-ENV FLASK_APP=app.py
+ENV FLASK_APP=main.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
 ENV RAILWAY_VOLUME_PATH=/app/static
