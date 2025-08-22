@@ -178,17 +178,29 @@
         };
         
         function showLoading() {
-            document.getElementById('loading').style.display = 'block';
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'block';
+            }
         }
         
         function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
         }
         
         function updateStatus(status, message, type = 'info') {
             const statusCard = document.getElementById('status-card');
             const buttons = document.getElementById('buttons');
             const setupSteps = document.getElementById('setup-steps');
+            
+            // Check if elements exist before using them
+            if (!statusCard) {
+                console.error('Status card element not found');
+                return;
+            }
             
             // Remove existing classes
             statusCard.className = 'status-card';
@@ -209,23 +221,33 @@
             
             // Show/hide buttons based on status
             if (status === 'Not Configured') {
-                buttons.style.display = 'none';
-                setupSteps.style.display = 'none';
+                if (buttons) buttons.style.display = 'none';
+                if (setupSteps) setupSteps.style.display = 'none';
             } else if (status === 'Needs OAuth2') {
-                buttons.style.display = 'block';
-                setupSteps.style.display = 'block';
-                document.getElementById('init-btn').style.display = 'inline-block';
-                document.getElementById('check-btn').style.display = 'inline-block';
-                document.getElementById('logout-btn').style.display = 'none';
+                if (buttons) buttons.style.display = 'block';
+                if (setupSteps) setupSteps.style.display = 'block';
+                
+                const initBtn = document.getElementById('init-btn');
+                const checkBtn = document.getElementById('check-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+                
+                if (initBtn) initBtn.style.display = 'inline-block';
+                if (checkBtn) checkBtn.style.display = 'inline-block';
+                if (logoutBtn) logoutBtn.style.display = 'none';
             } else if (status === 'Authenticated') {
-                buttons.style.display = 'block';
-                setupSteps.style.display = 'none';
-                document.getElementById('init-btn').style.display = 'none';
-                document.getElementById('check-btn').style.display = 'inline-block';
-                document.getElementById('logout-btn').style.display = 'inline-block';
+                if (buttons) buttons.style.display = 'block';
+                if (setupSteps) setupSteps.style.display = 'none';
+                
+                const initBtn = document.getElementById('init-btn');
+                const checkBtn = document.getElementById('check-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+                
+                if (initBtn) initBtn.style.display = 'none';
+                if (checkBtn) checkBtn.style.display = 'inline-block';
+                if (logoutBtn) logoutBtn.style.display = 'inline-block';
             } else {
-                buttons.style.display = 'block';
-                setupSteps.style.display = 'none';
+                if (buttons) buttons.style.display = 'block';
+                if (setupSteps) setupSteps.style.display = 'none';
             }
         }
         
