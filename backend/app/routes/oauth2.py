@@ -245,3 +245,32 @@ def oauth2_logout():
             'error': 'Failed to clear OAuth2 credentials',
             'message': str(e)
         }), 500
+
+@oauth2_bp.route('/oauth2/service-account-info', methods=['GET'])
+def service_account_info():
+    """Get service account information for debugging"""
+    try:
+        credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        if not credentials_json:
+            return jsonify({
+                'error': 'No GOOGLE_CREDENTIALS found'
+            }), 400
+        
+        creds_data = json.loads(credentials_json)
+        
+        if creds_data.get('type') == 'service_account':
+            return jsonify({
+                'service_account_email': creds_data.get('client_email'),
+                'project_id': creds_data.get('project_id'),
+                'folder_id': os.getenv('GOOGLE_DRIVE_FOLDER_ID', '1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg'),
+                'message': f'Share Google Drive folder {os.getenv("GOOGLE_DRIVE_FOLDER_ID", "1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg")} with {creds_data.get("client_email")}'
+            })
+        else:
+            return jsonify({
+                'error': 'Not using service account credentials'
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'error': str(e)
+        }), 500
