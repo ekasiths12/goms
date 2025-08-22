@@ -79,3 +79,46 @@ def test_google_drive():
             'message': 'Failed to initialize Google Drive service',
             'details': str(e)
         }), 500
+
+@main_bp.route('/debug-google-drive', methods=['GET'])
+def debug_google_drive():
+    """Debug Google Drive credentials"""
+    try:
+        credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        
+        if not credentials_json:
+            return jsonify({
+                'status': 'error',
+                'message': 'GOOGLE_CREDENTIALS environment variable is not set',
+                'details': 'Please add the Service Account JSON to Railway environment variables'
+            }), 500
+        
+        try:
+            import json
+            creds_data = json.loads(credentials_json)
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'GOOGLE_CREDENTIALS found and parsed successfully',
+                'details': {
+                    'type': creds_data.get('type', 'unknown'),
+                    'project_id': creds_data.get('project_id', 'unknown'),
+                    'client_email': creds_data.get('client_email', 'unknown'),
+                    'has_private_key': 'private_key' in creds_data,
+                    'private_key_length': len(creds_data.get('private_key', '')) if 'private_key' in creds_data else 0
+                }
+            })
+            
+        except json.JSONDecodeError as e:
+            return jsonify({
+                'status': 'error',
+                'message': 'GOOGLE_CREDENTIALS is not valid JSON',
+                'details': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Error checking Google Drive credentials',
+            'details': str(e)
+        }), 500
