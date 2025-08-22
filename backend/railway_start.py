@@ -46,11 +46,26 @@ def initialize_database():
             db.create_all()
             print("✅ Database tables created successfully!")
             
-            # Create initial serial counters
-            serial_types = ['ST', 'GB', 'PL', 'GBN']
-            for serial_type in serial_types:
-                counter = SerialCounter.get_or_create(serial_type)
-                print(f"✅ Serial counter for {serial_type} initialized")
+            # Check if serial_counters table exists and create initial counters
+            try:
+                # Test if serial_counters table exists
+                with db.engine.connect() as connection:
+                    result = connection.execute(db.text("SHOW TABLES LIKE 'serial_counters'"))
+                    table_exists = result.fetchone() is not None
+                    result.close()
+                
+                if table_exists:
+                    # Create initial serial counters
+                    serial_types = ['ST', 'GB', 'PL', 'GBN']
+                    for serial_type in serial_types:
+                        counter = SerialCounter.get_or_create(serial_type)
+                        print(f"✅ Serial counter for {serial_type} initialized")
+                else:
+                    print("⚠️  serial_counters table not found, skipping counter initialization")
+                    
+            except Exception as e:
+                print(f"⚠️  Error initializing serial counters: {e}")
+                print("   Continuing without serial counter initialization...")
             
             print("✅ Database initialization completed!")
             return True
