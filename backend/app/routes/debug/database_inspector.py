@@ -52,7 +52,7 @@ def inspect_stitching_records():
             result = connection.execute(text("""
                 SELECT 
                     id, stitching_invoice_number, item_name, invoice_line_id, 
-                    created_at, updated_at,
+                    created_at,
                     yard_consumed, price, add_vat, 
                     size_qty_json, stitched_item, total_value
                 FROM stitching_invoices 
