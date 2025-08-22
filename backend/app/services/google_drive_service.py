@@ -29,50 +29,80 @@ class GoogleDriveService:
     
     def _authenticate(self):
         """Authenticate with Google Drive API"""
-        # The file token.pickle stores the user's access and refresh tokens
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                self.creds = pickle.load(token)
-        
-        # If there are no (valid) credentials available, let the user log in.
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                # Check for credentials from environment variable first
-                credentials_json = os.getenv('GOOGLE_CREDENTIALS')
-                if credentials_json:
-                    import json
-                    import tempfile
-                    
-                    # Create temporary credentials file
-                    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                        f.write(credentials_json)
-                        temp_credentials_path = f.name
-                    
-                    try:
+        # Check for credentials from environment variable first (Railway deployment)
+        credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        if credentials_json:
+            import json
+            import tempfile
+            
+            try:
+                # Parse the JSON credentials
+                creds_data = json.loads(credentials_json)
+                
+                # Create temporary credentials file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(creds_data, f)
+                    temp_credentials_path = f.name
+                
+                try:
+                    # For Railway deployment, we need to use service account or handle OAuth differently
+                    # Since Railway doesn't support interactive OAuth flow, we'll use service account
+                    if 'type' in creds_data and creds_data['type'] == 'service_account':
+                        # Service account authentication (recommended for Railway)
+                        from google.oauth2 import service_account
+                        self.creds = service_account.Credentials.from_service_account_info(
+                            creds_data, scopes=self.SCOPES)
+                    else:
+                        # OAuth2 credentials (for development)
                         flow = InstalledAppFlow.from_client_secrets_file(
                             temp_credentials_path, self.SCOPES)
                         self.creds = flow.run_local_server(port=0)
-                    finally:
-                        # Clean up temporary file
-                        os.unlink(temp_credentials_path)
-                elif os.path.exists('credentials.json'):
-                    # Fallback to local credentials file
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        'credentials.json', self.SCOPES)
-                    self.creds = flow.run_local_server(port=0)
-                else:
-                    print("⚠️  Google Drive credentials not found. Google Drive features will be disabled.")
-                    print("💡 To enable Google Drive uploads:")
-                    print("   1. Download credentials.json from Google Cloud Console")
-                    print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
-                    self.service = None
-                    return
+                        
+                finally:
+                    # Clean up temporary file
+                    os.unlink(temp_credentials_path)
+                    
+            except Exception as e:
+                print(f"⚠️  Error parsing Google credentials from environment: {e}")
+                self.service = None
+                return
+        
+        # Fallback to local token.pickle (development only)
+        elif os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                self.creds = pickle.load(token)
             
-            # Save the credentials for the next run
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(self.creds, token)
+            # If there are no (valid) credentials available, let the user log in.
+            if not self.creds or not self.creds.valid:
+                if self.creds and self.creds.expired and self.creds.refresh_token:
+                    self.creds.refresh(Request())
+                else:
+                    # Check for local credentials file
+                    if os.path.exists('credentials.json'):
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                            'credentials.json', self.SCOPES)
+                        self.creds = flow.run_local_server(port=0)
+                    else:
+                        print("⚠️  Google Drive credentials not found. Google Drive features will be disabled.")
+                        print("💡 To enable Google Drive uploads:")
+                        print("   1. Download credentials.json from Google Cloud Console")
+                        print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
+                        print("   3. For Railway: Use service account credentials")
+                        self.service = None
+                        return
+                
+                # Save the credentials for the next run (development only)
+                with open('token.pickle', 'wb') as token:
+                    pickle.dump(self.creds, token)
+        
+        else:
+            print("⚠️  Google Drive credentials not found. Google Drive features will be disabled.")
+            print("💡 To enable Google Drive uploads:")
+            print("   1. Download credentials.json from Google Cloud Console")
+            print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
+            print("   3. For Railway: Use service account credentials")
+            self.service = None
+            return
         
         self.service = build('drive', 'v3', credentials=self.creds)
     

@@ -35,6 +35,11 @@ venv.bak/
 .env.test.local
 .env.production.local
 
+# Google Drive credentials
+credentials.json
+token.pickle
+*.pickle
+
 # IDE
 .vscode/
 .idea/
