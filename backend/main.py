@@ -69,6 +69,7 @@ def create_app(config_class=Config):
     from app.routes.customers import customers_bp
     from app.routes.files import files_bp
     from app.routes.images import images_bp
+    from app.routes.debug.database_inspector import debug_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(invoices_bp, url_prefix='/api/invoices')
@@ -78,6 +79,7 @@ def create_app(config_class=Config):
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(files_bp, url_prefix='/api/files')
     app.register_blueprint(images_bp, url_prefix='/api/images')
+    app.register_blueprint(debug_bp)
     
     # Test route
     @app.route('/test')
@@ -233,6 +235,14 @@ def create_app(config_class=Config):
     @app.route('/index')
     def index_no_ext():
         return send_from_directory(app.static_folder, 'index.html')
+    
+    @app.route('/debug.html')
+    def debug():
+        return send_from_directory(app.static_folder, 'debug.html')
+    
+    @app.route('/debug')
+    def debug_no_ext():
+        return send_from_directory(app.static_folder, 'debug.html')
     
     # Database initialization endpoint
     @app.route('/api/init-db')

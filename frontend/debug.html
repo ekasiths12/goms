@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Debug Interface - GMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+        }
+
+        .debug-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .debug-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .debug-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .debug-button:hover {
+            background: #2980b9;
+        }
+
+        .debug-button.danger {
+            background: #e74c3c;
+        }
+
+        .debug-button.danger:hover {
+            background: #c0392b;
+        }
+
+        .debug-button.success {
+            background: #27ae60;
+        }
+
+        .debug-button.success:hover {
+            background: #229954;
+        }
+
+        .result-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #f0f9f0;
+            border: 1px solid #c3e6c3;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .warning {
+            color: #f39c12;
+            background: #fef9e7;
+            border: 1px solid #fdeaa7;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Database Debug Interface</h1>
+            <p>Garment Management System - Database Inspection Tools</p>
+        </div>
+
+        <div class="debug-section">
+            <h2>📊 Database Overview</h2>
+            <button class="debug-button" onclick="checkHealth()">Health Check</button>
+            <button class="debug-button" onclick="listTables()">List All Tables</button>
+            <button class="debug-button" onclick="getDataComparison()">Data Comparison</button>
+            <div id="overview-result" class="result-area"></div>
+        </div>
+
+        <div class="debug-section">
+            <h2>🧵 Stitching Records Analysis</h2>
+            <button class="debug-button" onclick="inspectStitchingRecords()">Inspect Stitching Records</button>
+            <button class="debug-button" onclick="inspectStitchingStructure()">Table Structure</button>
+            <button class="debug-button" onclick="findMissingData()">Find Missing Data</button>
+            <button class="debug-button" onclick="checkMigrationIssues()">Migration Issues</button>
+            <div id="stitching-result" class="result-area"></div>
+        </div>
+
+        <div class="debug-section">
+            <h2>📋 Sample Data Inspection</h2>
+            <button class="debug-button" onclick="getSampleData('stitching_invoices')">Stitching Invoices</button>
+            <button class="debug-button" onclick="getSampleData('garment_fabrics')">Garment Fabrics</button>
+            <button class="debug-button" onclick="getSampleData('lining_fabrics')">Lining Fabrics</button>
+            <button class="debug-button" onclick="getSampleData('invoices')">Invoices</button>
+            <div id="sample-result" class="result-area"></div>
+        </div>
+
+        <div class="debug-section">
+            <h2>🧹 Cleanup</h2>
+            <p>When you're done debugging, you can easily remove these debug endpoints by deleting the <code>backend/app/routes/debug/</code> directory.</p>
+            <button class="debug-button danger" onclick="clearAllResults()">Clear All Results</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function showResult(elementId, data, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '';
+            
+            if (type === 'error') {
+                element.className = 'result-area error';
+            } else if (type === 'success') {
+                element.className = 'result-area success';
+            } else if (type === 'warning') {
+                element.className = 'result-area warning';
+            } else {
+                element.className = 'result-area';
+            }
+            
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.className = 'result-area loading';
+            element.textContent = 'Loading...';
+        }
+
+        async function makeRequest(endpoint, resultElementId) {
+            try {
+                showLoading(resultElementId);
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(resultElementId, data, 'success');
+                } else {
+                    showResult(resultElementId, data, 'error');
+                }
+            } catch (error) {
+                showResult(resultElementId, { error: error.message }, 'error');
+            }
+        }
+
+        async function checkHealth() {
+            await makeRequest('/api/debug/health', 'overview-result');
+        }
+
+        async function listTables() {
+            await makeRequest('/api/debug/tables', 'overview-result');
+        }
+
+        async function getDataComparison() {
+            await makeRequest('/api/debug/data-comparison', 'overview-result');
+        }
+
+        async function inspectStitchingRecords() {
+            await makeRequest('/api/debug/stitching-records', 'stitching-result');
+        }
+
+        async function inspectStitchingStructure() {
+            await makeRequest('/api/debug/stitching-structure', 'stitching-result');
+        }
+
+        async function findMissingData() {
+            await makeRequest('/api/debug/missing-data', 'stitching-result');
+        }
+
+        async function checkMigrationIssues() {
+            await makeRequest('/api/debug/migration-check', 'stitching-result');
+        }
+
+        async function getSampleData(tableName) {
+            await makeRequest(`/api/debug/sample-data/${tableName}?limit=3`, 'sample-result');
+        }
+
+        function clearAllResults() {
+            document.getElementById('overview-result').innerHTML = '';
+            document.getElementById('stitching-result').innerHTML = '';
+            document.getElementById('sample-result').innerHTML = '';
+        }
+
+        // Auto-load health check on page load
+        window.addEventListener('load', () => {
+            checkHealth();
+        });
+    </script>
+</body>
+</html>
