@@ -61,8 +61,7 @@ def oauth2_init():
             auth_url, state = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
-                prompt='consent',
-                redirect_uri=redirect_uri
+                prompt='consent'
             )
             print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
             
@@ -132,7 +131,7 @@ def oauth2_callback():
             print(f"🔍 Using stored redirect URI: {redirect_uri}")
             
             # Exchange authorization code for tokens with explicit redirect URI
-            flow.fetch_token(code=code, redirect_uri=redirect_uri)
+            flow.fetch_token(code=code)
             
             # Store credentials in session
             session['oauth2_credentials'] = {
