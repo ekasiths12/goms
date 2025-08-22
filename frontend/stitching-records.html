@@ -718,12 +718,12 @@
                     <input type="text" id="filterCustomer" class="filter-input" placeholder="Filter by Customer">
                 </div>
                 <div class="filter-group">
-                    <label>Date From:</label>
-                    <input type="date" id="filterDateFrom" class="filter-input">
+                    <label>From:</label>
+                    <input type="text" id="filterDateFrom" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
                 </div>
                 <div class="filter-group">
-                    <label>Date To:</label>
-                    <input type="date" id="filterDateTo" class="filter-input">
+                    <label>To:</label>
+                    <input type="text" id="filterDateTo" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
                 </div>
                 <div class="filter-group">
                     <label>Delivery Status:</label>
@@ -881,9 +881,35 @@
                 const day = parts[0];
                 const month = parts[1];
                 const year = parts[2];
-                return `20${year}-${month}-${day}`;
+                // Ensure year is 4 digits (assume 20xx for YY format)
+                const fullYear = year.length === 2 ? '20' + year : year;
+                return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
             return dateString;
+        }
+
+        function formatDateInput(input) {
+            // Auto-format date input to DD/MM/YY format (like old Qt app)
+            let text = input.value;
+            // Remove any non-digit characters
+            let digitsOnly = text.replace(/\D/g, '');
+            
+            // Format as DD/MM/YY
+            let formatted = "";
+            if (digitsOnly.length >= 1) {
+                formatted += digitsOnly.slice(0, 2);
+            }
+            if (digitsOnly.length >= 3) {
+                formatted += "/" + digitsOnly.slice(2, 4);
+            }
+            if (digitsOnly.length >= 5) {
+                formatted += "/" + digitsOnly.slice(4, 6);
+            }
+            
+            // Update text if different
+            if (formatted !== text) {
+                input.value = formatted;
+            }
         }
 
         async function loadStitchingData() {

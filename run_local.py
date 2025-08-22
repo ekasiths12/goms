@@ -16,7 +16,7 @@ def check_dependencies():
         'flask-sqlalchemy', 
         'flask-cors',
         'pymysql',
-        'python-dotenv'
+        'dotenv'
     ]
     
     missing_packages = []

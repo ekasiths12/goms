@@ -13,7 +13,7 @@ class GoogleDriveService:
     
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
-    FOLDER_ID = '1dToY9n5R-uDigQg-Y5goTA7YOcEnE00t'  # Your Google Drive folder ID
+    FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', '1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg')  # Your Google Drive folder ID
     
     def __init__(self):
         self.creds = None
@@ -39,16 +39,36 @@ class GoogleDriveService:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                # Check if credentials file exists
-                if not os.path.exists('credentials.json'):
-                    print("⚠️  Google Drive credentials.json not found. Google Drive features will be disabled.")
-                    print("💡 To enable Google Drive uploads, download credentials.json from Google Cloud Console")
+                # Check for credentials from environment variable first
+                credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+                if credentials_json:
+                    import json
+                    import tempfile
+                    
+                    # Create temporary credentials file
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                        f.write(credentials_json)
+                        temp_credentials_path = f.name
+                    
+                    try:
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                            temp_credentials_path, self.SCOPES)
+                        self.creds = flow.run_local_server(port=0)
+                    finally:
+                        # Clean up temporary file
+                        os.unlink(temp_credentials_path)
+                elif os.path.exists('credentials.json'):
+                    # Fallback to local credentials file
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        'credentials.json', self.SCOPES)
+                    self.creds = flow.run_local_server(port=0)
+                else:
+                    print("⚠️  Google Drive credentials not found. Google Drive features will be disabled.")
+                    print("💡 To enable Google Drive uploads:")
+                    print("   1. Download credentials.json from Google Cloud Console")
+                    print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
                     self.service = None
                     return
-                
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', self.SCOPES)
-                self.creds = flow.run_local_server(port=0)
             
             # Save the credentials for the next run
             with open('token.pickle', 'wb') as token:

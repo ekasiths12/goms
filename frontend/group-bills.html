@@ -203,10 +203,21 @@
             margin-bottom: 20px;
         }
 
+        .data-table-container {
+            background: #2c2c2c;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
+            white-space: nowrap;
+            min-width: 2300px; /* Ensure minimum width for all columns */
         }
 
         .data-table th {
@@ -218,11 +229,18 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .data-table td {
             padding: 10px 8px;
             border-bottom: 1px solid #444;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .data-table tr:hover {
@@ -243,21 +261,26 @@
             margin-bottom: 10px;
         }
 
-        .table-container::-webkit-scrollbar {
+        .table-container::-webkit-scrollbar,
+        .data-table-container::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
 
-        .table-container::-webkit-scrollbar-track {
+        .table-container::-webkit-scrollbar-track,
+        .data-table-container::-webkit-scrollbar-track {
             background: #424242;
             border-radius: 4px;
         }
 
-        .table-container::-webkit-scrollbar-thumb {
+        .table-container::-webkit-scrollbar-thumb,
+        .data-table-container::-webkit-scrollbar-thumb {
             background: #5c6bc0;
             border-radius: 4px;
         }
 
-        .table-container::-webkit-scrollbar-thumb:hover {
+        .table-container::-webkit-scrollbar-thumb:hover,
+        .data-table-container::-webkit-scrollbar-thumb:hover {
             background: #3949ab;
         }
 
@@ -615,6 +638,169 @@
                 overflow-x: auto;
             }
         }
+
+        /* Ensure table cells don't wrap and show ellipsis for long content */
+        .data-table th,
+        .data-table td {
+            max-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Specific column widths to prevent wrapping */
+        .data-table th:nth-child(1),
+        .data-table td:nth-child(1) { /* Checkbox column */
+            width: 30px;
+            min-width: 30px;
+            max-width: 30px;
+            text-align: center;
+        }
+
+        .data-table th:nth-child(2),
+        .data-table td:nth-child(2) { /* Bill # */
+            width: 140px;
+            min-width: 140px;
+            max-width: 140px;
+        }
+
+        .data-table th:nth-child(3),
+        .data-table td:nth-child(3) { /* PL # */
+            width: 140px;
+            min-width: 140px;
+            max-width: 140px;
+        }
+
+        .data-table th:nth-child(4),
+        .data-table td:nth-child(4) { /* Garment */
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+        }
+
+        .data-table th:nth-child(5),
+        .data-table td:nth-child(5) { /* Fabric */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
+
+        .data-table th:nth-child(6),
+        .data-table td:nth-child(6) { /* Color */
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+        }
+
+        .data-table th:nth-child(7),
+        .data-table td:nth-child(7) { /* Customer */
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
+        }
+
+        .data-table th:nth-child(8),
+        .data-table td:nth-child(8) { /* Tax Inv # */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
+
+        .data-table th:nth-child(9),
+        .data-table td:nth-child(9) { /* Fabric Inv */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
+
+        .data-table th:nth-child(10),
+        .data-table td:nth-child(10) { /* Fabric DN */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
+
+        .data-table th:nth-child(11),
+        .data-table td:nth-child(11) { /* Fab Used */
+            width: 70px;
+            min-width: 70px;
+            max-width: 70px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(12),
+        .data-table td:nth-child(12) { /* Fab Cost */
+            width: 70px;
+            min-width: 70px;
+            max-width: 70px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(13),
+        .data-table td:nth-child(13) { /* Fab Value */
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(14),
+        .data-table td:nth-child(14),
+        .data-table th:nth-child(15),
+        .data-table td:nth-child(15),
+        .data-table th:nth-child(16),
+        .data-table td:nth-child(16),
+        .data-table th:nth-child(17),
+        .data-table td:nth-child(17),
+        .data-table th:nth-child(18),
+        .data-table td:nth-child(18),
+        .data-table th:nth-child(19),
+        .data-table td:nth-child(19),
+        .data-table th:nth-child(20),
+        .data-table td:nth-child(20) { /* Size columns */
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
+            text-align: center;
+        }
+
+        .data-table th:nth-child(21),
+        .data-table td:nth-child(21) { /* Total Qty */
+            width: 70px;
+            min-width: 70px;
+            max-width: 70px;
+            text-align: center;
+        }
+
+        .data-table th:nth-child(22),
+        .data-table td:nth-child(22) { /* Sew Cost */
+            width: 70px;
+            min-width: 70px;
+            max-width: 70px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(23),
+        .data-table td:nth-child(23) { /* Sew Value */
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(24),
+        .data-table td:nth-child(24) { /* Created At */
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+        }
+
+        .data-table th:nth-child(25),
+        .data-table td:nth-child(25) { /* Actions */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -680,15 +866,15 @@
         </div>
 
         <!-- Group Bills Table -->
-        <div class="table-container">
+        <div class="data-table-container">
             <table id="groupBillsTable" class="data-table">
                 <thead>
                     <tr>
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th style="width: 100px;">Bill #</th>
-                        <th style="width: 120px;">PL #</th>
+                        <th style="width: 140px;">Bill #</th>
+                        <th style="width: 140px;">PL #</th>
                         <th style="width: 80px;">Garment</th>
                         <th style="width: 100px;">Fabric</th>
                         <th style="width: 80px;">Color</th>
