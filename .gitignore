@@ -75,3 +75,14 @@ static/uploads/*
 
 # Railway
 .railway/
+
+# Generated files
+packing_lists/
+group_bills/
+static/pdfs/
+static/images/
+
+# Test files
+test_*.html
+*_test.py
+test_*.py
