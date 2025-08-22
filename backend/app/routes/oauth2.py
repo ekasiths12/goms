@@ -56,15 +56,27 @@ def oauth2_init():
             
             print(f"🔍 Using redirect URI: {redirect_uri}")
             
-            # Generate authorization URL with explicit redirect URI
+            # Check if the credentials already have redirect_uris defined
+            has_redirect_uris = 'redirect_uris' in creds_data.get('web', {})
+            print(f"🔍 Credentials have redirect_uris: {has_redirect_uris}")
+            
+            # Generate authorization URL
             print("🔍 Generating authorization URL...")
-            print(f"🔍 Using redirect URI: {redirect_uri}")
-            auth_url, state = flow.authorization_url(
-                access_type='offline',
-                include_granted_scopes='true',
-                prompt='consent',
-                redirect_uri=redirect_uri
-            )
+            if has_redirect_uris:
+                # Don't pass redirect_uri explicitly if it's already in credentials
+                auth_url, state = flow.authorization_url(
+                    access_type='offline',
+                    include_granted_scopes='true',
+                    prompt='consent'
+                )
+            else:
+                # Pass redirect_uri explicitly if not in credentials
+                auth_url, state = flow.authorization_url(
+                    access_type='offline',
+                    include_granted_scopes='true',
+                    prompt='consent',
+                    redirect_uri=redirect_uri
+                )
             print(f"🔍 Authorization URL generated: {auth_url}")
             print(f"🔍 Authorization URL (first 100 chars): {auth_url[:100]}...")
             
@@ -73,7 +85,8 @@ def oauth2_init():
                 'client_config': creds_data,
                 'scopes': SCOPES,
                 'state': state,
-                'redirect_uri': redirect_uri
+                'redirect_uri': redirect_uri,
+                'has_redirect_uris': has_redirect_uris
             }
             print("🔍 OAuth2 flow data stored in session")
             
@@ -133,8 +146,17 @@ def oauth2_callback():
             redirect_uri = flow_data.get('redirect_uri', 'https://goms.up.railway.app/oauth2callback')
             print(f"🔍 Using stored redirect URI: {redirect_uri}")
             
-            # Exchange authorization code for tokens with explicit redirect URI
-            flow.fetch_token(code=code, redirect_uri=redirect_uri)
+            # Check if the credentials already have redirect_uris defined
+            has_redirect_uris = flow_data.get('has_redirect_uris', False)
+            print(f"🔍 Credentials have redirect_uris: {has_redirect_uris}")
+            
+            # Exchange authorization code for tokens
+            if has_redirect_uris:
+                # Don't pass redirect_uri explicitly if it's already in credentials
+                flow.fetch_token(code=code)
+            else:
+                # Pass redirect_uri explicitly if not in credentials
+                flow.fetch_token(code=code, redirect_uri=redirect_uri)
             
             # Store credentials in session
             session['oauth2_credentials'] = {
