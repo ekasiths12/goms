@@ -57,7 +57,4 @@ start.sh
 deploy.sh
 
 # Qt app (not needed for deployment)
-qt app/
-
-# Frontend (will be served by Flask)
-frontend/
+qt-desktop-app/
