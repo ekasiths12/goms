@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive OAuth2 Setup - GOMS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-left: 4px solid #4285f4;
+            background-color: #f8f9fa;
+        }
+        .step h3 {
+            color: #4285f4;
+            margin-top: 0;
+        }
+        .btn {
+            background-color: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background-color: #3367d6;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google Drive OAuth2 Setup</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This setup is for Railway deployment only. For local development, use the token.pickle approach.
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Configure Google Cloud Console</h3>
+            <p>Make sure you have created OAuth2 credentials with these redirect URIs:</p>
+            <div class="code-block">
+https://goms.up.railway.app/oauth2callback<br>
+http://localhost:8080/oauth2callback<br>
+http://localhost:5000/oauth2callback
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Set Railway Environment Variable</h3>
+            <p>Add the OAuth2 credentials JSON to Railway as <code>GOOGLE_CREDENTIALS</code> environment variable.</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Initialize OAuth2 Flow</h3>
+            <p>Click the button below to start the OAuth2 authorization process:</p>
+            <button class="btn" onclick="initOAuth2()">🚀 Start OAuth2 Authorization</button>
+            <button class="btn btn-secondary" onclick="checkStatus()">🔍 Check Status</button>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div class="step">
+            <h3>Step 4: Complete Authorization</h3>
+            <p>After clicking "Start OAuth2 Authorization", you'll be redirected to Google to authorize the application. Once authorized, you'll be redirected back and Google Drive features will be enabled.</p>
+        </div>
+
+        <div class="step">
+            <h3>Testing</h3>
+            <p>After successful authorization, you can test Google Drive integration by uploading an image through your app.</p>
+            <a href="/fabric-invoices" class="btn btn-secondary">📄 Go to Fabric Invoices</a>
+            <a href="/stitching-records" class="btn btn-secondary">🧵 Go to Stitching Records</a>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+            statusDiv.style.display = 'block';
+        }
+
+        async function initOAuth2() {
+            try {
+                showStatus('🔄 Initializing OAuth2 flow...', 'info');
+                
+                const response = await fetch('/api/oauth2/init');
+                const data = await response.json();
+                
+                if (response.ok && data.auth_url) {
+                    showStatus(`✅ OAuth2 flow initialized! <br><br><a href="${data.auth_url}" class="btn" target="_blank">🔗 Click here to authorize</a>`, 'success');
+                } else {
+                    showStatus(`❌ Error: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                showStatus('🔍 Checking Google Drive status...', 'info');
+                
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.google_drive_available) {
+                        showStatus('✅ Google Drive is available and working!', 'success');
+                    } else {
+                        showStatus('⚠️ Google Drive is not available. Please complete OAuth2 setup.', 'error');
+                    }
+                } else {
+                    showStatus(`❌ Error checking status: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check status on page load
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>
