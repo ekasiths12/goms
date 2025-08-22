@@ -936,6 +936,7 @@
             
             // Railway deployment - force HTTPS
             if (hostname.includes('railway.app') || hostname.includes('up.railway.app')) {
+                // Force HTTPS for Railway
                 const httpsUrl = `https://${hostname}`;
                 console.log('🚀 Using Railway HTTPS URL:', httpsUrl);
                 return httpsUrl;
@@ -1032,10 +1033,18 @@
                 
                 const queryString = params.toString();
                 const baseUrl = getApiBaseUrl();
-                const url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
+                let url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
+                url += `&_t=${Date.now()}`;
                 
+                console.log('🔍 API URL debug:', { baseUrl, url, windowLocation: window.location.href });
                 console.log('🌐 Fetching', url);
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 console.log('📡 Response status:', response.status);
                 
                 if (response.ok) {

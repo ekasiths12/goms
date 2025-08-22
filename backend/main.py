@@ -82,7 +82,14 @@ def create_app(config_class=Config):
     # Test route
     @app.route('/test')
     def test():
-        return {'message': 'Flask app is working', 'status': 'ok'}
+        import os
+        return {
+            'message': 'Flask app is working', 
+            'status': 'ok',
+            'static_folder': app.static_folder,
+            'static_exists': os.path.exists(app.static_folder),
+            'frontend_files': os.listdir(app.static_folder) if os.path.exists(app.static_folder) else []
+        }
     
     # Debug route to log all requests
     @app.route('/debug/request')
@@ -108,10 +115,16 @@ def create_app(config_class=Config):
             except Exception as e:
                 static_contents = [f"Error listing directory: {str(e)}"]
         
+        # Check if specific files exist
+        fabric_invoices_exists = os.path.exists(os.path.join(static_folder, 'fabric-invoices.html'))
+        login_exists = os.path.exists(os.path.join(static_folder, 'login.html'))
+        
         return {
             'static_folder': static_folder,
             'static_exists': static_exists,
             'static_contents': static_contents,
+            'fabric_invoices_exists': fabric_invoices_exists,
+            'login_exists': login_exists,
             'current_dir': os.getcwd(),
             'current_dir_contents': os.listdir('.') if os.path.exists('.') else []
         }
@@ -138,6 +151,7 @@ def create_app(config_class=Config):
         # Only redirect in production, not in development
         if not app.debug and request.headers.get('X-Forwarded-Proto') == 'http':
             url = request.url.replace('http://', 'https://', 1)
+            print(f"🔄 HTTPS redirect: {request.url} -> {url}")
             return redirect(url, code=301)
     
     # Health check endpoint
@@ -177,6 +191,15 @@ def create_app(config_class=Config):
     
     @app.route('/fabric-invoices')
     def fabric_invoices_no_ext():
+        import os
+        file_path = os.path.join(app.static_folder, 'fabric-invoices.html')
+        exists = os.path.exists(file_path)
+        print(f"🔍 fabric-invoices route debug:")
+        print(f"   static_folder: {app.static_folder}")
+        print(f"   file_path: {file_path}")
+        print(f"   exists: {exists}")
+        if not exists:
+            return f"File not found: {file_path}", 404
         return send_from_directory(app.static_folder, 'fabric-invoices.html')
     
     @app.route('/stitching-records.html')
