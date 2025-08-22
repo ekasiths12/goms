@@ -51,10 +51,10 @@ def inspect_stitching_records():
             # Get stitching records
             result = connection.execute(text("""
                 SELECT 
-                    id, serial_number, customer_name, invoice_date, 
+                    id, stitching_invoice_number, item_name, invoice_line_id, 
                     created_at, updated_at,
-                    fabric_name, fabric_unit_price, yard_consumed,
-                    price, add_vat, delivered, delivery_date
+                    yard_consumed, price, add_vat, 
+                    size_qty_json, stitched_item, total_value
                 FROM stitching_invoices 
                 ORDER BY created_at DESC 
                 LIMIT 10
@@ -148,23 +148,22 @@ def find_missing_data():
             # Find records with missing size quantities
             result3 = connection.execute(text("""
                 SELECT COUNT(*) as count FROM stitching_invoices 
-                WHERE size_qty IS NULL OR size_qty = '{}' OR size_qty = ''
+                WHERE size_qty_json IS NULL OR size_qty_json = '{}' OR size_qty_json = ''
             """))
             missing_size_qty = result3.fetchone()[0]
             
-            # Find records with missing stitching quantities
+            # Find records with missing stitching quantities (calculate from size_qty_json)
             result4 = connection.execute(text("""
                 SELECT COUNT(*) as count FROM stitching_invoices 
-                WHERE stitching_qty IS NULL OR stitching_qty = 0
+                WHERE size_qty_json IS NULL OR size_qty_json = '{}' OR size_qty_json = ''
             """))
             missing_stitching_qty = result4.fetchone()[0]
             
             # Get sample records with missing data
             result5 = connection.execute(text("""
-                SELECT id, serial_number, customer_name, size_qty, stitching_qty
+                SELECT id, stitching_invoice_number, size_qty_json
                 FROM stitching_invoices 
-                WHERE (size_qty IS NULL OR size_qty = '{}' OR size_qty = '')
-                   OR (stitching_qty IS NULL OR stitching_qty = 0)
+                WHERE (size_qty_json IS NULL OR size_qty_json = '{}' OR size_qty_json = '')
                 LIMIT 5
             """))
             sample_missing = [dict(row._mapping) for row in result5]
@@ -174,7 +173,7 @@ def find_missing_data():
             'missing_data_summary': {
                 'records_without_garment_fabrics': missing_garment_fabrics,
                 'records_without_lining_fabrics': missing_lining_fabrics,
-                'records_with_missing_size_qty': missing_size_qty,
+                'records_with_missing_size_qty_json': missing_size_qty,
                 'records_with_missing_stitching_qty': missing_stitching_qty
             },
             'sample_missing_records': sample_missing
@@ -234,9 +233,9 @@ def compare_data_structures():
             result = connection.execute(text("""
                 SELECT 
                     COUNT(*) as total_records,
-                    COUNT(CASE WHEN size_qty IS NOT NULL AND size_qty != '{}' AND size_qty != '' THEN 1 END) as with_size_qty,
-                    COUNT(CASE WHEN stitching_qty IS NOT NULL AND stitching_qty > 0 THEN 1 END) as with_stitching_qty,
-                    COUNT(CASE WHEN fabric_name IS NOT NULL AND fabric_name != '' THEN 1 END) as with_fabric_name
+                    COUNT(CASE WHEN size_qty_json IS NOT NULL AND size_qty_json != '{}' AND size_qty_json != '' THEN 1 END) as with_size_qty_json,
+                    COUNT(CASE WHEN size_qty_json IS NOT NULL AND size_qty_json != '{}' AND size_qty_json != '' THEN 1 END) as with_stitching_qty,
+                    COUNT(CASE WHEN item_name IS NOT NULL AND item_name != '' THEN 1 END) as with_item_name
                 FROM stitching_invoices
             """))
             stitching_stats = dict(result.fetchone()._mapping)
@@ -261,9 +260,9 @@ def compare_data_structures():
                 'lining_fabrics': {'total_records': lining_fabrics_count}
             },
             'analysis': {
-                'size_qty_completion_rate': f"{(stitching_stats['with_size_qty'] / stitching_stats['total_records'] * 100):.1f}%" if stitching_stats['total_records'] > 0 else "0%",
+                'size_qty_json_completion_rate': f"{(stitching_stats['with_size_qty_json'] / stitching_stats['total_records'] * 100):.1f}%" if stitching_stats['total_records'] > 0 else "0%",
                 'stitching_qty_completion_rate': f"{(stitching_stats['with_stitching_qty'] / stitching_stats['total_records'] * 100):.1f}%" if stitching_stats['total_records'] > 0 else "0%",
-                'fabric_name_completion_rate': f"{(stitching_stats['with_fabric_name'] / stitching_stats['total_records'] * 100):.1f}%" if stitching_stats['total_records'] > 0 else "0%"
+                'item_name_completion_rate': f"{(stitching_stats['with_item_name'] / stitching_stats['total_records'] * 100):.1f}%" if stitching_stats['total_records'] > 0 else "0%"
             }
         })
     except Exception as e:
@@ -279,14 +278,14 @@ def check_migration_issues():
         with db.engine.connect() as connection:
             issues = []
             
-            # Check for empty size_qty fields
+            # Check for empty size_qty_json fields
             result1 = connection.execute(text("""
                 SELECT COUNT(*) as count FROM stitching_invoices 
-                WHERE size_qty IS NULL OR size_qty = '{}' OR size_qty = ''
+                WHERE size_qty_json IS NULL OR size_qty_json = '{}' OR size_qty_json = ''
             """))
             empty_size_qty = result1.fetchone()[0]
             if empty_size_qty > 0:
-                issues.append(f"Found {empty_size_qty} records with empty size_qty")
+                issues.append(f"Found {empty_size_qty} records with empty size_qty_json")
             
             # Check for records without line items
             result2 = connection.execute(text("""
@@ -299,10 +298,10 @@ def check_migration_issues():
             if no_line_items > 0:
                 issues.append(f"Found {no_line_items} records without any line items")
             
-            # Check for malformed JSON in size_qty
+            # Check for malformed JSON in size_qty_json
             result3 = connection.execute(text("""
-                SELECT id, serial_number, size_qty FROM stitching_invoices 
-                WHERE size_qty IS NOT NULL AND size_qty != '{}' AND size_qty != ''
+                SELECT id, stitching_invoice_number, size_qty_json FROM stitching_invoices 
+                WHERE size_qty_json IS NOT NULL AND size_qty_json != '{}' AND size_qty_json != ''
                 LIMIT 5
             """))
             sample_size_qty = [dict(row._mapping) for row in result3]
@@ -310,7 +309,7 @@ def check_migration_issues():
             # Check for records with zero quantities
             result4 = connection.execute(text("""
                 SELECT COUNT(*) as count FROM stitching_invoices 
-                WHERE stitching_qty = 0 OR yard_consumed = 0
+                WHERE yard_consumed = 0
             """))
             zero_quantities = result4.fetchone()[0]
             if zero_quantities > 0:
@@ -319,7 +318,7 @@ def check_migration_issues():
         return jsonify({
             'status': 'success',
             'migration_issues': issues,
-            'sample_size_qty_data': sample_size_qty,
+            'sample_size_qty_json_data': sample_size_qty,
             'total_issues_found': len(issues)
         })
     except Exception as e:

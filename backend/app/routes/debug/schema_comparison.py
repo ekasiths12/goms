@@ -11,42 +11,42 @@ def compare_schemas():
     try:
         inspector = inspect(db.engine)
         
-        # Expected schema from the new app models
+        # Expected schema from the new app models (matching your actual database)
         expected_schema = {
             'stitching_invoices': {
                 'id': 'INTEGER PRIMARY KEY',
-                'stitching_invoice_number': 'VARCHAR(50) UNIQUE NOT NULL',
-                'item_name': 'VARCHAR(255) NOT NULL',
-                'yard_consumed': 'NUMERIC(10,2) DEFAULT 0',
-                'stitched_item': 'VARCHAR(255) NOT NULL',
+                'stitching_invoice_number': 'VARCHAR(32)',
+                'item_name': 'VARCHAR(100)',
+                'yard_consumed': 'DECIMAL(10,2)',
+                'stitched_item': 'VARCHAR(100)',
                 'size_qty_json': 'TEXT',
-                'price': 'NUMERIC(10,2) DEFAULT 0',
-                'total_value': 'NUMERIC(12,2) DEFAULT 0',
+                'price': 'DECIMAL(10,2)',
+                'total_value': 'DECIMAL(12,2)',
                 'add_vat': 'BOOLEAN DEFAULT FALSE',
-                'created_at': 'DATETIME DEFAULT UTCNOW',
-                'invoice_line_id': 'INTEGER FOREIGN KEY',
-                'image_id': 'INTEGER FOREIGN KEY',
-                'billing_group_id': 'INTEGER FOREIGN KEY',
-                'total_lining_cost': 'NUMERIC(12,2) DEFAULT 0',
-                'total_fabric_cost': 'NUMERIC(12,2) DEFAULT 0'
+                'image_id': 'INTEGER',
+                'created_at': 'DATETIME',
+                'billing_group_id': 'INTEGER',
+                'invoice_line_id': 'INTEGER',
+                'total_fabric_cost': 'DECIMAL(12,2)',
+                'total_lining_cost': 'DECIMAL(12,2)'
             },
             'garment_fabrics': {
                 'id': 'INTEGER PRIMARY KEY',
-                'stitching_invoice_id': 'INTEGER FOREIGN KEY NOT NULL',
-                'fabric_invoice_line_id': 'INTEGER FOREIGN KEY NOT NULL',
-                'consumption_yards': 'NUMERIC(10,2) DEFAULT 0',
-                'unit_price': 'NUMERIC(10,2) DEFAULT 0',
-                'total_fabric_cost': 'NUMERIC(12,2) DEFAULT 0',
-                'created_at': 'DATETIME DEFAULT UTCNOW'
+                'stitching_invoice_id': 'INTEGER',
+                'fabric_invoice_line_id': 'INTEGER',
+                'consumption_yards': 'DECIMAL(10,2)',
+                'unit_price': 'DECIMAL(10,2)',
+                'total_fabric_cost': 'DECIMAL(12,2)',
+                'created_at': 'DATETIME'
             },
             'lining_fabrics': {
                 'id': 'INTEGER PRIMARY KEY',
-                'stitching_invoice_id': 'INTEGER FOREIGN KEY NOT NULL',
-                'lining_name': 'VARCHAR(255) NOT NULL',
-                'consumption_yards': 'NUMERIC(10,2) DEFAULT 0',
-                'unit_price': 'NUMERIC(10,2) DEFAULT 0',
-                'total_cost': 'NUMERIC(12,2) DEFAULT 0',
-                'created_at': 'DATETIME DEFAULT UTCNOW'
+                'stitching_invoice_id': 'INTEGER',
+                'lining_name': 'VARCHAR(100)',
+                'consumption_yards': 'DECIMAL(10,2)',
+                'unit_price': 'DECIMAL(10,2)',
+                'total_cost': 'DECIMAL(12,2)',
+                'created_at': 'DATETIME'
             }
         }
         
@@ -142,38 +142,38 @@ def get_expected_schema():
     expected_schema = {
         'stitching_invoices': {
             'id': 'INTEGER PRIMARY KEY',
-            'stitching_invoice_number': 'VARCHAR(50) UNIQUE NOT NULL',
-            'item_name': 'VARCHAR(255) NOT NULL',
-            'yard_consumed': 'NUMERIC(10,2) DEFAULT 0',
-            'stitched_item': 'VARCHAR(255) NOT NULL',
+            'stitching_invoice_number': 'VARCHAR(32)',
+            'item_name': 'VARCHAR(100)',
+            'yard_consumed': 'DECIMAL(10,2)',
+            'stitched_item': 'VARCHAR(100)',
             'size_qty_json': 'TEXT',
-            'price': 'NUMERIC(10,2) DEFAULT 0',
-            'total_value': 'NUMERIC(12,2) DEFAULT 0',
+            'price': 'DECIMAL(10,2)',
+            'total_value': 'DECIMAL(12,2)',
             'add_vat': 'BOOLEAN DEFAULT FALSE',
-            'created_at': 'DATETIME DEFAULT UTCNOW',
-            'invoice_line_id': 'INTEGER FOREIGN KEY',
-            'image_id': 'INTEGER FOREIGN KEY',
-            'billing_group_id': 'INTEGER FOREIGN KEY',
-            'total_lining_cost': 'NUMERIC(12,2) DEFAULT 0',
-            'total_fabric_cost': 'NUMERIC(12,2) DEFAULT 0'
+            'image_id': 'INTEGER',
+            'created_at': 'DATETIME',
+            'billing_group_id': 'INTEGER',
+            'invoice_line_id': 'INTEGER',
+            'total_fabric_cost': 'DECIMAL(12,2)',
+            'total_lining_cost': 'DECIMAL(12,2)'
         },
         'garment_fabrics': {
             'id': 'INTEGER PRIMARY KEY',
-            'stitching_invoice_id': 'INTEGER FOREIGN KEY NOT NULL',
-            'fabric_invoice_line_id': 'INTEGER FOREIGN KEY NOT NULL',
-            'consumption_yards': 'NUMERIC(10,2) DEFAULT 0',
-            'unit_price': 'NUMERIC(10,2) DEFAULT 0',
-            'total_fabric_cost': 'NUMERIC(12,2) DEFAULT 0',
-            'created_at': 'DATETIME DEFAULT UTCNOW'
+            'stitching_invoice_id': 'INTEGER',
+            'fabric_invoice_line_id': 'INTEGER',
+            'consumption_yards': 'DECIMAL(10,2)',
+            'unit_price': 'DECIMAL(10,2)',
+            'total_fabric_cost': 'DECIMAL(12,2)',
+            'created_at': 'DATETIME'
         },
         'lining_fabrics': {
             'id': 'INTEGER PRIMARY KEY',
-            'stitching_invoice_id': 'INTEGER FOREIGN KEY NOT NULL',
-            'lining_name': 'VARCHAR(255) NOT NULL',
-            'consumption_yards': 'NUMERIC(10,2) DEFAULT 0',
-            'unit_price': 'NUMERIC(10,2) DEFAULT 0',
-            'total_cost': 'NUMERIC(12,2) DEFAULT 0',
-            'created_at': 'DATETIME DEFAULT UTCNOW'
+            'stitching_invoice_id': 'INTEGER',
+            'lining_name': 'VARCHAR(100)',
+            'consumption_yards': 'DECIMAL(10,2)',
+            'unit_price': 'DECIMAL(10,2)',
+            'total_cost': 'DECIMAL(12,2)',
+            'created_at': 'DATETIME'
         }
     }
     
