@@ -84,6 +84,17 @@ def create_app(config_class=Config):
     def test():
         return {'message': 'Flask app is working', 'status': 'ok'}
     
+    # Debug route to log all requests
+    @app.route('/debug/request')
+    def debug_request():
+        return {
+            'method': request.method,
+            'url': request.url,
+            'path': request.path,
+            'headers': dict(request.headers),
+            'args': dict(request.args)
+        }
+    
     # Debug route to check static folder configuration
     @app.route('/debug/static')
     def debug_static():
@@ -147,16 +158,18 @@ def create_app(config_class=Config):
             'database': db_status
         }
     
-    # Frontend routes - serve HTML pages
+    # Frontend routes - serve HTML pages (specific routes first)
     @app.route('/')
     def index():
+        return send_from_directory(app.static_folder, 'login.html')
+    
+    @app.route('/login.html')
+    def login():
         return send_from_directory(app.static_folder, 'login.html')
     
     @app.route('/fabric-invoices.html')
     def fabric_invoices():
         return send_from_directory(app.static_folder, 'fabric-invoices.html')
-    
-
     
     @app.route('/stitching-records.html')
     def stitching_records():
@@ -170,10 +183,9 @@ def create_app(config_class=Config):
     def group_bills():
         return send_from_directory(app.static_folder, 'group-bills.html')
     
-    # Catch-all route for any other frontend files
-    @app.route('/<path:filename>')
-    def serve_frontend(filename):
-        return send_from_directory(app.static_folder, filename)
+    @app.route('/index.html')
+    def index_html():
+        return send_from_directory(app.static_folder, 'index.html')
     
     # Database initialization endpoint
     @app.route('/api/init-db')
@@ -207,6 +219,11 @@ def create_app(config_class=Config):
                 'status': 'error',
                 'message': f'Database initialization failed: {str(e)}'
             }, 500
+    
+    # Catch-all route for any other frontend files (must be last)
+    @app.route('/<path:filename>')
+    def serve_frontend(filename):
+        return send_from_directory(app.static_folder, filename)
     
     return app
 
