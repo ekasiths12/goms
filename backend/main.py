@@ -10,7 +10,18 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def create_app(config_class=Config):
     """Application factory pattern"""
-    app = Flask(__name__, static_folder='../frontend', static_url_path='')
+    # Determine static folder path based on environment
+    if os.path.exists('../frontend'):
+        # Local development - frontend is in parent directory
+        static_folder = '../frontend'
+    elif os.path.exists('frontend'):
+        # Railway deployment - frontend is copied to backend directory
+        static_folder = 'frontend'
+    else:
+        # Fallback - use current directory
+        static_folder = '.'
+    
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
     app.config.from_object(config_class)
     
     # Disable automatic trailing slash redirects to prevent CORS issues
