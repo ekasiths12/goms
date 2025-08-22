@@ -212,33 +212,55 @@ def create_invoice_line():
         db.session.rollback()
         return {'error': str(e)}, 500
 
-@invoices_bp.route('/<int:line_id>', methods=['PUT'])
+
+
+@invoices_bp.route('/<int:line_id>/update', methods=['PUT'])
 def update_invoice_line(line_id):
     """Update an invoice line"""
     try:
-        line = InvoiceLine.query.get_or_404(line_id)
         data = request.get_json()
+        
+        # Get the invoice line
+        invoice_line = InvoiceLine.query.get(line_id)
+        if not invoice_line:
+            return jsonify({'error': 'Invoice line not found'}), 404
         
         # Update fields
         if 'item_name' in data:
-            line.item_name = data['item_name']
-        if 'quantity' in data:
-            line.quantity = float(data['quantity'])
-        if 'unit_price' in data:
-            line.unit_price = float(data['unit_price'])
+            invoice_line.item_name = data['item_name']
         if 'color' in data:
-            line.color = data['color']
+            invoice_line.color = data['color']
         if 'delivery_note' in data:
-            line.delivery_note = data['delivery_note']
+            invoice_line.delivery_note = data['delivery_note']
+        if 'yards_sent' in data:
+            invoice_line.yards_sent = data['yards_sent']
+        if 'yards_consumed' in data:
+            invoice_line.yards_consumed = data['yards_consumed']
+        if 'unit_price' in data:
+            invoice_line.unit_price = data['unit_price']
         if 'delivered_location' in data:
-            line.delivered_location = data['delivered_location']
+            invoice_line.delivered_location = data['delivered_location']
+        
+        # Update invoice total
+        invoice = invoice_line.invoice
+        if invoice:
+            # Recalculate total based on all lines
+            total = 0
+            for line in invoice.invoice_lines:
+                total += (line.yards_sent or 0) * (line.unit_price or 0)
+            invoice.total_amount = total
         
         db.session.commit()
-        return {'message': 'Invoice line updated successfully'}, 200
+        
+        return jsonify({
+            'success': True,
+            'message': 'Invoice line updated successfully',
+            'invoice_line': invoice_line.to_dict()
+        })
         
     except Exception as e:
         db.session.rollback()
-        return {'error': str(e)}, 500
+        return jsonify({'error': f'Error updating invoice line: {str(e)}'}), 500
 
 @invoices_bp.route('/<int:line_id>', methods=['DELETE'])
 def delete_invoice_line(line_id):

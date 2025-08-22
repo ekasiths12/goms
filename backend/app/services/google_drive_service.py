@@ -158,15 +158,16 @@ class GoogleDriveService:
         
         return self.upload_image(image_data, filename, mime_type)
     
-    def generate_filename(self, garment_name, fabric_name, fabric_color):
+    def generate_filename(self, garment_name, fabric_name, fabric_color, stitching_serial_number=None):
         """
         Generate filename according to the specified format:
-        Garmentname-fabricname-fabriccolor
+        Garmentname-fabricname-fabriccolor-stitching_serial
         
         Args:
             garment_name: Name of the garment
             fabric_name: Name of the fabric
             fabric_color: Color of the fabric
+            stitching_serial_number: Stitching record serial number (optional)
         
         Returns:
             str: Formatted filename
@@ -176,7 +177,12 @@ class GoogleDriveService:
         fabric_clean = self._clean_filename(fabric_name)
         color_clean = self._clean_filename(fabric_color)
         
-        return f"{garment_clean}-{fabric_clean}-{color_clean}.jpg"
+        # Build filename
+        if stitching_serial_number:
+            serial_clean = self._clean_filename(stitching_serial_number)
+            return f"{garment_clean}-{fabric_clean}-{color_clean}-{serial_clean}.jpg"
+        else:
+            return f"{garment_clean}-{fabric_clean}-{color_clean}.jpg"
     
     def _clean_filename(self, text):
         """

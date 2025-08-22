@@ -695,6 +695,7 @@
             <button class="btn btn-success" onclick="openStitchingRecordDialog()">Create Stitching Record</button>
             <button class="btn btn-info" onclick="openCustomerIdDialog()">Customer IDs</button>
             <button class="btn btn-warning" onclick="openAddInvoiceLineDialog()">Add Invoice Line</button>
+            <button class="btn btn-primary" onclick="editSelectedInvoice()">Edit Selected Invoice</button>
             <button class="btn btn-danger" onclick="deleteSelectedInvoice()">Delete Selected Invoice</button>
             <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
             <button class="btn btn-secondary" onclick="openImageUploadDialog()">Upload Image</button>
@@ -750,6 +751,52 @@
                 <div class="progress-fill"></div>
             </div>
             <div class="progress-text">Importing...</div>
+        </div>
+
+        <!-- Edit Invoice Line Dialog -->
+        <div id="editInvoiceDialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Edit Invoice Line</h2>
+                    <span class="close" onclick="closeEditInvoiceDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="editInvoiceForm">
+                        <div class="form-group">
+                            <label for="editItemName">Item Name:</label>
+                            <input type="text" id="editItemName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editColor">Color:</label>
+                            <input type="text" id="editColor">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDeliveryNote">Delivery Note:</label>
+                            <input type="text" id="editDeliveryNote">
+                        </div>
+                        <div class="form-group">
+                            <label for="editYardsSent">Yards Sent:</label>
+                            <input type="number" id="editYardsSent" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editYardsConsumed">Yards Consumed:</label>
+                            <input type="number" id="editYardsConsumed" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editUnitPrice">Unit Price:</label>
+                            <input type="number" id="editUnitPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDeliveredLocation">Delivered Location:</label>
+                            <input type="text" id="editDeliveredLocation">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeEditInvoiceDialog()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveEditInvoice()">Save Changes</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -1652,12 +1699,14 @@
         let stitchingLiningFabrics = [];
         let stitchingMultiFabrics = [];
         let stitchingImagePath = null;
+        let stitchingImageFile = null;
         
         function initializeStitchingRecordDialog(selectedLines) {
             stitchingSelectedLines = selectedLines;
             stitchingLiningFabrics = [];
             stitchingMultiFabrics = [];
             stitchingImagePath = null;
+            stitchingImageFile = null;
             
             // Populate consumed inputs
             const consumedInputs = document.getElementById('consumedInputs');
@@ -2062,13 +2111,16 @@
                 reader.onload = function(e) {
                     const preview = document.getElementById('imagePreview');
                     preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">`;
-                    stitchingImagePath = file.name; // In a real app, you'd upload to server
+                    
+                    // Store the file for later upload
+                    stitchingImageFile = file;
+                    stitchingImagePath = null; // Will be set after upload
                 };
                 reader.readAsDataURL(file);
             }
         }
         
-        function submitStitchingRecord() {
+        async function submitStitchingRecord() {
             // Validate inputs
             const stitchedItem = document.getElementById('stitchedItem').value.trim();
             const price = parseFloat(document.getElementById('price').value) || 0;
@@ -2088,6 +2140,64 @@
             if (!hasConsumption) {
                 alert('Please enter consumption for at least one fabric line.');
                 return;
+            }
+            
+            // Generate serial number first
+            let serial_number = null;
+            try {
+                const serialResponse = await fetch(`${getApiBaseUrl()}/api/stitching/generate-serial`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (serialResponse.ok) {
+                    const serialResult = await serialResponse.json();
+                    serial_number = serialResult.serial_number;
+                } else {
+                    console.warn('Failed to generate serial number, proceeding without it');
+                }
+            } catch (error) {
+                console.warn('Error generating serial number:', error);
+            }
+            
+            // Upload image first if provided
+            let imageData = null;
+            if (stitchingImageFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('image', stitchingImageFile);
+                    formData.append('garment_name', stitchedItem);
+                    formData.append('fabric_name', stitchingSelectedLines[0]?.item_name || 'unknown');
+                    formData.append('fabric_color', stitchingSelectedLines[0]?.color || 'unknown');
+                    if (serial_number) {
+                        formData.append('stitching_serial_number', serial_number);
+                    }
+                    
+                    const uploadResponse = await fetch(`${getApiBaseUrl()}/api/images/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    
+                    if (uploadResult.success) {
+                        imageData = {
+                            image_id: uploadResult.image_id,
+                            google_drive_id: uploadResult.google_drive_id,
+                            google_drive_link: uploadResult.google_drive_link,
+                            google_drive_filename: uploadResult.google_drive_filename,
+                            local_path: uploadResult.local_path
+                        };
+                    } else {
+                        alert('Image upload failed: ' + (uploadResult.error || 'Unknown error'));
+                        return;
+                    }
+                } catch (error) {
+                    alert('Image upload failed: ' + error.message);
+                    return;
+                }
             }
             
             // Prepare data
@@ -2110,19 +2220,21 @@
                 add_vat: addVat,
                 lining_fabrics: stitchingLiningFabrics,
                 garment_fabrics: stitchingMultiFabrics,
-                image_path: stitchingImagePath
+                image_data: imageData
             };
             
             // Submit to server
-            fetch(`${getApiBaseUrl()}/api/stitching/create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/stitching/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
                 if (result.message) {
                     alert(result.message);
                     closeStitchingRecordDialog();
@@ -2130,10 +2242,9 @@
                 } else {
                     alert('Error: ' + (result.error || 'Unknown error'));
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 alert('Error creating stitching record: ' + error.message);
-            });
+            }
         }
         
         function closeStitchingRecordDialog() {
@@ -2639,9 +2750,121 @@
             }
         }
 
-        function editInvoice(index) {
-            // TODO: Implement edit functionality
-            alert('Edit functionality will be implemented next.');
+        // Edit Invoice Line Functions
+        let currentEditInvoiceId = null;
+
+        function editSelectedInvoice() {
+            if (selectedRows.length === 0) {
+                alert('Please select an invoice line to edit');
+                return;
+            }
+            
+            if (selectedRows.length > 1) {
+                alert('Please select only one invoice line to edit');
+                return;
+            }
+            
+            const selectedIndex = selectedRows[0];
+            const invoice = invoiceData[selectedIndex];
+            
+            if (!invoice) {
+                alert('Selected invoice not found');
+                return;
+            }
+            
+            // Check if invoice is already used in stitching records
+            if (invoice.yards_consumed > 0) {
+                const result = confirm('This invoice line has been used in stitching records. Editing may affect existing records. Do you want to continue?');
+                if (!result) {
+                    return;
+                }
+            }
+            
+            currentEditInvoiceId = invoice.id;
+            
+            // Populate the edit form
+            document.getElementById('editItemName').value = invoice.item_name || '';
+            document.getElementById('editColor').value = invoice.color || '';
+            document.getElementById('editDeliveryNote').value = invoice.delivery_note || '';
+            document.getElementById('editYardsSent').value = invoice.yards_sent || invoice.quantity || 0;
+            document.getElementById('editYardsConsumed').value = invoice.yards_consumed || 0;
+            document.getElementById('editUnitPrice').value = invoice.unit_price || 0;
+            document.getElementById('editDeliveredLocation').value = invoice.delivered_location || '';
+            
+            // Show the dialog
+            document.getElementById('editInvoiceDialog').style.display = 'block';
+        }
+
+        function closeEditInvoiceDialog() {
+            document.getElementById('editInvoiceDialog').style.display = 'none';
+            currentEditInvoiceId = null;
+        }
+
+        async function saveEditInvoice() {
+            if (!currentEditInvoiceId) {
+                alert('No invoice selected for editing');
+                return;
+            }
+            
+            // Get form values
+            const itemName = document.getElementById('editItemName').value.trim();
+            const color = document.getElementById('editColor').value.trim();
+            const deliveryNote = document.getElementById('editDeliveryNote').value.trim();
+            const yardsSent = parseFloat(document.getElementById('editYardsSent').value) || 0;
+            const yardsConsumed = parseFloat(document.getElementById('editYardsConsumed').value) || 0;
+            const unitPrice = parseFloat(document.getElementById('editUnitPrice').value) || 0;
+            const deliveredLocation = document.getElementById('editDeliveredLocation').value.trim();
+            
+            // Validate required fields
+            if (!itemName) {
+                alert('Item Name is required');
+                return;
+            }
+            
+            if (yardsSent < 0) {
+                alert('Yards Sent cannot be negative');
+                return;
+            }
+            
+            if (yardsConsumed < 0) {
+                alert('Yards Consumed cannot be negative');
+                return;
+            }
+            
+            if (yardsConsumed > yardsSent) {
+                alert('Yards Consumed cannot be greater than Yards Sent');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/invoices/${currentEditInvoiceId}/update`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        item_name: itemName,
+                        color: color,
+                        delivery_note: deliveryNote,
+                        yards_sent: yardsSent,
+                        yards_consumed: yardsConsumed,
+                        unit_price: unitPrice,
+                        delivered_location: deliveredLocation
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Invoice line updated successfully');
+                    closeEditInvoiceDialog();
+                    await loadInvoiceData(); // Refresh the table
+                } else {
+                    const error = await response.json();
+                    alert('Error updating invoice line: ' + (error.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error updating invoice line: ' + error.message);
+            }
         }
 
         function deleteInvoice(index) {

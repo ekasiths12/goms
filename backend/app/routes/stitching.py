@@ -126,6 +126,18 @@ def get_stitching():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@stitching_bp.route('/generate-serial', methods=['POST'])
+def generate_stitching_serial():
+    """Generate a new stitching record serial number"""
+    try:
+        serial_number = SerialCounter.generate_serial_number("ST")
+        return jsonify({
+            'success': True,
+            'serial_number': serial_number
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate serial number: {str(e)}'}), 500
+
 @stitching_bp.route('/create', methods=['POST'])
 def create_stitching_record():
     """Create a new stitching record"""
@@ -160,23 +172,20 @@ def create_stitching_record():
         else:
             total_value = base_total
         
-        # Save image if provided
+        # Handle image data if provided
         image_id = None
-        if data.get('image_path'):
-            # Copy image to images directory
-            src_path = data['image_path']
-            if os.path.exists(src_path):
-                ext = os.path.splitext(src_path)[1].lower()
-                dest_dir = 'static/images'
-                os.makedirs(dest_dir, exist_ok=True)
-                dest_path = os.path.join(dest_dir, serial_number.replace('/', '') + ext)
-                shutil.copy(src_path, dest_path)
-                
-                # Save to database
-                image = Image(file_path=dest_path, uploaded_at=datetime.utcnow())
-                db.session.add(image)
-                db.session.flush()  # Get the ID
-                image_id = image.id
+        if data.get('image_data'):
+            # Image was already uploaded via the images endpoint
+            image_data = data['image_data']
+            image_id = image_data.get('image_id')
+            
+            # Update the image record with stitching-specific information if needed
+            if image_id:
+                image = Image.query.get(image_id)
+                if image:
+                    # The image is already saved with Google Drive integration
+                    # No additional processing needed
+                    pass
         
         # Create stitching record
         stitching_record = StitchingInvoice(

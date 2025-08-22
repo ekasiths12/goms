@@ -394,7 +394,10 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
         if image_ids:
             images = Image.query.filter(Image.id.in_(image_ids)).all()
             for image in images:
-                image_map[image.id] = image.file_path
+                # Use the best available image path (Google Drive preferred)
+                image_path = image.get_image_path_for_pdf()
+                if image_path:
+                    image_map[image.id] = image_path
         
         # Generate PDF
         pdf = FPDF('P', 'mm', 'A4')
