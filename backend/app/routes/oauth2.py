@@ -50,16 +50,20 @@ def oauth2_init():
             
             # Generate authorization URL
             print("🔍 Generating authorization URL...")
-            auth_url, _ = flow.authorization_url(
+            auth_url, state = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
                 prompt='consent'
             )
             print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
             
-            # Store flow in session for callback
-            session['oauth2_flow'] = flow
-            print("🔍 OAuth2 flow stored in session")
+            # Store only the necessary flow data in session (not the entire flow object)
+            session['oauth2_flow_data'] = {
+                'client_config': creds_data,
+                'scopes': SCOPES,
+                'state': state
+            }
+            print("🔍 OAuth2 flow data stored in session")
             
             return jsonify({
                 'auth_url': auth_url,
@@ -83,38 +87,57 @@ def oauth2_init():
 @oauth2_bp.route('/oauth2callback', methods=['GET'])
 def oauth2_callback():
     """Handle OAuth2 callback from Google"""
+    print("🔍 OAuth2 callback endpoint called")
     try:
         # Get authorization code from request
         code = request.args.get('code')
         if not code:
+            print("❌ No authorization code received")
             return jsonify({
                 'error': 'No authorization code received',
                 'message': 'OAuth2 callback failed'
             }), 400
         
-        # Get flow from session
-        flow = session.get('oauth2_flow')
-        if not flow:
+        # Get flow data from session
+        flow_data = session.get('oauth2_flow_data')
+        if not flow_data:
+            print("❌ No OAuth2 flow data found in session")
             return jsonify({
-                'error': 'No OAuth2 flow found in session',
+                'error': 'No OAuth2 flow data found in session',
                 'message': 'Please restart the OAuth2 flow'
             }), 400
         
-        # Exchange authorization code for tokens
-        flow.fetch_token(code=code)
+        # Create temporary credentials file to recreate the flow
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(flow_data['client_config'], f)
+            temp_credentials_path = f.name
         
-        # Store credentials in session
-        session['oauth2_credentials'] = {
-            'token': flow.credentials.token,
-            'refresh_token': flow.credentials.refresh_token,
-            'token_uri': flow.credentials.token_uri,
-            'client_id': flow.credentials.client_id,
-            'client_secret': flow.credentials.client_secret,
-            'scopes': flow.credentials.scopes
-        }
+        try:
+            # Recreate InstalledAppFlow from stored data
+            flow = InstalledAppFlow.from_client_secrets_file(
+                temp_credentials_path, flow_data['scopes'])
+            
+            # Exchange authorization code for tokens
+            flow.fetch_token(code=code)
+            
+            # Store credentials in session
+            session['oauth2_credentials'] = {
+                'token': flow.credentials.token,
+                'refresh_token': flow.credentials.refresh_token,
+                'token_uri': flow.credentials.token_uri,
+                'client_id': flow.credentials.client_id,
+                'client_secret': flow.credentials.client_secret,
+                'scopes': flow.credentials.scopes
+            }
+            
+            print("🔍 OAuth2 credentials stored in session")
+            
+        finally:
+            # Clean up temporary file
+            os.unlink(temp_credentials_path)
         
-        # Clear flow from session
-        session.pop('oauth2_flow', None)
+        # Clear flow data from session
+        session.pop('oauth2_flow_data', None)
         
         return jsonify({
             'message': 'OAuth2 authentication successful!',
@@ -122,6 +145,9 @@ def oauth2_callback():
         })
         
     except Exception as e:
+        print(f"❌ OAuth2 callback error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'error': 'OAuth2 callback failed',
             'message': str(e)
@@ -192,7 +218,7 @@ def oauth2_logout():
     try:
         # Clear OAuth2 credentials from session
         session.pop('oauth2_credentials', None)
-        session.pop('oauth2_flow', None)
+        session.pop('oauth2_flow_data', None)
         
         return jsonify({
             'message': 'OAuth2 credentials cleared successfully'
