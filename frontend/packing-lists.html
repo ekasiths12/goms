@@ -1559,72 +1559,139 @@
         }
 
         // Sorting functionality for packing lists
-        let currentPackingSortColumn = -1;
-        let currentPackingSortDirection = 'asc';
-
+        let currentPackingSortColumn = 0; // Default to created_at column
+        let currentPackingSortDirection = 'desc'; // Default to descending
+        
+        // Function to load packing list data with sorting
+        async function loadPackingData() {
+            try {
+                showLoading();
+                
+                // Build query parameters
+                const params = new URLSearchParams();
+                
+                // Add filter parameters
+                const plSerialFilter = document.getElementById('plSerialFilter').value;
+                const stitchSerialFilter = document.getElementById('stitchSerialFilter').value;
+                const fabricNameFilter = document.getElementById('fabricNameFilter').value;
+                const customerFilter = document.getElementById('customerFilter').value;
+                const taxInvoiceFilter = document.getElementById('taxInvoiceFilter').value;
+                const fabricInvoiceFilter = document.getElementById('fabricInvoiceFilter').value;
+                const fabricDnFilter = document.getElementById('fabricDnFilter').value;
+                const dateFromFilter = document.getElementById('dateFromFilter').value;
+                const dateToFilter = document.getElementById('dateToFilter').value;
+                const billingStatusFilter = document.getElementById('billingStatusFilter').value;
+                
+                if (plSerialFilter) params.append('pl_serial', plSerialFilter);
+                if (stitchSerialFilter) params.append('stitch_serial', stitchSerialFilter);
+                if (fabricNameFilter) params.append('fabric_name', fabricNameFilter);
+                if (customerFilter) params.append('customer', customerFilter);
+                if (taxInvoiceFilter) params.append('tax_invoice', taxInvoiceFilter);
+                if (fabricInvoiceFilter) params.append('fabric_invoice', fabricInvoiceFilter);
+                if (fabricDnFilter) params.append('fabric_dn', fabricDnFilter);
+                if (dateFromFilter) params.append('date_from', dateFromFilter);
+                if (dateToFilter) params.append('date_to', dateToFilter);
+                if (billingStatusFilter && billingStatusFilter !== 'all') params.append('billing_status', billingStatusFilter);
+                
+                // Add sorting parameters
+                const sortColumnMapping = {
+                    0: 'created_at',
+                    1: 'packing_list_serial',
+                    2: 'customer',
+                    3: 'stitching_invoice_number',
+                    4: 'item_name',
+                    5: 'quantity',
+                    6: 'unit_price',
+                    7: 'total_amount',
+                    8: 'fabric_invoice_number',
+                    9: 'tax_invoice_number',
+                    10: 'delivery_note'
+                };
+                
+                const sortColumn = sortColumnMapping[currentPackingSortColumn] || 'created_at';
+                params.append('sort_column', sortColumn);
+                params.append('sort_direction', currentPackingSortDirection);
+                
+                const response = await fetch(`/api/packing-lists/?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Clear existing data
+                const tbody = document.querySelector('#packingTable tbody');
+                tbody.innerHTML = '';
+                
+                // Populate table with sorted data from server
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${formatDate(item.created_at)}</td>
+                        <td>${item.packing_list_serial}</td>
+                        <td>${item.customer.short_name}</td>
+                        <td>${item.stitching_invoice_number || ''}</td>
+                        <td>${item.item_name || ''}</td>
+                        <td>${item.quantity || ''}</td>
+                        <td>${item.unit_price ? item.unit_price.toFixed(2) : ''}</td>
+                        <td>${item.total_amount ? item.total_amount.toFixed(2) : ''}</td>
+                        <td>${item.fabric_invoice_number || ''}</td>
+                        <td>${item.tax_invoice_number || ''}</td>
+                        <td>${item.delivery_note || ''}</td>
+                        <td>
+                            <button onclick="viewPackingList(${item.id})" class="btn btn-sm btn-info">View</button>
+                            <button onclick="downloadPackingList(${item.id})" class="btn btn-sm btn-success">Download</button>
+                            <button onclick="deletePackingList(${item.id})" class="btn btn-sm btn-danger">Delete</button>
+                        </td>
+                    `;
+                });
+                
+                updatePackingSortArrows();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading packing data:', error);
+                hideLoading();
+                alert('Error loading data: ' + error.message);
+            }
+        }
+        
+        // Function to handle packing column sorting
         function sortPackingTable(columnIndex) {
-            const table = document.getElementById('packingListTable');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
+            // Skip actions column (last column)
+            if (columnIndex === 11) return;
             
-            // Skip checkbox column (index 0)
-            if (columnIndex === 0) return;
-            
-            // Toggle sort direction if clicking the same column
+            // If clicking the same column, toggle direction
             if (currentPackingSortColumn === columnIndex) {
                 currentPackingSortDirection = currentPackingSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
+                // New column, default to ascending
                 currentPackingSortColumn = columnIndex;
                 currentPackingSortDirection = 'asc';
             }
             
-            // Sort the rows
-            rows.sort((a, b) => {
-                const aValue = a.cells[columnIndex]?.textContent?.trim() || '';
-                const bValue = b.cells[columnIndex]?.textContent?.trim() || '';
-                
-                // Handle numeric values
-                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
-                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
-                
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return currentPackingSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
-                }
-                
-                // Handle date values
-                const aDate = new Date(aValue);
-                const bDate = new Date(bValue);
-                
-                if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
-                    return currentPackingSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
-                }
-                
-                // Handle text values
-                if (currentPackingSortDirection === 'asc') {
-                    return aValue.localeCompare(bValue);
-                } else {
-                    return bValue.localeCompare(aValue);
-                }
-            });
-            
-            // Reorder the rows in the table
-            rows.forEach(row => tbody.appendChild(row));
-            
-            // Update header arrows
-            updatePackingSortArrows(columnIndex);
+            // Reload data with new sorting
+            loadPackingData();
         }
-
-        function updatePackingSortArrows(activeColumn) {
-            const headers = document.querySelectorAll('#packingListTable th');
+        
+        // Function to update packing sort arrows in headers
+                 function updatePackingSortArrows() {
+             const headers = document.querySelectorAll('#packingTable th');
             headers.forEach((header, index) => {
-                if (index === 0) return; // Skip checkbox column
+                if (index === 11) return; // Skip actions column
                 
-                const text = header.textContent.replace(' ↕', '').replace(' ↑', '').replace(' ↓', '');
-                if (index === activeColumn) {
+                // Remove existing arrows
+                header.textContent = header.textContent.replace(/[↑↓]/, '');
+                
+                // Add appropriate arrow
+                if (index === currentPackingSortColumn) {
                     const arrow = currentPackingSortDirection === 'asc' ? ' ↑' : ' ↓';
-                    header.textContent = text + arrow;
+                    header.textContent = header.textContent.replace(' ↕', '') + arrow;
                 } else {
-                    header.textContent = text + ' ↕';
+                    // Add neutral arrow for sortable columns
+                    if (!header.textContent.includes(' ↕')) {
+                        header.textContent = header.textContent.replace(/[↑↓]/, '') + ' ↕';
+                    }
                 }
             });
         }

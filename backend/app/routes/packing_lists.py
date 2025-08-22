@@ -30,6 +30,10 @@ def get_packing_lists():
         date_to = request.args.get('date_to')
         billing_status = request.args.get('billing_status', 'all')  # all, billed, unbilled
         
+        # Get sorting parameters
+        sort_column = request.args.get('sort_column', 'created_at')
+        sort_direction = request.args.get('sort_direction', 'desc')
+        
         # Build query
         query = PackingList.query.join(Customer)
         
@@ -96,8 +100,40 @@ def get_packing_lists():
                 )
             )
         
-        # Order by creation date (newest first)
-        query = query.order_by(PackingList.created_at.desc())
+        # Apply sorting
+        sort_direction_func = db.desc if sort_direction.lower() == 'desc' else db.asc
+        
+        # Map frontend column names to database columns
+        sort_mapping = {
+            'created_at': PackingList.created_at,
+            'packing_list_serial': PackingList.packing_list_serial,
+            'customer': Customer.short_name,
+            'stitching_invoice_number': StitchingInvoice.stitching_invoice_number,
+            'item_name': StitchingInvoice.item_name,
+            'quantity': StitchingInvoice.quantity,
+            'unit_price': StitchingInvoice.unit_price,
+            'total_amount': StitchingInvoice.total_amount,
+            'fabric_invoice_number': Invoice.invoice_number,
+            'tax_invoice_number': Invoice.tax_invoice_number,
+            'delivery_note': InvoiceLine.delivery_note
+        }
+        
+        if sort_column in sort_mapping:
+            # Handle special case for fields that require joins
+            if sort_column in ['stitching_invoice_number', 'item_name', 'quantity', 'unit_price', 'total_amount']:
+                query = query.join(PackingListLine).join(StitchingInvoice)
+                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
+            elif sort_column in ['fabric_invoice_number', 'tax_invoice_number']:
+                query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine).join(Invoice)
+                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
+            elif sort_column == 'delivery_note':
+                query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine)
+                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
+            else:
+                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
+        else:
+            # Default sorting by creation date
+            query = query.order_by(sort_direction_func(PackingList.created_at))
         
         # Execute query with distinct to avoid duplicates from joins
         packing_lists = query.distinct().all()
