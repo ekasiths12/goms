@@ -16,73 +16,9 @@ class GoogleDriveService:
     FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', '1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg')  # Your Google Drive folder ID
     
     def __init__(self):
-        """Initialize Google Drive service with authentication"""
-        self.SCOPES = ['https://www.googleapis.com/auth/drive.file']
+        self.creds = None
         self.service = None
-        
-        try:
-            # Priority 1: Service Account (recommended for Railway)
-            credentials_json = os.getenv('GOOGLE_CREDENTIALS')
-            if credentials_json:
-                print("🔍 Found GOOGLE_CREDENTIALS environment variable")
-                try:
-                    creds_data = json.loads(credentials_json)
-                    creds_type = creds_data.get('type', 'unknown')
-                    print(f"🔍 Credentials type: {creds_type}")
-                    
-                    if creds_type == 'service_account':
-                        print("✅ Using Service Account authentication")
-                        # Service Account authentication
-                        from google.oauth2 import service_account
-                        self.creds = service_account.Credentials.from_service_account_info(
-                            creds_data, scopes=self.SCOPES)
-                    else:
-                        print("⚠️  GOOGLE_CREDENTIALS is not a service account, trying OAuth2")
-                        # OAuth2 credentials - check if we have stored credentials in session
-                        from flask import session
-                        
-                        # Check if we have OAuth2 credentials in session
-                        oauth2_creds = session.get('oauth2_credentials')
-                        if oauth2_creds:
-                            # Create credentials from session data
-                            from google.oauth2.credentials import Credentials
-                            self.creds = Credentials(
-                                token=oauth2_creds['token'],
-                                refresh_token=oauth2_creds['refresh_token'],
-                                token_uri=oauth2_creds['token_uri'],
-                                client_id=oauth2_creds['client_id'],
-                                client_secret=oauth2_creds['client_secret'],
-                                scopes=oauth2_creds['scopes']
-                            )
-                            
-                            # Refresh token if expired
-                            if self.creds.expired and self.creds.refresh_token:
-                                self.creds.refresh(Request())
-                                
-                                # Update session with new token
-                                session['oauth2_credentials']['token'] = self.creds.token
-                        else:
-                            # No OAuth2 credentials available
-                            print("⚠️  OAuth2 credentials not found in session. Please visit /api/oauth2/init to start authorization.")
-                            self.service = None
-                            return
-                except json.JSONDecodeError as e:
-                    print(f"❌ Failed to parse GOOGLE_CREDENTIALS JSON: {e}")
-                    self.service = None
-                    return
-            else:
-                print("❌ No GOOGLE_CREDENTIALS environment variable found")
-                print("💡 Please set up a Service Account in Google Cloud Console and add the JSON credentials to Railway environment variables")
-                self.service = None
-                return
-            
-            # Create the service
-            self.service = build('drive', 'v3', credentials=self.creds)
-            print("✅ Google Drive service initialized successfully")
-            
-        except Exception as e:
-            print(f"❌ Failed to initialize Google Drive service: {e}")
-            self.service = None
+        self._authenticate()
     
     def is_available(self):
         """Check if Google Drive service is available (credentials configured)"""

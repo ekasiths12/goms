@@ -759,30 +759,30 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="selectAllTree" onchange="toggleSelectAllTree()"></th>
-                            <th onclick="sortStitchingTable(1)" style="cursor: pointer;">PL # ↕</th>
-                            <th onclick="sortStitchingTable(2)" style="cursor: pointer;">Serial # ↕</th>
-                            <th onclick="sortStitchingTable(3)" style="cursor: pointer;">Garment ↕</th>
-                            <th onclick="sortStitchingTable(4)" style="cursor: pointer;">Fabric ↕</th>
-                            <th onclick="sortStitchingTable(5)" style="cursor: pointer;">Color ↕</th>
-                            <th onclick="sortStitchingTable(6)" style="cursor: pointer;">Customer ↕</th>
-                            <th onclick="sortStitchingTable(7)" style="cursor: pointer;">Tax Inv # ↕</th>
-                            <th onclick="sortStitchingTable(8)" style="cursor: pointer;">Fabric Inv. ↕</th>
-                            <th onclick="sortStitchingTable(9)" style="cursor: pointer;">Fabric DN. ↕</th>
-                            <th onclick="sortStitchingTable(10)" style="cursor: pointer;">Fab Used ↕</th>
-                            <th onclick="sortStitchingTable(11)" style="cursor: pointer;">Fab Cost ↕</th>
-                            <th onclick="sortStitchingTable(12)" style="cursor: pointer;">Fab Value ↕</th>
-                            <th onclick="sortStitchingTable(13)" style="cursor: pointer;">S ↕</th>
-                            <th onclick="sortStitchingTable(14)" style="cursor: pointer;">M ↕</th>
-                            <th onclick="sortStitchingTable(15)" style="cursor: pointer;">L ↕</th>
-                            <th onclick="sortStitchingTable(16)" style="cursor: pointer;">XL ↕</th>
-                            <th onclick="sortStitchingTable(17)" style="cursor: pointer;">XXL ↕</th>
-                            <th onclick="sortStitchingTable(18)" style="cursor: pointer;">XXXL ↕</th>
-                            <th onclick="sortStitchingTable(19)" style="cursor: pointer;">Total Qty ↕</th>
-                            <th onclick="sortStitchingTable(20)" style="cursor: pointer;">Sew Cost ↕</th>
-                            <th onclick="sortStitchingTable(21)" style="cursor: pointer;">Sew Value ↕</th>
-                            <th onclick="sortStitchingTable(22)" style="cursor: pointer;">Yd/Pcs ↕</th>
-                            <th onclick="sortStitchingTable(23)" style="cursor: pointer;">Grmt Cost ↕</th>
-                            <th onclick="sortStitchingTable(24)" style="cursor: pointer;">Created At ↕</th>
+                            <th>PL #</th>
+                            <th>Serial #</th>
+                            <th>Garment</th>
+                            <th>Fabric</th>
+                            <th>Color</th>
+                            <th>Customer</th>
+                            <th>Tax Inv #</th>
+                            <th>Fabric Inv.</th>
+                            <th>Fabric DN.</th>
+                            <th>Fab Used</th>
+                            <th>Fab Cost</th>
+                            <th>Fab Value</th>
+                            <th>S</th>
+                            <th>M</th>
+                            <th>L</th>
+                            <th>XL</th>
+                            <th>XXL</th>
+                            <th>XXXL</th>
+                            <th>Total Qty</th>
+                            <th>Sew Cost</th>
+                            <th>Sew Value</th>
+                            <th>Yd/Pcs</th>
+                            <th>Grmt Cost</th>
+                            <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -945,26 +945,7 @@
                 if (deliveryStatusFilter === 'delivered') params.append('delivered_only', 'true');
                 if (deliveryStatusFilter === 'undelivered') params.append('undelivered_only', 'true');
                 
-                // Add sorting parameters
-                const sortColumnMapping = {
-                    0: 'created_at',
-                    1: 'stitching_invoice_number',
-                    2: 'item_name',
-                    3: 'quantity',
-                    4: 'unit_price',
-                    5: 'total_amount',
-                    6: 'customer',
-                    7: 'fabric_invoice_number',
-                    8: 'tax_invoice_number',
-                    9: 'packing_list_number'
-                };
-                
-                const sortColumn = sortColumnMapping[currentStitchingSortColumn] || 'created_at';
-                params.append('sort_column', sortColumn);
-                params.append('sort_direction', currentStitchingSortDirection);
-                
-                console.log('🌐 Fetching /api/stitching with filters and sorting...');
-                console.log('🔍 Sort column:', sortColumn, 'Direction:', currentStitchingSortDirection);
+                console.log('🌐 Fetching /api/stitching with filters...');
                 const apiBaseUrl = getApiBaseUrl();
                 const apiUrl = `${apiBaseUrl}/api/stitching?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
@@ -1149,7 +1130,6 @@
             console.log('✅ Stitching treeview populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
             updatePaginationControls();
             updateSelectAllCheckbox();
-            updateStitchingSortArrows();
         }
         
         function createFabricChildRow(parentRecord, fabric, type) {
@@ -2124,138 +2104,6 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
-        }
-
-        // Global variables for sorting
-        let currentStitchingSortColumn = 0; // Default to created_at column
-        let currentStitchingSortDirection = 'desc'; // Default to descending
-        
-        // Function to load stitching data with sorting
-        async function loadStitchingData() {
-            try {
-                showLoading();
-                
-                // Build query parameters
-                const params = new URLSearchParams();
-                
-                // Add filter parameters
-                const plNumberFilter = document.getElementById('plNumberFilter').value;
-                const serialNumberFilter = document.getElementById('serialNumberFilter').value;
-                const fabricNameFilter = document.getElementById('fabricNameFilter').value;
-                const customerFilter = document.getElementById('customerFilter').value;
-                const dateFromFilter = document.getElementById('dateFromFilter').value;
-                const dateToFilter = document.getElementById('dateToFilter').value;
-                const deliveredOnlyFilter = document.getElementById('deliveredOnlyFilter').checked;
-                const undeliveredOnlyFilter = document.getElementById('undeliveredOnlyFilter').checked;
-                
-                if (plNumberFilter) params.append('pl_number', plNumberFilter);
-                if (serialNumberFilter) params.append('serial_number', serialNumberFilter);
-                if (fabricNameFilter) params.append('fabric_name', fabricNameFilter);
-                if (customerFilter) params.append('customer', customerFilter);
-                if (dateFromFilter) params.append('date_from', dateFromFilter);
-                if (dateToFilter) params.append('date_to', dateToFilter);
-                if (deliveredOnlyFilter) params.append('delivered_only', 'true');
-                if (undeliveredOnlyFilter) params.append('undelivered_only', 'true');
-                
-                // Add sorting parameters
-                const sortColumnMapping = {
-                    0: 'created_at',
-                    1: 'stitching_invoice_number',
-                    2: 'item_name',
-                    3: 'quantity',
-                    4: 'unit_price',
-                    5: 'total_amount',
-                    6: 'customer',
-                    7: 'fabric_invoice_number',
-                    8: 'tax_invoice_number',
-                    9: 'packing_list_number'
-                };
-                
-                const sortColumn = sortColumnMapping[currentStitchingSortColumn] || 'created_at';
-                params.append('sort_column', sortColumn);
-                params.append('sort_direction', currentStitchingSortDirection);
-                
-                const response = await fetch(`/api/stitching/?${params.toString()}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Clear existing data
-                const tbody = document.querySelector('#stitchingTable tbody');
-                tbody.innerHTML = '';
-                
-                // Populate table with sorted data from server
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `
-                        <td>${formatDate(item.created_at)}</td>
-                        <td>${item.stitching_invoice_number}</td>
-                        <td>${item.item_name}</td>
-                        <td>${item.quantity}</td>
-                        <td>${item.unit_price.toFixed(2)}</td>
-                        <td>${item.total_amount.toFixed(2)}</td>
-                        <td>${item.customer_name || ''}</td>
-                        <td>${item.fabric_invoice_number || ''}</td>
-                        <td>${item.tax_invoice_number || ''}</td>
-                        <td>${item.packing_list_number || ''}</td>
-                        <td>
-                            <button onclick="editStitchingRecord(${item.id})" class="btn btn-sm btn-primary">Edit</button>
-                            <button onclick="deleteStitchingRecord(${item.id})" class="btn btn-sm btn-danger">Delete</button>
-                            <button onclick="uploadImage(${item.id})" class="btn btn-sm btn-success">Upload Image</button>
-                        </td>
-                    `;
-                });
-                
-                updateStitchingSortArrows();
-                hideLoading();
-                
-            } catch (error) {
-                console.error('Error loading stitching data:', error);
-                hideLoading();
-                alert('Error loading data: ' + error.message);
-            }
-        }
-        
-        // Function to handle stitching column sorting
-        function sortStitchingTable(columnIndex) {
-            // Skip actions column (last column)
-            if (columnIndex === 10) return;
-            
-            // If clicking the same column, toggle direction
-            if (currentStitchingSortColumn === columnIndex) {
-                currentStitchingSortDirection = currentStitchingSortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                // New column, default to ascending
-                currentStitchingSortColumn = columnIndex;
-                currentStitchingSortDirection = 'asc';
-            }
-            
-            // Reload data with new sorting
-            loadStitchingData();
-        }
-        
-        // Function to update stitching sort arrows in headers
-        function updateStitchingSortArrows() {
-            const headers = document.querySelectorAll('#stitchingTable th');
-            headers.forEach((header, index) => {
-                if (index === 10) return; // Skip actions column
-                
-                // Remove existing arrows
-                header.textContent = header.textContent.replace(/[↑↓]/, '');
-                
-                // Add appropriate arrow
-                if (index === currentStitchingSortColumn) {
-                    const arrow = currentStitchingSortDirection === 'asc' ? ' ↑' : ' ↓';
-                    header.textContent = header.textContent.replace(' ↕', '') + arrow;
-                } else {
-                    // Add neutral arrow for sortable columns
-                    if (!header.textContent.includes(' ↕')) {
-                        header.textContent = header.textContent.replace(/[↑↓]/, '') + ' ↕';
-                    }
-                }
-            });
         }
     </script>
 </body>

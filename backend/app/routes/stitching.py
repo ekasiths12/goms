@@ -30,10 +30,6 @@ def get_stitching():
         delivered_only = request.args.get('delivered_only', 'false').lower() == 'true'
         undelivered_only = request.args.get('undelivered_only', 'false').lower() == 'true'
         
-        # Get sorting parameters
-        sort_column = request.args.get('sort_column', 'created_at')
-        sort_direction = request.args.get('sort_direction', 'desc')
-        
         # Build query
         query = StitchingInvoice.query
         
@@ -69,36 +65,8 @@ def get_stitching():
                 db.session.query(PackingListLine.stitching_invoice_id).filter(PackingListLine.stitching_invoice_id.isnot(None))
             ))
         
-        # Apply sorting
-        sort_direction_func = db.desc if sort_direction.lower() == 'desc' else db.asc
-        
-        # Map frontend column names to database columns
-        sort_mapping = {
-            'created_at': StitchingInvoice.created_at,
-            'stitching_invoice_number': StitchingInvoice.stitching_invoice_number,
-            'item_name': StitchingInvoice.item_name,
-            'quantity': StitchingInvoice.quantity,
-            'unit_price': StitchingInvoice.unit_price,
-            'total_amount': StitchingInvoice.total_amount,
-            'customer': Customer.short_name,
-            'fabric_invoice_number': Invoice.invoice_number,
-            'tax_invoice_number': Invoice.tax_invoice_number,
-            'packing_list_number': PackingList.packing_list_serial
-        }
-        
-        if sort_column in sort_mapping:
-            # Handle special case for customer and invoice fields that require joins
-            if sort_column in ['customer', 'fabric_invoice_number', 'tax_invoice_number']:
-                query = query.join(InvoiceLine).join(Invoice).join(Customer)
-                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
-            elif sort_column == 'packing_list_number':
-                query = query.join(PackingListLine).join(PackingList)
-                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
-            else:
-                query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
-        else:
-            # Default sorting by creation date
-            query = query.order_by(sort_direction_func(StitchingInvoice.created_at))
+        # Order by creation date (newest first)
+        query = query.order_by(StitchingInvoice.created_at.desc())
         
         # Execute query
         stitching_records = query.all()

@@ -55,13 +55,8 @@ def get_invoices():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         show_consumed = request.args.get('show_consumed', 'false').lower() == 'true'
-        
-        # Get sorting parameters
-        sort_column = request.args.get('sort_column', 'invoice_date')
-        sort_direction = request.args.get('sort_direction', 'desc')
 
         print(f"DEBUG: Filters - customer: {customer_filter}, show_consumed: {show_consumed}")
-        print(f"DEBUG: Sorting - column: {sort_column}, direction: {sort_direction}")
 
         print("DEBUG: About to execute query")
 
@@ -117,32 +112,6 @@ def get_invoices():
                     InvoiceLine.yards_sent > InvoiceLine.yards_consumed
                 )
             )
-
-        # Apply sorting
-        sort_direction_func = db.desc if sort_direction.lower() == 'desc' else db.asc
-        
-        # Map frontend column names to database columns
-        sort_mapping = {
-            'invoice_date': Invoice.invoice_date,
-            'short_name': Customer.short_name,
-            'invoice_number': Invoice.invoice_number,
-            'tax_invoice': Invoice.tax_invoice_number,
-            'item_code': InvoiceLine.item_name,
-            'color': InvoiceLine.color,
-            'delivery_note': InvoiceLine.delivery_note,
-            'in_stock': InvoiceLine.yards_sent,
-            'used': InvoiceLine.yards_consumed,
-            'pending': (InvoiceLine.yards_sent - InvoiceLine.yards_consumed),
-            'price': InvoiceLine.unit_price,
-            'total': (InvoiceLine.yards_sent * InvoiceLine.unit_price),
-            'delivered_location': InvoiceLine.delivered_location
-        }
-        
-        if sort_column in sort_mapping:
-            query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
-        else:
-            # Default sorting by invoice date
-            query = query.order_by(sort_direction_func(Invoice.invoice_date))
 
         # Execute query
         print("DEBUG: About to execute query")

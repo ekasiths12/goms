@@ -873,28 +873,28 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th onclick="sortGroupBillsTable(1)" style="cursor: pointer; width: 140px;">Bill # ↕</th>
-                        <th onclick="sortGroupBillsTable(2)" style="cursor: pointer; width: 140px;">PL # ↕</th>
-                        <th onclick="sortGroupBillsTable(3)" style="cursor: pointer; width: 80px;">Garment ↕</th>
-                        <th onclick="sortGroupBillsTable(4)" style="cursor: pointer; width: 100px;">Fabric ↕</th>
-                        <th onclick="sortGroupBillsTable(5)" style="cursor: pointer; width: 80px;">Color ↕</th>
-                        <th onclick="sortGroupBillsTable(6)" style="cursor: pointer; width: 120px;">Customer ↕</th>
-                        <th onclick="sortGroupBillsTable(7)" style="cursor: pointer; width: 100px;">Tax Inv # ↕</th>
-                        <th onclick="sortGroupBillsTable(8)" style="cursor: pointer; width: 100px;">Fabric Inv. ↕</th>
-                        <th onclick="sortGroupBillsTable(9)" style="cursor: pointer; width: 100px;">Fabric DN. ↕</th>
-                        <th onclick="sortGroupBillsTable(10)" style="cursor: pointer; width: 70px;">Fab Used ↕</th>
-                        <th onclick="sortGroupBillsTable(11)" style="cursor: pointer; width: 70px;">Fab Cost ↕</th>
-                        <th onclick="sortGroupBillsTable(12)" style="cursor: pointer; width: 80px;">Fab Value ↕</th>
-                        <th onclick="sortGroupBillsTable(13)" style="cursor: pointer; width: 40px;">S ↕</th>
-                        <th onclick="sortGroupBillsTable(14)" style="cursor: pointer; width: 40px;">M ↕</th>
-                        <th onclick="sortGroupBillsTable(15)" style="cursor: pointer; width: 40px;">L ↕</th>
-                        <th onclick="sortGroupBillsTable(16)" style="cursor: pointer; width: 40px;">XL ↕</th>
-                        <th onclick="sortGroupBillsTable(17)" style="cursor: pointer; width: 40px;">XXL ↕</th>
-                        <th onclick="sortGroupBillsTable(18)" style="cursor: pointer; width: 40px;">XXXL ↕</th>
-                        <th onclick="sortGroupBillsTable(19)" style="cursor: pointer; width: 70px;">Total Qty ↕</th>
-                        <th onclick="sortGroupBillsTable(20)" style="cursor: pointer; width: 70px;">Sew Cost ↕</th>
-                        <th onclick="sortGroupBillsTable(21)" style="cursor: pointer; width: 80px;">Sew Value ↕</th>
-                        <th onclick="sortGroupBillsTable(22)" style="cursor: pointer; width: 80px;">Created At ↕</th>
+                        <th style="width: 140px;">Bill #</th>
+                        <th style="width: 140px;">PL #</th>
+                        <th style="width: 80px;">Garment</th>
+                        <th style="width: 100px;">Fabric</th>
+                        <th style="width: 80px;">Color</th>
+                        <th style="width: 120px;">Customer</th>
+                        <th style="width: 100px;">Tax Inv #</th>
+                        <th style="width: 100px;">Fabric Inv.</th>
+                        <th style="width: 100px;">Fabric DN.</th>
+                        <th style="width: 70px;">Fab Used</th>
+                        <th style="width: 70px;">Fab Cost</th>
+                        <th style="width: 80px;">Fab Value</th>
+                        <th style="width: 40px;">S</th>
+                        <th style="width: 40px;">M</th>
+                        <th style="width: 40px;">L</th>
+                        <th style="width: 40px;">XL</th>
+                        <th style="width: 40px;">XXL</th>
+                        <th style="width: 40px;">XXXL</th>
+                        <th style="width: 70px;">Total Qty</th>
+                        <th style="width: 70px;">Sew Cost</th>
+                        <th style="width: 80px;">Sew Value</th>
+                        <th style="width: 80px;">Created At</th>
                         <th style="width: 100px;">Actions</th>
                     </tr>
                 </thead>
@@ -968,25 +968,33 @@
         });
 
         async function loadGroupBillsData() {
+            console.log('🔄 loadGroupBillsData called');
+            
+            const tbody = document.getElementById('groupBillsTableBody');
+            if (!tbody) {
+                console.error('❌ Group bills table body not found');
+                return;
+            }
+            
+            console.log('✅ Found group bills table body, showing loading state');
+            // Show loading state
+            tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #b0bec5;">Loading group bills data...</td></tr>';
+            
             try {
-                showLoading();
-                
                 // Build query parameters
                 const params = new URLSearchParams();
+                const customer = document.getElementById('filterCustomer').value;
+                const groupNumber = document.getElementById('filterGroupNumber').value;
+                const dateFrom = document.getElementById('filterDateFrom').value;
+                const dateTo = document.getElementById('filterDateTo').value;
                 
-                // Add filter parameters
-                const customerFilter = document.getElementById('filterCustomer').value;
-                const groupNumberFilter = document.getElementById('filterGroupNumber').value;
-                const dateFromFilter = document.getElementById('filterDateFrom').value;
-                const dateToFilter = document.getElementById('filterDateTo').value;
-                
-                if (customerFilter) params.append('customer', customerFilter);
-                if (groupNumberFilter) params.append('group_number', groupNumberFilter);
+                if (customer) params.append('customer', customer);
+                if (groupNumber) params.append('group_number', groupNumber);
                 
                 // Convert DD/MM/YY to YYYY-MM-DD for backend
-                if (dateFromFilter) {
+                if (dateFrom) {
                     try {
-                        const parts = dateFromFilter.split('/');
+                        const parts = dateFrom.split('/');
                         if (parts.length === 3) {
                             const day = parts[0];
                             const month = parts[1];
@@ -998,9 +1006,9 @@
                     }
                 }
                 
-                if (dateToFilter) {
+                if (dateTo) {
                     try {
-                        const parts = dateToFilter.split('/');
+                        const parts = dateTo.split('/');
                         if (parts.length === 3) {
                             const day = parts[0];
                             const month = parts[1];
@@ -1012,65 +1020,25 @@
                     }
                 }
                 
-                // Add sorting parameters
-                const sortColumnMapping = {
-                    0: 'created_at',
-                    1: 'group_billing_note_serial',
-                    2: 'customer',
-                    3: 'invoice_date',
-                    4: 'total_amount',
-                    5: 'withholding_tax_amount',
-                    6: 'net_amount',
-                    7: 'status'
-                };
+                const queryString = params.toString();
+                const baseUrl = getApiBaseUrl();
+                const url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
                 
-                const sortColumn = sortColumnMapping[currentGroupBillsSortColumn] || 'created_at';
-                params.append('sort_column', sortColumn);
-                params.append('sort_direction', currentGroupBillsSortDirection);
-                
-                const response = await fetch(`/api/group-bills/?${params.toString()}`);
-                
-                console.log('🌐 Fetching group bills data');
+                console.log('🌐 Fetching', url);
+                const response = await fetch(url);
                 console.log('📡 Response status:', response.status);
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    console.log('📊 Received group bills data:', data.length, 'records');
-                    
-                    // Clear existing data
-                    const tbody = document.querySelector('#groupBillsTable tbody');
-                    tbody.innerHTML = '';
-                    
-                    // Populate table with sorted data from server
-                    data.forEach(item => {
-                        const row = tbody.insertRow();
-                        row.innerHTML = `
-                            <td>${formatDate(item.created_at)}</td>
-                            <td>${item.group_billing_note_serial}</td>
-                            <td>${item.customer.short_name}</td>
-                            <td>${formatDate(item.invoice_date)}</td>
-                            <td>${item.total_amount.toFixed(2)}</td>
-                            <td>${item.withholding_tax_amount.toFixed(2)}</td>
-                            <td>${item.net_amount.toFixed(2)}</td>
-                            <td>${item.status}</td>
-                            <td>
-                                <button onclick="viewGroupBill(${item.id})" class="btn btn-sm btn-info">View</button>
-                                <button onclick="downloadGroupBill(${item.id})" class="btn btn-sm btn-success">Download</button>
-                                <button onclick="deleteGroupBill(${item.id})" class="btn btn-sm btn-danger">Delete</button>
-                            </td>
-                        `;
-                    });
-                    
-                    updateGroupBillsSortArrows();
+                    groupBillsData = await response.json();
+                    console.log('📊 Received group bills data:', groupBillsData.length, 'records');
+                    populateGroupBillsTable();
                 } else {
                     console.error('❌ Failed to load group bills data, status:', response.status);
-                    const tbody = document.querySelector('#groupBillsTable tbody');
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #f44336;">Failed to load group bills data. Please try refreshing the page.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Failed to load group bills data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading group bills data:', error);
-                const tbody = document.querySelector('#groupBillsTable tbody');
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #f44336;">Error loading group bills data. Please check your connection and try again.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Error loading group bills data. Please check your connection and try again.</td></tr>';
             }
         }
 
@@ -1625,48 +1593,6 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
-        }
-
-
-
-        // Function to handle group bills column sorting
-        function sortGroupBillsTable(columnIndex) {
-            // Skip actions column (last column)
-            if (columnIndex === 8) return;
-            
-            // If clicking the same column, toggle direction
-            if (currentGroupBillsSortColumn === columnIndex) {
-                currentGroupBillsSortDirection = currentGroupBillsSortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                // New column, default to ascending
-                currentGroupBillsSortColumn = columnIndex;
-                currentGroupBillsSortDirection = 'asc';
-            }
-            
-            // Reload data with new sorting
-            loadGroupBillsData();
-        }
-        
-        // Function to update group bills sort arrows in headers
-        function updateGroupBillsSortArrows() {
-            const headers = document.querySelectorAll('#groupBillsTable th');
-            headers.forEach((header, index) => {
-                if (index === 8) return; // Skip actions column
-                
-                // Remove existing arrows
-                header.textContent = header.textContent.replace(/[↑↓]/, '');
-                
-                // Add appropriate arrow
-                if (index === currentGroupBillsSortColumn) {
-                    const arrow = currentGroupBillsSortDirection === 'asc' ? ' ↑' : ' ↓';
-                    header.textContent = header.textContent.replace(' ↕', '') + arrow;
-                } else {
-                    // Add neutral arrow for sortable columns
-                    if (!header.textContent.includes(' ↕')) {
-                        header.textContent = header.textContent.replace(/[↑↓]/, '') + ' ↕';
-                    }
-                }
-            });
         }
 
     </script>

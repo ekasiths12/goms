@@ -23,10 +23,6 @@ def get_group_bills():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Get sorting parameters
-        sort_column = request.args.get('sort_column', 'created_at')
-        sort_direction = request.args.get('sort_direction', 'desc')
-        
         # Build query
         query = StitchingInvoiceGroup.query.join(Customer)
         
@@ -47,26 +43,8 @@ def get_group_bills():
             except ValueError:
                 pass
         
-        # Apply sorting
-        sort_direction_func = db.desc if sort_direction.lower() == 'desc' else db.asc
-        
-        # Map frontend column names to database columns
-        sort_mapping = {
-            'created_at': StitchingInvoiceGroup.created_at,
-            'group_billing_note_serial': StitchingInvoiceGroup.group_billing_note_serial,
-            'customer': Customer.short_name,
-            'invoice_date': StitchingInvoiceGroup.invoice_date,
-            'total_amount': StitchingInvoiceGroup.total_amount,
-            'withholding_tax_amount': StitchingInvoiceGroup.withholding_tax_amount,
-            'net_amount': StitchingInvoiceGroup.net_amount,
-            'status': StitchingInvoiceGroup.status
-        }
-        
-        if sort_column in sort_mapping:
-            query = query.order_by(sort_direction_func(sort_mapping[sort_column]))
-        else:
-            # Default sorting by creation date
-            query = query.order_by(sort_direction_func(StitchingInvoiceGroup.created_at))
+        # Order by creation date (newest first)
+        query = query.order_by(StitchingInvoiceGroup.created_at.desc())
         
         # Execute query
         group_bills = query.all()

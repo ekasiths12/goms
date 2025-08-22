@@ -715,19 +715,19 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th onclick="sortTable(1)" style="cursor: pointer;">Date ↕</th>
-                        <th onclick="sortTable(2)" style="cursor: pointer;">Short Name ↕</th>
-                        <th onclick="sortTable(3)" style="cursor: pointer;">Invoice Number ↕</th>
-                        <th onclick="sortTable(4)" style="cursor: pointer;">Tax Invoice # ↕</th>
-                        <th onclick="sortTable(5)" style="cursor: pointer;">Item Code ↕</th>
-                        <th onclick="sortTable(6)" style="cursor: pointer;">Color ↕</th>
-                        <th onclick="sortTable(7)" style="cursor: pointer;">Delivery Note ↕</th>
-                        <th onclick="sortTable(8)" style="cursor: pointer;">In Stock ↕</th>
-                        <th onclick="sortTable(9)" style="cursor: pointer;">Used ↕</th>
-                        <th onclick="sortTable(10)" style="cursor: pointer;">Pending ↕</th>
-                        <th onclick="sortTable(11)" style="cursor: pointer;">Price ↕</th>
-                        <th onclick="sortTable(12)" style="cursor: pointer;">Total ↕</th>
-                        <th onclick="sortTable(13)" style="cursor: pointer;">Delivered Location ↕</th>
+                        <th>Date</th>
+                        <th>Short Name</th>
+                        <th>Invoice Number</th>
+                        <th>Tax Invoice #</th>
+                        <th>Item Code</th>
+                        <th>Color</th>
+                        <th>Delivery Note</th>
+                        <th>In Stock</th>
+                        <th>Used</th>
+                        <th>Pending</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                        <th>Delivered Location</th>
                         <th style="display: none;">Line ID</th>
                     </tr>
                 </thead>
@@ -807,147 +807,6 @@
     </main>
 
     <script>
-        // Global variables for sorting
-        let currentSortColumn = 1; // Default to date column
-        let currentSortDirection = 'desc'; // Default to descending
-        
-        // Function to load data with sorting
-        async function loadData() {
-            try {
-                showLoading();
-                
-                // Build query parameters
-                const params = new URLSearchParams();
-                
-                // Add filter parameters
-                const customerFilter = document.getElementById('customerFilter').value;
-                const invoiceFilter = document.getElementById('invoiceFilter').value;
-                const taxInvoiceFilter = document.getElementById('taxInvoiceFilter').value;
-                const itemCodeFilter = document.getElementById('itemCodeFilter').value;
-                const dnFilter = document.getElementById('dnFilter').value;
-                const locationFilter = document.getElementById('locationFilter').value;
-                const dateFromFilter = document.getElementById('dateFromFilter').value;
-                const dateToFilter = document.getElementById('dateToFilter').value;
-                const showConsumedFilter = document.getElementById('showConsumedFilter').checked;
-                
-                if (customerFilter) params.append('customer', customerFilter);
-                if (invoiceFilter) params.append('invoice_number', invoiceFilter);
-                if (taxInvoiceFilter) params.append('tax_invoice', taxInvoiceFilter);
-                if (itemCodeFilter) params.append('item_code', itemCodeFilter);
-                if (dnFilter) params.append('dn', dnFilter);
-                if (locationFilter) params.append('location', locationFilter);
-                if (dateFromFilter) params.append('date_from', dateFromFilter);
-                if (dateToFilter) params.append('date_to', dateToFilter);
-                if (showConsumedFilter) params.append('show_consumed', 'true');
-                
-                // Add sorting parameters
-                const sortColumnMapping = {
-                    1: 'invoice_date',
-                    2: 'short_name',
-                    3: 'invoice_number',
-                    4: 'tax_invoice',
-                    5: 'item_code',
-                    6: 'color',
-                    7: 'delivery_note',
-                    8: 'in_stock',
-                    9: 'used',
-                    10: 'pending',
-                    11: 'price',
-                    12: 'total',
-                    13: 'delivered_location'
-                };
-                
-                const sortColumn = sortColumnMapping[currentSortColumn] || 'invoice_date';
-                params.append('sort_column', sortColumn);
-                params.append('sort_direction', currentSortDirection);
-                
-                const response = await fetch(`/api/invoices/?${params.toString()}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Clear existing data
-                const tbody = document.querySelector('#invoiceTable tbody');
-                tbody.innerHTML = '';
-                
-                // Populate table with sorted data from server
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `
-                        <td><input type="checkbox" class="row-checkbox" value="${item.id}"></td>
-                        <td>${formatDate(item.invoice_date)}</td>
-                        <td>${item.customer.short_name}</td>
-                        <td>${item.invoice_number}</td>
-                        <td>${item.tax_invoice_number || ''}</td>
-                        <td>${item.item_name}</td>
-                        <td>${item.color || ''}</td>
-                        <td>${item.delivery_note || ''}</td>
-                        <td>${item.yards_sent.toFixed(2)}</td>
-                        <td>${item.yards_consumed.toFixed(2)}</td>
-                        <td>${item.pending.toFixed(2)}</td>
-                        <td>${item.unit_price.toFixed(2)}</td>
-                        <td>${item.total_value.toFixed(2)}</td>
-                        <td>${item.delivered_location || ''}</td>
-                        <td style="display: none;">${item.id}</td>
-                        <td>
-                            <button onclick="editInvoiceLine(${item.id})" class="btn btn-sm btn-primary">Edit</button>
-                            <button onclick="deleteInvoiceLine(${item.id})" class="btn btn-sm btn-danger">Delete</button>
-                        </td>
-                    `;
-                });
-                
-                updateSortArrows();
-                hideLoading();
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-                hideLoading();
-                alert('Error loading data: ' + error.message);
-            }
-        }
-        
-        // Function to handle column sorting
-        function sortTable(columnIndex) {
-            // Skip checkbox column (index 0) and actions column (last column)
-            if (columnIndex === 0 || columnIndex === 14) return;
-            
-            // If clicking the same column, toggle direction
-            if (currentSortColumn === columnIndex) {
-                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                // New column, default to ascending
-                currentSortColumn = columnIndex;
-                currentSortDirection = 'asc';
-            }
-            
-            // Reload data with new sorting
-            loadInvoiceData();
-        }
-        
-        // Function to update sort arrows in headers
-        function updateSortArrows() {
-            const headers = document.querySelectorAll('#invoiceTable th');
-            headers.forEach((header, index) => {
-                if (index === 0 || index === 14) return; // Skip checkbox and actions columns
-                
-                // Remove existing arrows
-                header.textContent = header.textContent.replace(/[↑↓]/, '');
-                
-                // Add appropriate arrow
-                if (index === currentSortColumn) {
-                    const arrow = currentSortDirection === 'asc' ? ' ↑' : ' ↓';
-                    header.textContent = header.textContent.replace(' ↕', '') + arrow;
-                } else {
-                    // Add neutral arrow for sortable columns
-                    if (!header.textContent.includes(' ↕')) {
-                        header.textContent = header.textContent.replace(/[↑↓]/, '') + ' ↕';
-                    }
-                }
-            });
-        }
-
         // Fabric Invoice Functions
         let invoiceData = [];
         let selectedRows = [];
@@ -1105,29 +964,7 @@
                 if (dateTo) params.append('date_to', dateTo);
                 if (showConsumed) params.append('show_consumed', 'true');
                 
-                // Add sorting parameters
-                const sortColumnMapping = {
-                    1: 'invoice_date',
-                    2: 'short_name',
-                    3: 'invoice_number',
-                    4: 'tax_invoice',
-                    5: 'item_code',
-                    6: 'color',
-                    7: 'delivery_note',
-                    8: 'in_stock',
-                    9: 'used',
-                    10: 'pending',
-                    11: 'price',
-                    12: 'total',
-                    13: 'delivered_location'
-                };
-                
-                const sortColumn = sortColumnMapping[currentSortColumn] || 'invoice_date';
-                params.append('sort_column', sortColumn);
-                params.append('sort_direction', currentSortDirection);
-                
-                console.log('🌐 Fetching /api/invoices with filters and sorting...');
-                console.log('🔍 Sort column:', sortColumn, 'Direction:', currentSortDirection);
+                console.log('🌐 Fetching /api/invoices with filters...');
                 // Use dynamic API base URL for local development vs Railway
                 const apiBaseUrl = getApiBaseUrl();
                 const apiUrl = `${apiBaseUrl}/api/invoices?${params.toString()}`;
@@ -1223,9 +1060,6 @@
             
             // Update filter data for enhanced dropdowns
             updateFilterData();
-            
-            // Update sort arrows
-            updateSortArrows();
             
             console.log('✅ Invoice table populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
         }
