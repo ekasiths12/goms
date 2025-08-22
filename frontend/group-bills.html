@@ -1034,7 +1034,7 @@
                 const queryString = params.toString();
                 const baseUrl = getApiBaseUrl();
                 let url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
-                url += `&_t=${Date.now()}`;
+                url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
                 
                 console.log('🔍 API URL debug:', { baseUrl, url, windowLocation: window.location.href });
                 console.log('🌐 Fetching', url);
