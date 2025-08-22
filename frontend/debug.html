@@ -176,6 +176,15 @@
         </div>
 
         <div class="debug-section">
+            <h2>🔍 Schema Comparison</h2>
+            <button class="debug-button" onclick="compareSchemas()">Compare Schemas</button>
+            <button class="debug-button" onclick="getActualSchema()">Actual Database Schema</button>
+            <button class="debug-button" onclick="getExpectedSchema()">Expected Schema</button>
+            <button class="debug-button" onclick="generateMigrationPlan()">Migration Plan</button>
+            <div id="schema-result" class="result-area"></div>
+        </div>
+
+        <div class="debug-section">
             <h2>📋 Sample Data Inspection</h2>
             <button class="debug-button" onclick="getSampleData('stitching_invoices')">Stitching Invoices</button>
             <button class="debug-button" onclick="getSampleData('garment_fabrics')">Garment Fabrics</button>
@@ -265,10 +274,27 @@
             await makeRequest(`/api/debug/sample-data/${tableName}?limit=3`, 'sample-result');
         }
 
+        async function compareSchemas() {
+            await makeRequest('/api/debug/schema/compare', 'schema-result');
+        }
+
+        async function getActualSchema() {
+            await makeRequest('/api/debug/schema/actual', 'schema-result');
+        }
+
+        async function getExpectedSchema() {
+            await makeRequest('/api/debug/schema/expected', 'schema-result');
+        }
+
+        async function generateMigrationPlan() {
+            await makeRequest('/api/debug/schema/migration-plan', 'schema-result');
+        }
+
         function clearAllResults() {
             document.getElementById('overview-result').innerHTML = '';
             document.getElementById('stitching-result').innerHTML = '';
             document.getElementById('sample-result').innerHTML = '';
+            document.getElementById('schema-result').innerHTML = '';
         }
 
         // Auto-load health check on page load
