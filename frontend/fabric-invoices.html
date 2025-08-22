@@ -715,19 +715,19 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th>Date</th>
-                        <th>Short Name</th>
-                        <th>Invoice Number</th>
-                        <th>Tax Invoice #</th>
-                        <th>Item Code</th>
-                        <th>Color</th>
-                        <th>Delivery Note</th>
-                        <th>In Stock</th>
-                        <th>Used</th>
-                        <th>Pending</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                        <th>Delivered Location</th>
+                        <th onclick="sortTable(1)" style="cursor: pointer;">Date ↕</th>
+                        <th onclick="sortTable(2)" style="cursor: pointer;">Short Name ↕</th>
+                        <th onclick="sortTable(3)" style="cursor: pointer;">Invoice Number ↕</th>
+                        <th onclick="sortTable(4)" style="cursor: pointer;">Tax Invoice # ↕</th>
+                        <th onclick="sortTable(5)" style="cursor: pointer;">Item Code ↕</th>
+                        <th onclick="sortTable(6)" style="cursor: pointer;">Color ↕</th>
+                        <th onclick="sortTable(7)" style="cursor: pointer;">Delivery Note ↕</th>
+                        <th onclick="sortTable(8)" style="cursor: pointer;">In Stock ↕</th>
+                        <th onclick="sortTable(9)" style="cursor: pointer;">Used ↕</th>
+                        <th onclick="sortTable(10)" style="cursor: pointer;">Pending ↕</th>
+                        <th onclick="sortTable(11)" style="cursor: pointer;">Price ↕</th>
+                        <th onclick="sortTable(12)" style="cursor: pointer;">Total ↕</th>
+                        <th onclick="sortTable(13)" style="cursor: pointer;">Delivered Location ↕</th>
                         <th style="display: none;">Line ID</th>
                     </tr>
                 </thead>
@@ -2804,6 +2804,77 @@
             modals.forEach(modal => {
                 if (event.target === modal) {
                     modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Sorting functionality
+        let currentSortColumn = -1;
+        let currentSortDirection = 'asc';
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById('invoiceTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Skip checkbox column (index 0)
+            if (columnIndex === 0) return;
+            
+            // Toggle sort direction if clicking the same column
+            if (currentSortColumn === columnIndex) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = columnIndex;
+                currentSortDirection = 'asc';
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex]?.textContent?.trim() || '';
+                const bValue = b.cells[columnIndex]?.textContent?.trim() || '';
+                
+                // Handle numeric values
+                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return currentSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+                
+                // Handle date values
+                const aDate = new Date(aValue);
+                const bDate = new Date(bValue);
+                
+                if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+                    return currentSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                }
+                
+                // Handle text values
+                if (currentSortDirection === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            });
+            
+            // Reorder the rows in the table
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update header arrows
+            updateSortArrows(columnIndex);
+        }
+
+        function updateSortArrows(activeColumn) {
+            const headers = document.querySelectorAll('#invoiceTable th');
+            headers.forEach((header, index) => {
+                if (index === 0) return; // Skip checkbox column
+                
+                const text = header.textContent.replace(' ↕', '').replace(' ↑', '').replace(' ↓', '');
+                if (index === activeColumn) {
+                    const arrow = currentSortDirection === 'asc' ? ' ↑' : ' ↓';
+                    header.textContent = text + arrow;
+                } else {
+                    header.textContent = text + ' ↕';
                 }
             });
         }

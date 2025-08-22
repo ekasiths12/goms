@@ -757,29 +757,29 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th style="width: 120px;">PL #</th>
-                        <th style="width: 120px;">Serial #</th>
-                        <th style="width: 80px;">Garment</th>
-                        <th style="width: 100px;">Fabric</th>
-                        <th style="width: 80px;">Color</th>
-                        <th style="width: 120px;">Customer</th>
-                        <th style="width: 100px;">Tax Inv #</th>
-                        <th style="width: 140px;">Group Bill #</th>
-                        <th style="width: 100px;">Fabric Inv.</th>
-                        <th style="width: 100px;">Fabric DN.</th>
-                        <th style="width: 70px;">Fab Used</th>
-                        <th style="width: 70px;">Fab Cost</th>
-                        <th style="width: 80px;">Fab Value</th>
-                        <th style="width: 40px;">S</th>
-                        <th style="width: 40px;">M</th>
-                        <th style="width: 40px;">L</th>
-                        <th style="width: 40px;">XL</th>
-                        <th style="width: 40px;">XXL</th>
-                        <th style="width: 40px;">XXXL</th>
-                        <th style="width: 70px;">Total Qty</th>
-                        <th style="width: 70px;">Sew Cost</th>
-                        <th style="width: 80px;">Sew Value</th>
-                        <th style="width: 80px;">Created At</th>
+                        <th onclick="sortPackingTable(1)" style="cursor: pointer; width: 120px;">PL # ↕</th>
+                        <th onclick="sortPackingTable(2)" style="cursor: pointer; width: 120px;">Serial # ↕</th>
+                        <th onclick="sortPackingTable(3)" style="cursor: pointer; width: 80px;">Garment ↕</th>
+                        <th onclick="sortPackingTable(4)" style="cursor: pointer; width: 100px;">Fabric ↕</th>
+                        <th onclick="sortPackingTable(5)" style="cursor: pointer; width: 80px;">Color ↕</th>
+                        <th onclick="sortPackingTable(6)" style="cursor: pointer; width: 120px;">Customer ↕</th>
+                        <th onclick="sortPackingTable(7)" style="cursor: pointer; width: 100px;">Tax Inv # ↕</th>
+                        <th onclick="sortPackingTable(8)" style="cursor: pointer; width: 140px;">Group Bill # ↕</th>
+                        <th onclick="sortPackingTable(9)" style="cursor: pointer; width: 100px;">Fabric Inv. ↕</th>
+                        <th onclick="sortPackingTable(10)" style="cursor: pointer; width: 100px;">Fabric DN. ↕</th>
+                        <th onclick="sortPackingTable(11)" style="cursor: pointer; width: 70px;">Fab Used ↕</th>
+                        <th onclick="sortPackingTable(12)" style="cursor: pointer; width: 70px;">Fab Cost ↕</th>
+                        <th onclick="sortPackingTable(13)" style="cursor: pointer; width: 80px;">Fab Value ↕</th>
+                        <th onclick="sortPackingTable(14)" style="cursor: pointer; width: 40px;">S ↕</th>
+                        <th onclick="sortPackingTable(15)" style="cursor: pointer; width: 40px;">M ↕</th>
+                        <th onclick="sortPackingTable(16)" style="cursor: pointer; width: 40px;">L ↕</th>
+                        <th onclick="sortPackingTable(17)" style="cursor: pointer; width: 40px;">XL ↕</th>
+                        <th onclick="sortPackingTable(18)" style="cursor: pointer; width: 40px;">XXL ↕</th>
+                        <th onclick="sortPackingTable(19)" style="cursor: pointer; width: 40px;">XXXL ↕</th>
+                        <th onclick="sortPackingTable(20)" style="cursor: pointer; width: 70px;">Total Qty ↕</th>
+                        <th onclick="sortPackingTable(21)" style="cursor: pointer; width: 70px;">Sew Cost ↕</th>
+                        <th onclick="sortPackingTable(22)" style="cursor: pointer; width: 80px;">Sew Value ↕</th>
+                        <th onclick="sortPackingTable(23)" style="cursor: pointer; width: 80px;">Created At ↕</th>
                     </tr>
                 </thead>
                 <tbody id="packingListTableBody">
@@ -1556,6 +1556,77 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
+        }
+
+        // Sorting functionality for packing lists
+        let currentPackingSortColumn = -1;
+        let currentPackingSortDirection = 'asc';
+
+        function sortPackingTable(columnIndex) {
+            const table = document.getElementById('packingListTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Skip checkbox column (index 0)
+            if (columnIndex === 0) return;
+            
+            // Toggle sort direction if clicking the same column
+            if (currentPackingSortColumn === columnIndex) {
+                currentPackingSortDirection = currentPackingSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentPackingSortColumn = columnIndex;
+                currentPackingSortDirection = 'asc';
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex]?.textContent?.trim() || '';
+                const bValue = b.cells[columnIndex]?.textContent?.trim() || '';
+                
+                // Handle numeric values
+                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return currentPackingSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+                
+                // Handle date values
+                const aDate = new Date(aValue);
+                const bDate = new Date(bValue);
+                
+                if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+                    return currentPackingSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                }
+                
+                // Handle text values
+                if (currentPackingSortDirection === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            });
+            
+            // Reorder the rows in the table
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update header arrows
+            updatePackingSortArrows(columnIndex);
+        }
+
+        function updatePackingSortArrows(activeColumn) {
+            const headers = document.querySelectorAll('#packingListTable th');
+            headers.forEach((header, index) => {
+                if (index === 0) return; // Skip checkbox column
+                
+                const text = header.textContent.replace(' ↕', '').replace(' ↑', '').replace(' ↓', '');
+                if (index === activeColumn) {
+                    const arrow = currentPackingSortDirection === 'asc' ? ' ↑' : ' ↓';
+                    header.textContent = text + arrow;
+                } else {
+                    header.textContent = text + ' ↕';
+                }
+            });
         }
     </script>
 </body>

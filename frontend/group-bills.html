@@ -873,28 +873,28 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th style="width: 140px;">Bill #</th>
-                        <th style="width: 140px;">PL #</th>
-                        <th style="width: 80px;">Garment</th>
-                        <th style="width: 100px;">Fabric</th>
-                        <th style="width: 80px;">Color</th>
-                        <th style="width: 120px;">Customer</th>
-                        <th style="width: 100px;">Tax Inv #</th>
-                        <th style="width: 100px;">Fabric Inv.</th>
-                        <th style="width: 100px;">Fabric DN.</th>
-                        <th style="width: 70px;">Fab Used</th>
-                        <th style="width: 70px;">Fab Cost</th>
-                        <th style="width: 80px;">Fab Value</th>
-                        <th style="width: 40px;">S</th>
-                        <th style="width: 40px;">M</th>
-                        <th style="width: 40px;">L</th>
-                        <th style="width: 40px;">XL</th>
-                        <th style="width: 40px;">XXL</th>
-                        <th style="width: 40px;">XXXL</th>
-                        <th style="width: 70px;">Total Qty</th>
-                        <th style="width: 70px;">Sew Cost</th>
-                        <th style="width: 80px;">Sew Value</th>
-                        <th style="width: 80px;">Created At</th>
+                        <th onclick="sortGroupBillsTable(1)" style="cursor: pointer; width: 140px;">Bill # ↕</th>
+                        <th onclick="sortGroupBillsTable(2)" style="cursor: pointer; width: 140px;">PL # ↕</th>
+                        <th onclick="sortGroupBillsTable(3)" style="cursor: pointer; width: 80px;">Garment ↕</th>
+                        <th onclick="sortGroupBillsTable(4)" style="cursor: pointer; width: 100px;">Fabric ↕</th>
+                        <th onclick="sortGroupBillsTable(5)" style="cursor: pointer; width: 80px;">Color ↕</th>
+                        <th onclick="sortGroupBillsTable(6)" style="cursor: pointer; width: 120px;">Customer ↕</th>
+                        <th onclick="sortGroupBillsTable(7)" style="cursor: pointer; width: 100px;">Tax Inv # ↕</th>
+                        <th onclick="sortGroupBillsTable(8)" style="cursor: pointer; width: 100px;">Fabric Inv. ↕</th>
+                        <th onclick="sortGroupBillsTable(9)" style="cursor: pointer; width: 100px;">Fabric DN. ↕</th>
+                        <th onclick="sortGroupBillsTable(10)" style="cursor: pointer; width: 70px;">Fab Used ↕</th>
+                        <th onclick="sortGroupBillsTable(11)" style="cursor: pointer; width: 70px;">Fab Cost ↕</th>
+                        <th onclick="sortGroupBillsTable(12)" style="cursor: pointer; width: 80px;">Fab Value ↕</th>
+                        <th onclick="sortGroupBillsTable(13)" style="cursor: pointer; width: 40px;">S ↕</th>
+                        <th onclick="sortGroupBillsTable(14)" style="cursor: pointer; width: 40px;">M ↕</th>
+                        <th onclick="sortGroupBillsTable(15)" style="cursor: pointer; width: 40px;">L ↕</th>
+                        <th onclick="sortGroupBillsTable(16)" style="cursor: pointer; width: 40px;">XL ↕</th>
+                        <th onclick="sortGroupBillsTable(17)" style="cursor: pointer; width: 40px;">XXL ↕</th>
+                        <th onclick="sortGroupBillsTable(18)" style="cursor: pointer; width: 40px;">XXXL ↕</th>
+                        <th onclick="sortGroupBillsTable(19)" style="cursor: pointer; width: 70px;">Total Qty ↕</th>
+                        <th onclick="sortGroupBillsTable(20)" style="cursor: pointer; width: 70px;">Sew Cost ↕</th>
+                        <th onclick="sortGroupBillsTable(21)" style="cursor: pointer; width: 80px;">Sew Value ↕</th>
+                        <th onclick="sortGroupBillsTable(22)" style="cursor: pointer; width: 80px;">Created At ↕</th>
                         <th style="width: 100px;">Actions</th>
                     </tr>
                 </thead>
@@ -1593,6 +1593,77 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
+        }
+
+        // Sorting functionality for group bills
+        let currentGroupBillsSortColumn = -1;
+        let currentGroupBillsSortDirection = 'asc';
+
+        function sortGroupBillsTable(columnIndex) {
+            const table = document.getElementById('groupBillsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Skip checkbox column (index 0) and actions column (last column)
+            if (columnIndex === 0 || columnIndex === 23) return;
+            
+            // Toggle sort direction if clicking the same column
+            if (currentGroupBillsSortColumn === columnIndex) {
+                currentGroupBillsSortDirection = currentGroupBillsSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentGroupBillsSortColumn = columnIndex;
+                currentGroupBillsSortDirection = 'asc';
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex]?.textContent?.trim() || '';
+                const bValue = b.cells[columnIndex]?.textContent?.trim() || '';
+                
+                // Handle numeric values
+                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return currentGroupBillsSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+                
+                // Handle date values
+                const aDate = new Date(aValue);
+                const bDate = new Date(bValue);
+                
+                if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+                    return currentGroupBillsSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                }
+                
+                // Handle text values
+                if (currentGroupBillsSortDirection === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            });
+            
+            // Reorder the rows in the table
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update header arrows
+            updateGroupBillsSortArrows(columnIndex);
+        }
+
+        function updateGroupBillsSortArrows(activeColumn) {
+            const headers = document.querySelectorAll('#groupBillsTable th');
+            headers.forEach((header, index) => {
+                if (index === 0 || index === 23) return; // Skip checkbox and actions columns
+                
+                const text = header.textContent.replace(' ↕', '').replace(' ↑', '').replace(' ↓', '');
+                if (index === activeColumn) {
+                    const arrow = currentGroupBillsSortDirection === 'asc' ? ' ↑' : ' ↓';
+                    header.textContent = text + arrow;
+                } else {
+                    header.textContent = text + ' ↕';
+                }
+            });
         }
 
     </script>

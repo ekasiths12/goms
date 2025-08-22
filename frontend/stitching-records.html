@@ -759,30 +759,30 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="selectAllTree" onchange="toggleSelectAllTree()"></th>
-                            <th>PL #</th>
-                            <th>Serial #</th>
-                            <th>Garment</th>
-                            <th>Fabric</th>
-                            <th>Color</th>
-                            <th>Customer</th>
-                            <th>Tax Inv #</th>
-                            <th>Fabric Inv.</th>
-                            <th>Fabric DN.</th>
-                            <th>Fab Used</th>
-                            <th>Fab Cost</th>
-                            <th>Fab Value</th>
-                            <th>S</th>
-                            <th>M</th>
-                            <th>L</th>
-                            <th>XL</th>
-                            <th>XXL</th>
-                            <th>XXXL</th>
-                            <th>Total Qty</th>
-                            <th>Sew Cost</th>
-                            <th>Sew Value</th>
-                            <th>Yd/Pcs</th>
-                            <th>Grmt Cost</th>
-                            <th>Created At</th>
+                            <th onclick="sortStitchingTable(1)" style="cursor: pointer;">PL # ↕</th>
+                            <th onclick="sortStitchingTable(2)" style="cursor: pointer;">Serial # ↕</th>
+                            <th onclick="sortStitchingTable(3)" style="cursor: pointer;">Garment ↕</th>
+                            <th onclick="sortStitchingTable(4)" style="cursor: pointer;">Fabric ↕</th>
+                            <th onclick="sortStitchingTable(5)" style="cursor: pointer;">Color ↕</th>
+                            <th onclick="sortStitchingTable(6)" style="cursor: pointer;">Customer ↕</th>
+                            <th onclick="sortStitchingTable(7)" style="cursor: pointer;">Tax Inv # ↕</th>
+                            <th onclick="sortStitchingTable(8)" style="cursor: pointer;">Fabric Inv. ↕</th>
+                            <th onclick="sortStitchingTable(9)" style="cursor: pointer;">Fabric DN. ↕</th>
+                            <th onclick="sortStitchingTable(10)" style="cursor: pointer;">Fab Used ↕</th>
+                            <th onclick="sortStitchingTable(11)" style="cursor: pointer;">Fab Cost ↕</th>
+                            <th onclick="sortStitchingTable(12)" style="cursor: pointer;">Fab Value ↕</th>
+                            <th onclick="sortStitchingTable(13)" style="cursor: pointer;">S ↕</th>
+                            <th onclick="sortStitchingTable(14)" style="cursor: pointer;">M ↕</th>
+                            <th onclick="sortStitchingTable(15)" style="cursor: pointer;">L ↕</th>
+                            <th onclick="sortStitchingTable(16)" style="cursor: pointer;">XL ↕</th>
+                            <th onclick="sortStitchingTable(17)" style="cursor: pointer;">XXL ↕</th>
+                            <th onclick="sortStitchingTable(18)" style="cursor: pointer;">XXXL ↕</th>
+                            <th onclick="sortStitchingTable(19)" style="cursor: pointer;">Total Qty ↕</th>
+                            <th onclick="sortStitchingTable(20)" style="cursor: pointer;">Sew Cost ↕</th>
+                            <th onclick="sortStitchingTable(21)" style="cursor: pointer;">Sew Value ↕</th>
+                            <th onclick="sortStitchingTable(22)" style="cursor: pointer;">Yd/Pcs ↕</th>
+                            <th onclick="sortStitchingTable(23)" style="cursor: pointer;">Grmt Cost ↕</th>
+                            <th onclick="sortStitchingTable(24)" style="cursor: pointer;">Created At ↕</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -2104,6 +2104,77 @@
             localStorage.removeItem('gms_logged_in');
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
+        }
+
+        // Sorting functionality for stitching records
+        let currentStitchingSortColumn = -1;
+        let currentStitchingSortDirection = 'asc';
+
+        function sortStitchingTable(columnIndex) {
+            const table = document.getElementById('stitchingTreeview');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Skip checkbox column (index 0) and actions column (last column)
+            if (columnIndex === 0 || columnIndex === 25) return;
+            
+            // Toggle sort direction if clicking the same column
+            if (currentStitchingSortColumn === columnIndex) {
+                currentStitchingSortDirection = currentStitchingSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentStitchingSortColumn = columnIndex;
+                currentStitchingSortDirection = 'asc';
+            }
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex]?.textContent?.trim() || '';
+                const bValue = b.cells[columnIndex]?.textContent?.trim() || '';
+                
+                // Handle numeric values
+                const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return currentStitchingSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+                
+                // Handle date values
+                const aDate = new Date(aValue);
+                const bDate = new Date(bValue);
+                
+                if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+                    return currentStitchingSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                }
+                
+                // Handle text values
+                if (currentStitchingSortDirection === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            });
+            
+            // Reorder the rows in the table
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update header arrows
+            updateStitchingSortArrows(columnIndex);
+        }
+
+        function updateStitchingSortArrows(activeColumn) {
+            const headers = document.querySelectorAll('#stitchingTreeview th');
+            headers.forEach((header, index) => {
+                if (index === 0 || index === 25) return; // Skip checkbox and actions columns
+                
+                const text = header.textContent.replace(' ↕', '').replace(' ↑', '').replace(' ↓', '');
+                if (index === activeColumn) {
+                    const arrow = currentStitchingSortDirection === 'asc' ? ' ↑' : ' ↓';
+                    header.textContent = text + arrow;
+                } else {
+                    header.textContent = text + ' ↕';
+                }
+            });
         }
     </script>
 </body>
