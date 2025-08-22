@@ -11,15 +11,26 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def create_app(config_class=Config):
     """Application factory pattern"""
     # Determine static folder path based on environment
+    print(f"🔍 Debugging static folder detection...")
+    print(f"   Current directory: {os.getcwd()}")
+    print(f"   ../frontend exists: {os.path.exists('../frontend')}")
+    print(f"   ./frontend exists: {os.path.exists('frontend')}")
+    print(f"   ./frontend/ exists: {os.path.exists('./frontend/')}")
+    
     if os.path.exists('../frontend'):
         # Local development - frontend is in parent directory
         static_folder = '../frontend'
+        print(f"   Using ../frontend for local development")
     elif os.path.exists('frontend'):
         # Railway deployment - frontend is copied to backend directory
         static_folder = 'frontend'
+        print(f"   Using ./frontend for Railway deployment")
     else:
         # Fallback - use current directory
         static_folder = '.'
+        print(f"   Using current directory as fallback")
+    
+    print(f"   Final static_folder: {static_folder}")
     
     app = Flask(__name__, static_folder=static_folder, static_url_path='')
     app.config.from_object(config_class)
@@ -72,6 +83,40 @@ def create_app(config_class=Config):
     @app.route('/test')
     def test():
         return {'message': 'Flask app is working', 'status': 'ok'}
+    
+    # Debug route to check static folder configuration
+    @app.route('/debug/static')
+    def debug_static():
+        import os
+        static_folder = app.static_folder
+        static_exists = os.path.exists(static_folder)
+        static_contents = []
+        if static_exists:
+            try:
+                static_contents = os.listdir(static_folder)
+            except Exception as e:
+                static_contents = [f"Error listing directory: {str(e)}"]
+        
+        return {
+            'static_folder': static_folder,
+            'static_exists': static_exists,
+            'static_contents': static_contents,
+            'current_dir': os.getcwd(),
+            'current_dir_contents': os.listdir('.') if os.path.exists('.') else []
+        }
+    
+    # Debug route to check if specific files exist
+    @app.route('/debug/file/<path:filename>')
+    def debug_file(filename):
+        import os
+        file_path = os.path.join(app.static_folder, filename)
+        exists = os.path.exists(file_path)
+        return {
+            'filename': filename,
+            'file_path': file_path,
+            'exists': exists,
+            'static_folder': app.static_folder
+        }
     
     # Force HTTPS redirects in production only
     @app.before_request
