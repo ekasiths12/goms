@@ -12,37 +12,54 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 @oauth2_bp.route('/oauth2/init', methods=['GET'])
 def oauth2_init():
     """Initialize OAuth2 flow"""
+    print("🔍 OAuth2 init endpoint called")
     try:
         # Get credentials from environment
         credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+        print(f"🔍 GOOGLE_CREDENTIALS found: {'Yes' if credentials_json else 'No'}")
+        
         if not credentials_json:
+            print("❌ No GOOGLE_CREDENTIALS environment variable found")
             return jsonify({
                 'error': 'GOOGLE_CREDENTIALS environment variable not set',
                 'message': 'Please configure Google OAuth2 credentials in Railway'
             }), 400
         
         # Parse credentials
-        creds_data = json.loads(credentials_json)
+        try:
+            creds_data = json.loads(credentials_json)
+            print(f"🔍 Credentials parsed successfully, type: {creds_data.get('type', 'unknown')}")
+        except json.JSONDecodeError as e:
+            print(f"❌ Failed to parse GOOGLE_CREDENTIALS JSON: {e}")
+            return jsonify({
+                'error': 'Invalid GOOGLE_CREDENTIALS JSON format',
+                'message': f'JSON parsing error: {str(e)}'
+            }), 400
         
         # Create temporary credentials file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             json.dump(creds_data, f)
             temp_credentials_path = f.name
+            print(f"🔍 Created temporary credentials file: {temp_credentials_path}")
         
         try:
             # Create OAuth2 flow
+            print("🔍 Creating OAuth2 flow...")
             flow = InstalledAppFlow.from_client_secrets_file(
                 temp_credentials_path, SCOPES)
             
             # Generate authorization URL
+            print("🔍 Generating authorization URL...")
             auth_url, _ = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
                 prompt='consent'
             )
+            print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
             
             # Store flow in session for callback
             session['oauth2_flow'] = flow
+            print("🔍 OAuth2 flow stored in session")
             
             return jsonify({
                 'auth_url': auth_url,
@@ -52,8 +69,12 @@ def oauth2_init():
         finally:
             # Clean up temporary file
             os.unlink(temp_credentials_path)
+            print(f"🔍 Cleaned up temporary file: {temp_credentials_path}")
             
     except Exception as e:
+        print(f"❌ OAuth2 init error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'error': 'Failed to initialize OAuth2 flow',
             'message': str(e)
@@ -109,10 +130,14 @@ def oauth2_callback():
 @oauth2_bp.route('/oauth2/status', methods=['GET'])
 def oauth2_status():
     """Check OAuth2 authentication status"""
+    print("🔍 OAuth2 status endpoint called")
     try:
         # Check if we have credentials in session
         credentials = session.get('oauth2_credentials')
+        print(f"🔍 OAuth2 credentials in session: {'Yes' if credentials else 'No'}")
+        
         if credentials:
+            print("🔍 Found OAuth2 credentials in session")
             return jsonify({
                 'status': 'authenticated',
                 'message': 'OAuth2 credentials are available'
@@ -120,25 +145,42 @@ def oauth2_status():
         
         # Check if we have environment credentials
         credentials_json = os.getenv('GOOGLE_CREDENTIALS')
-        if credentials_json:
-            creds_data = json.loads(credentials_json)
-            if 'type' in creds_data and creds_data['type'] == 'service_account':
-                return jsonify({
-                    'status': 'service_account',
-                    'message': 'Using service account authentication'
-                })
-            else:
-                return jsonify({
-                    'status': 'needs_oauth2',
-                    'message': 'OAuth2 credentials available but not authenticated'
-                })
+        print(f"🔍 GOOGLE_CREDENTIALS in environment: {'Yes' if credentials_json else 'No'}")
         
+        if credentials_json:
+            try:
+                creds_data = json.loads(credentials_json)
+                print(f"🔍 Credentials type: {creds_data.get('type', 'unknown')}")
+                
+                if 'type' in creds_data and creds_data['type'] == 'service_account':
+                    print("🔍 Using service account authentication")
+                    return jsonify({
+                        'status': 'service_account',
+                        'message': 'Using service account authentication'
+                    })
+                else:
+                    print("🔍 OAuth2 credentials available but not authenticated")
+                    return jsonify({
+                        'status': 'needs_oauth2',
+                        'message': 'OAuth2 credentials available but not authenticated'
+                    })
+            except json.JSONDecodeError as e:
+                print(f"❌ Failed to parse credentials JSON: {e}")
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid credentials format: {str(e)}'
+                }), 500
+        
+        print("🔍 No Google Drive credentials configured")
         return jsonify({
             'status': 'not_configured',
             'message': 'No Google Drive credentials configured'
         })
         
     except Exception as e:
+        print(f"❌ OAuth2 status error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'status': 'error',
             'message': str(e)

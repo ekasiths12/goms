@@ -255,20 +255,33 @@
         }
         
         async function initOAuth2() {
+            console.log('Starting OAuth2 initialization...');
             showLoading();
             try {
+                console.log('Fetching /api/oauth2/init...');
                 const response = await fetch('/api/oauth2/init');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 hideLoading();
                 
                 if (data.auth_url) {
+                    console.log('Redirecting to:', data.auth_url);
                     // Redirect to Google OAuth2
                     window.location.href = data.auth_url;
                 } else {
-                    updateStatus('Error', data.message || 'Failed to initialize OAuth2', 'error');
+                    console.error('No auth_url in response:', data);
+                    updateStatus('Error', data.message || 'Failed to initialize OAuth2 - no auth URL received', 'error');
                 }
             } catch (error) {
+                console.error('OAuth2 initialization error:', error);
                 hideLoading();
                 updateStatus('Error', 'Failed to initialize OAuth2: ' + error.message, 'error');
             }
