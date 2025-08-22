@@ -1,124 +1,135 @@
-# Google Drive Integration Setup for Railway Deployment
+# Google Drive OAuth2 Setup for Railway Deployment
 
 ## Overview
 
-This guide explains how to set up Google Drive integration for your Railway deployment. The local `token.pickle` file won't work on Railway due to its ephemeral file system and security considerations.
+This guide explains how to set up Google Drive OAuth2 integration for your Railway deployment at `goms.up.railway.app`. The local `token.pickle` file won't work on Railway due to its ephemeral file system and security considerations.
 
-## Two Authentication Methods
+## OAuth2 Setup for Railway
 
-### Method 1: Service Account (Recommended for Railway)
+### Step 1: Create OAuth2 Credentials in Google Cloud Console
 
-Service accounts are perfect for server-to-server authentication and don't require user interaction.
+1. **Go to Google Cloud Console**:
+   - Visit [https://console.cloud.google.com/](https://console.cloud.google.com/)
+   - Select your project (or create one if you haven't already)
 
-#### Step 1: Create a Service Account
+2. **Navigate to Credentials**:
+   - Go to **APIs & Services** → **Credentials**
+   - Click **Create Credentials** → **OAuth 2.0 Client IDs**
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **APIs & Services** > **Credentials**
-3. Click **Create Credentials** > **Service Account**
-4. Fill in the details:
-   - **Name**: `garment-app-service-account`
-   - **Description**: `Service account for garment management app`
-5. Click **Create and Continue**
-6. Skip role assignment (we'll handle permissions manually)
-7. Click **Done**
+3. **Configure OAuth Consent Screen** (if not already done):
+   - Choose **External** user type
+   - Fill in required fields:
+     - App name: `Garment Management System`
+     - User support email: Your email
+     - Developer contact information: Your email
+   - Add scopes: `https://www.googleapis.com/auth/drive.file`
+   - Add test users: Your email address
 
-#### Step 2: Generate Service Account Key
+4. **Create OAuth 2.0 Client ID**:
+   - Application type: **Web application**
+   - Name: `GOMS Railway App`
+   - **Authorized redirect URIs** (add these):
+     ```
+     https://goms.up.railway.app/oauth2callback
+     http://localhost:8080/oauth2callback
+     http://localhost:5000/oauth2callback
+     ```
+   - Click **Create**
 
-1. Click on your newly created service account
-2. Go to **Keys** tab
-3. Click **Add Key** > **Create New Key**
-4. Choose **JSON** format
-5. Download the JSON file
+5. **Download the JSON file**:
+   - Click the download button (⬇️) next to your new OAuth 2.0 Client ID
+   - Save the file as `oauth2_credentials.json`
 
-#### Step 3: Set Up Google Drive Permissions
+### Step 2: Configure Railway Environment Variables
 
-1. Open the downloaded JSON file
-2. Copy the `client_email` value (looks like: `garment-app@project-id.iam.gserviceaccount.com`)
-3. Go to your Google Drive folder
-4. Right-click the folder > **Share**
-5. Add the service account email with **Editor** permissions
-6. Make sure to uncheck "Notify people" to avoid sending emails
+1. **Open Railway Dashboard**:
+   - Go to your Railway project dashboard
+   - Navigate to **Variables** tab
 
-#### Step 4: Configure Railway Environment Variable
-
-1. Open your Railway project dashboard
-2. Go to **Variables** tab
-3. Add a new variable:
+2. **Add Environment Variables**:
    - **Name**: `GOOGLE_CREDENTIALS`
-   - **Value**: Copy the entire contents of the downloaded JSON file
-4. Click **Add**
+   - **Value**: Copy the entire contents of the downloaded OAuth2 JSON file
+   
+   - **Name**: `GOOGLE_DRIVE_FOLDER_ID`
+   - **Value**: Your Google Drive folder ID (e.g., `1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg`)
 
-### Method 2: OAuth2 Credentials (Alternative)
+3. **Example Environment Variables**:
+   ```bash
+   GOOGLE_CREDENTIALS={"web":{"client_id":"your-client-id.apps.googleusercontent.com","project_id":"your-project-id","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"your-client-secret","redirect_uris":["https://goms.up.railway.app/oauth2callback"]}}
+   GOOGLE_DRIVE_FOLDER_ID=1TLnjpJuMWdllq3VOgw_kH-EyGRISq6cg
+   ```
 
-If you prefer to use OAuth2, you'll need to handle the authentication flow differently.
+### Step 3: Deploy and Initialize OAuth2
 
-#### Step 1: Create OAuth2 Credentials
+1. **Deploy to Railway**:
+   - Push your code to trigger a new deployment
+   - Wait for the deployment to complete
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **APIs & Services** > **Credentials**
-3. Click **Create Credentials** > **OAuth 2.0 Client IDs**
-4. Choose **Web application**
-5. Add authorized redirect URIs:
-   - `https://your-railway-app.railway.app/oauth2callback`
-   - `http://localhost:8080/oauth2callback` (for local development)
-6. Download the JSON file
+2. **Access OAuth2 Setup Page**:
+   - Visit: `https://goms.up.railway.app/oauth2-setup`
+   - This page will help you complete the OAuth2 setup
 
-#### Step 2: Configure Railway Environment Variable
+3. **Initialize OAuth2 Flow**:
+   - Click "Start OAuth2 Authorization" button
+   - You'll be redirected to Google's authorization page
+   - Sign in with your Google account
+   - Grant permissions to the application
+   - You'll be redirected back to your app
 
-1. Open your Railway project dashboard
-2. Go to **Variables** tab
-3. Add a new variable:
-   - **Name**: `GOOGLE_CREDENTIALS`
-   - **Value**: Copy the entire contents of the OAuth2 JSON file
-4. Click **Add**
+### Step 4: Test the Integration
 
-## Environment Variables Summary
+1. **Check Status**:
+   - Visit the OAuth2 setup page to verify Google Drive is available
+   - Or check: `https://goms.up.railway.app/api/health`
 
-Add these to your Railway project:
-
-```bash
-GOOGLE_CREDENTIALS={"type":"service_account","project_id":"...","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"...","token_uri":"...","auth_provider_x509_cert_url":"...","client_x509_cert_url":"..."}
-GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
-```
-
-## Testing the Setup
-
-After deployment, you can test the Google Drive integration by:
-
-1. Uploading an image through your app
-2. Checking if it appears in your Google Drive folder
-3. Verifying the file permissions and access
+2. **Test Upload**:
+   - Go to any page with image upload functionality
+   - Try uploading an image
+   - Check if it appears in your Google Drive folder
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Google Drive features will be disabled"**
+1. **"OAuth2 flow requires user interaction"**
+   - Visit `/oauth2-setup` page to start the authorization flow
+   - Make sure you're signed in with the correct Google account
+
+2. **"Invalid redirect URI"**
+   - Verify the redirect URIs in Google Cloud Console match exactly:
+     - `https://goms.up.railway.app/oauth2callback`
+   - Check for typos or extra spaces
+
+3. **"Google Drive features will be disabled"**
    - Check that `GOOGLE_CREDENTIALS` environment variable is set correctly
    - Verify the JSON format is valid
-   - Ensure the service account has access to the Google Drive folder
+   - Ensure you've completed the OAuth2 authorization flow
 
-2. **"Permission denied" errors**
-   - Make sure the service account email has Editor permissions on the Google Drive folder
+4. **"Permission denied" errors**
+   - Make sure you've granted the necessary permissions during OAuth2 flow
    - Check that the folder ID is correct
 
-3. **"Invalid credentials" errors**
-   - Verify the JSON credentials are complete and properly formatted
-   - Ensure the service account is enabled in Google Cloud Console
+### Debug Steps
 
-### Debug Mode
+1. **Check Railway Logs**:
+   - Go to Railway dashboard → Deployments → View logs
+   - Look for Google Drive related errors
 
-To enable debug logging, add this environment variable:
-```bash
-GOOGLE_DRIVE_DEBUG=true
-```
+2. **Verify Environment Variables**:
+   - Check Railway Variables tab
+   - Ensure `GOOGLE_CREDENTIALS` and `GOOGLE_DRIVE_FOLDER_ID` are set
+
+3. **Test OAuth2 Flow**:
+   - Visit `/oauth2-setup` page
+   - Use the "Check Status" button to verify setup
 
 ## Security Notes
 
-- ✅ Service account credentials are stored securely in Railway environment variables
+- ✅ OAuth2 credentials are stored securely in Railway environment variables
 - ✅ No sensitive files are committed to the repository
 - ✅ Each Railway deployment uses its own isolated credentials
 - ✅ Credentials can be rotated without code changes
+- ✅ OAuth2 tokens are handled securely through the callback flow
 
 ## Local Development
 
@@ -135,6 +146,19 @@ If you're migrating from local development:
 1. Remove `token.pickle` and `credentials.json` from your local repository
 2. Set up the Railway environment variables as described above
 3. Deploy to Railway
-4. Test the Google Drive integration
+4. Complete the OAuth2 authorization flow
+5. Test the Google Drive integration
 
 The app will automatically detect the environment and use the appropriate authentication method.
+
+## Quick Setup Checklist
+
+- [ ] Created OAuth2 credentials in Google Cloud Console
+- [ ] Added redirect URI: `https://goms.up.railway.app/oauth2callback`
+- [ ] Downloaded OAuth2 JSON file
+- [ ] Set `GOOGLE_CREDENTIALS` environment variable in Railway
+- [ ] Set `GOOGLE_DRIVE_FOLDER_ID` environment variable in Railway
+- [ ] Deployed to Railway
+- [ ] Visited `/oauth2-setup` page
+- [ ] Completed OAuth2 authorization flow
+- [ ] Tested image upload functionality

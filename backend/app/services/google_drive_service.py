@@ -53,10 +53,34 @@ class GoogleDriveService:
                         self.creds = service_account.Credentials.from_service_account_info(
                             creds_data, scopes=self.SCOPES)
                     else:
-                        # OAuth2 credentials (for development)
-                        flow = InstalledAppFlow.from_client_secrets_file(
-                            temp_credentials_path, self.SCOPES)
-                        self.creds = flow.run_local_server(port=0)
+                        # OAuth2 credentials - check if we have stored credentials in session
+                        from flask import session
+                        
+                        # Check if we have OAuth2 credentials in session
+                        oauth2_creds = session.get('oauth2_credentials')
+                        if oauth2_creds:
+                            # Create credentials from session data
+                            from google.oauth2.credentials import Credentials
+                            self.creds = Credentials(
+                                token=oauth2_creds['token'],
+                                refresh_token=oauth2_creds['refresh_token'],
+                                token_uri=oauth2_creds['token_uri'],
+                                client_id=oauth2_creds['client_id'],
+                                client_secret=oauth2_creds['client_secret'],
+                                scopes=oauth2_creds['scopes']
+                            )
+                            
+                            # Refresh token if expired
+                            if self.creds.expired and self.creds.refresh_token:
+                                self.creds.refresh(Request())
+                                
+                                # Update session with new token
+                                session['oauth2_credentials']['token'] = self.creds.token
+                        else:
+                            # No OAuth2 credentials available
+                            print("⚠️  OAuth2 credentials not found in session. Please visit /api/oauth2/init to start authorization.")
+                            self.service = None
+                            return
                         
                 finally:
                     # Clean up temporary file
@@ -87,7 +111,7 @@ class GoogleDriveService:
                         print("💡 To enable Google Drive uploads:")
                         print("   1. Download credentials.json from Google Cloud Console")
                         print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
-                        print("   3. For Railway: Use service account credentials")
+                        print("   3. For Railway: Use service account credentials or OAuth2 flow")
                         self.service = None
                         return
                 
@@ -100,7 +124,7 @@ class GoogleDriveService:
             print("💡 To enable Google Drive uploads:")
             print("   1. Download credentials.json from Google Cloud Console")
             print("   2. Add GOOGLE_CREDENTIALS environment variable to Railway")
-            print("   3. For Railway: Use service account credentials")
+            print("   3. For Railway: Use service account credentials or OAuth2 flow")
             self.service = None
             return
         

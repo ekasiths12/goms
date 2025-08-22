@@ -6,189 +6,294 @@
     <title>Google Drive OAuth2 Setup - GOMS</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
             text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
             margin-bottom: 30px;
         }
-        .step {
-            margin-bottom: 25px;
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
             padding: 20px;
-            border-left: 4px solid #4285f4;
-            background-color: #f8f9fa;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
         }
-        .step h3 {
-            color: #4285f4;
-            margin-top: 0;
+        
+        .status-success {
+            border-left-color: #28a745;
+            background: #d4edda;
         }
+        
+        .status-error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .status-warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        
         .btn {
-            background-color: #4285f4;
+            background: #007bff;
             color: white;
-            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            margin: 10px;
             text-decoration: none;
             display: inline-block;
-            margin: 10px 5px;
+            transition: background 0.3s;
         }
+        
         .btn:hover {
-            background-color: #3367d6;
+            background: #0056b3;
         }
-        .btn-secondary {
-            background-color: #6c757d;
+        
+        .btn-success {
+            background: #28a745;
         }
-        .btn-secondary:hover {
-            background-color: #5a6268;
+        
+        .btn-success:hover {
+            background: #1e7e34;
         }
-        .status {
-            padding: 15px;
-            border-radius: 5px;
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .loading {
+            display: none;
             margin: 20px 0;
         }
-        .status.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
         }
-        .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .status.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+        
+        .steps {
+            text-align: left;
+            margin: 20px 0;
         }
-        .code-block {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 15px;
-            font-family: monospace;
-            font-size: 14px;
-            overflow-x: auto;
+        
+        .step {
             margin: 10px 0;
-        }
-        .warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
+            padding: 10px;
+            background: #f8f9fa;
             border-radius: 5px;
-            margin: 20px 0;
+        }
+        
+        .step.completed {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 Google Drive OAuth2 Setup</h1>
+        <div class="logo">GOMS</div>
+        <div class="subtitle">Google Drive OAuth2 Setup</div>
         
-        <div class="warning">
-            <strong>⚠️ Important:</strong> This setup is for Railway deployment only. For local development, use the token.pickle approach.
-        </div>
-
-        <div class="step">
-            <h3>Step 1: Configure Google Cloud Console</h3>
-            <p>Make sure you have created OAuth2 credentials with these redirect URIs:</p>
-            <div class="code-block">
-https://goms.up.railway.app/oauth2callback<br>
-http://localhost:8080/oauth2callback<br>
-http://localhost:5000/oauth2callback
+        <div id="status-card" class="status-card">
+            <h3>Checking Google Drive Status...</h3>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Please wait...</p>
             </div>
         </div>
-
-        <div class="step">
-            <h3>Step 2: Set Railway Environment Variable</h3>
-            <p>Add the OAuth2 credentials JSON to Railway as <code>GOOGLE_CREDENTIALS</code> environment variable.</p>
+        
+        <div id="setup-steps" class="steps" style="display: none;">
+            <h3>Setup Steps:</h3>
+            <div class="step" id="step1">
+                <strong>Step 1:</strong> Click "Start OAuth2 Authorization" below
+            </div>
+            <div class="step" id="step2">
+                <strong>Step 2:</strong> Sign in to your Google account and grant permissions
+            </div>
+            <div class="step" id="step3">
+                <strong>Step 3:</strong> You'll be redirected back here automatically
+            </div>
         </div>
-
-        <div class="step">
-            <h3>Step 3: Initialize OAuth2 Flow</h3>
-            <p>Click the button below to start the OAuth2 authorization process:</p>
-            <button class="btn" onclick="initOAuth2()">🚀 Start OAuth2 Authorization</button>
-            <button class="btn btn-secondary" onclick="checkStatus()">🔍 Check Status</button>
+        
+        <div id="buttons" style="display: none;">
+            <button class="btn" id="init-btn" onclick="initOAuth2()">Start OAuth2 Authorization</button>
+            <button class="btn btn-success" id="check-btn" onclick="checkStatus()">Check Status</button>
+            <button class="btn btn-warning" id="logout-btn" onclick="logout()">Clear Credentials</button>
         </div>
-
-        <div id="status" class="status" style="display: none;"></div>
-
-        <div class="step">
-            <h3>Step 4: Complete Authorization</h3>
-            <p>After clicking "Start OAuth2 Authorization", you'll be redirected to Google to authorize the application. Once authorized, you'll be redirected back and Google Drive features will be enabled.</p>
-        </div>
-
-        <div class="step">
-            <h3>Testing</h3>
-            <p>After successful authorization, you can test Google Drive integration by uploading an image through your app.</p>
-            <a href="/fabric-invoices" class="btn btn-secondary">📄 Go to Fabric Invoices</a>
-            <a href="/stitching-records" class="btn btn-secondary">🧵 Go to Stitching Records</a>
+        
+        <div style="margin-top: 30px;">
+            <a href="/" class="btn">Back to App</a>
         </div>
     </div>
 
     <script>
-        function showStatus(message, type = 'info') {
-            const statusDiv = document.getElementById('status');
-            statusDiv.className = `status ${type}`;
-            statusDiv.innerHTML = message;
-            statusDiv.style.display = 'block';
-        }
-
-        async function initOAuth2() {
-            try {
-                showStatus('🔄 Initializing OAuth2 flow...', 'info');
-                
-                const response = await fetch('/api/oauth2/init');
-                const data = await response.json();
-                
-                if (response.ok && data.auth_url) {
-                    showStatus(`✅ OAuth2 flow initialized! <br><br><a href="${data.auth_url}" class="btn" target="_blank">🔗 Click here to authorize</a>`, 'success');
-                } else {
-                    showStatus(`❌ Error: ${data.error || 'Unknown error'}`, 'error');
-                }
-            } catch (error) {
-                showStatus(`❌ Network error: ${error.message}`, 'error');
-            }
-        }
-
-        async function checkStatus() {
-            try {
-                showStatus('🔍 Checking Google Drive status...', 'info');
-                
-                const response = await fetch('/api/health');
-                const data = await response.json();
-                
-                if (response.ok) {
-                    if (data.google_drive_available) {
-                        showStatus('✅ Google Drive is available and working!', 'success');
-                    } else {
-                        showStatus('⚠️ Google Drive is not available. Please complete OAuth2 setup.', 'error');
-                    }
-                } else {
-                    showStatus(`❌ Error checking status: ${data.error || 'Unknown error'}`, 'error');
-                }
-            } catch (error) {
-                showStatus(`❌ Network error: ${error.message}`, 'error');
-            }
-        }
-
         // Check status on page load
         window.onload = function() {
             checkStatus();
         };
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function updateStatus(status, message, type = 'info') {
+            const statusCard = document.getElementById('status-card');
+            const buttons = document.getElementById('buttons');
+            const setupSteps = document.getElementById('setup-steps');
+            
+            // Remove existing classes
+            statusCard.className = 'status-card';
+            
+            // Add appropriate class
+            if (type === 'success') {
+                statusCard.classList.add('status-success');
+            } else if (type === 'error') {
+                statusCard.classList.add('status-error');
+            } else if (type === 'warning') {
+                statusCard.classList.add('status-warning');
+            }
+            
+            statusCard.innerHTML = `
+                <h3>${status}</h3>
+                <p>${message}</p>
+            `;
+            
+            // Show/hide buttons based on status
+            if (status === 'Not Configured') {
+                buttons.style.display = 'none';
+                setupSteps.style.display = 'none';
+            } else if (status === 'Needs OAuth2') {
+                buttons.style.display = 'block';
+                setupSteps.style.display = 'block';
+                document.getElementById('init-btn').style.display = 'inline-block';
+                document.getElementById('check-btn').style.display = 'inline-block';
+                document.getElementById('logout-btn').style.display = 'none';
+            } else if (status === 'Authenticated') {
+                buttons.style.display = 'block';
+                setupSteps.style.display = 'none';
+                document.getElementById('init-btn').style.display = 'none';
+                document.getElementById('check-btn').style.display = 'inline-block';
+                document.getElementById('logout-btn').style.display = 'inline-block';
+            } else {
+                buttons.style.display = 'block';
+                setupSteps.style.display = 'none';
+            }
+        }
+        
+        async function checkStatus() {
+            showLoading();
+            try {
+                const response = await fetch('/api/oauth2/status');
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.status === 'authenticated') {
+                    updateStatus('Authenticated', 'Google Drive OAuth2 is working! You can now use Google Drive features.', 'success');
+                } else if (data.status === 'service_account') {
+                    updateStatus('Service Account Active', 'Using service account authentication. No OAuth2 needed.', 'success');
+                } else if (data.status === 'needs_oauth2') {
+                    updateStatus('Needs OAuth2', 'OAuth2 credentials are configured but not authenticated. Please complete the authorization flow.', 'warning');
+                } else if (data.status === 'not_configured') {
+                    updateStatus('Not Configured', 'No Google Drive credentials found. Please configure GOOGLE_CREDENTIALS environment variable in Railway.', 'error');
+                } else {
+                    updateStatus('Error', data.message || 'Unknown error occurred', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                updateStatus('Error', 'Failed to check status: ' + error.message, 'error');
+            }
+        }
+        
+        async function initOAuth2() {
+            showLoading();
+            try {
+                const response = await fetch('/api/oauth2/init');
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.auth_url) {
+                    // Redirect to Google OAuth2
+                    window.location.href = data.auth_url;
+                } else {
+                    updateStatus('Error', data.message || 'Failed to initialize OAuth2', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                updateStatus('Error', 'Failed to initialize OAuth2: ' + error.message, 'error');
+            }
+        }
+        
+        async function logout() {
+            if (confirm('Are you sure you want to clear OAuth2 credentials?')) {
+                showLoading();
+                try {
+                    const response = await fetch('/api/oauth2/logout', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    hideLoading();
+                    updateStatus('Logged Out', data.message, 'info');
+                    
+                    // Refresh status after logout
+                    setTimeout(checkStatus, 1000);
+                } catch (error) {
+                    hideLoading();
+                    updateStatus('Error', 'Failed to logout: ' + error.message, 'error');
+                }
+            }
+        }
     </script>
 </body>
 </html>
