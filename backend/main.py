@@ -167,24 +167,48 @@ def create_app(config_class=Config):
     def login():
         return send_from_directory(app.static_folder, 'login.html')
     
+    @app.route('/login')
+    def login_no_ext():
+        return send_from_directory(app.static_folder, 'login.html')
+    
     @app.route('/fabric-invoices.html')
     def fabric_invoices():
+        return send_from_directory(app.static_folder, 'fabric-invoices.html')
+    
+    @app.route('/fabric-invoices')
+    def fabric_invoices_no_ext():
         return send_from_directory(app.static_folder, 'fabric-invoices.html')
     
     @app.route('/stitching-records.html')
     def stitching_records():
         return send_from_directory(app.static_folder, 'stitching-records.html')
     
+    @app.route('/stitching-records')
+    def stitching_records_no_ext():
+        return send_from_directory(app.static_folder, 'stitching-records.html')
+    
     @app.route('/packing-lists.html')
     def packing_lists():
+        return send_from_directory(app.static_folder, 'packing-lists.html')
+    
+    @app.route('/packing-lists')
+    def packing_lists_no_ext():
         return send_from_directory(app.static_folder, 'packing-lists.html')
     
     @app.route('/group-bills.html')
     def group_bills():
         return send_from_directory(app.static_folder, 'group-bills.html')
     
+    @app.route('/group-bills')
+    def group_bills_no_ext():
+        return send_from_directory(app.static_folder, 'group-bills.html')
+    
     @app.route('/index.html')
     def index_html():
+        return send_from_directory(app.static_folder, 'index.html')
+    
+    @app.route('/index')
+    def index_no_ext():
         return send_from_directory(app.static_folder, 'index.html')
     
     # Database initialization endpoint
