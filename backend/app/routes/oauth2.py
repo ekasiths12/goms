@@ -37,43 +37,79 @@ def oauth2_init():
             }), 400
         
         # Create temporary credentials file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(creds_data, f)
-            temp_credentials_path = f.name
-            print(f"🔍 Created temporary credentials file: {temp_credentials_path}")
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                json.dump(creds_data, f)
+                temp_credentials_path = f.name
+                print(f"🔍 Created temporary credentials file: {temp_credentials_path}")
+        except Exception as e:
+            print(f"❌ Failed to create temporary file: {e}")
+            return jsonify({
+                'error': 'Failed to create temporary credentials file',
+                'message': str(e)
+            }), 500
         
         try:
             # Create OAuth2 flow
             print("🔍 Creating OAuth2 flow...")
-            flow = InstalledAppFlow.from_client_secrets_file(
-                temp_credentials_path, SCOPES)
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    temp_credentials_path, SCOPES)
+                print("🔍 OAuth2 flow created successfully")
+            except Exception as e:
+                print(f"❌ Failed to create OAuth2 flow: {e}")
+                return jsonify({
+                    'error': 'Failed to create OAuth2 flow',
+                    'message': str(e)
+                }), 500
             
             # Determine the correct redirect URI based on the request
-            if request.headers.get('Host', '').startswith('localhost'):
-                redirect_uri = 'http://localhost:8000/oauth2callback'
-            else:
-                redirect_uri = 'https://goms.up.railway.app/oauth2callback'
-            
-            print(f"🔍 Using redirect URI: {redirect_uri}")
+            try:
+                if request.headers.get('Host', '').startswith('localhost'):
+                    redirect_uri = 'http://localhost:8000/oauth2callback'
+                else:
+                    redirect_uri = 'https://goms.up.railway.app/oauth2callback'
+                
+                print(f"🔍 Using redirect URI: {redirect_uri}")
+            except Exception as e:
+                print(f"❌ Failed to determine redirect URI: {e}")
+                return jsonify({
+                    'error': 'Failed to determine redirect URI',
+                    'message': str(e)
+                }), 500
             
             # Generate authorization URL with explicit redirect URI
             print("🔍 Generating authorization URL...")
-            auth_url, state = flow.authorization_url(
-                access_type='offline',
-                include_granted_scopes='true',
-                prompt='consent',
-                redirect_uri=redirect_uri
-            )
-            print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
+            try:
+                auth_url, state = flow.authorization_url(
+                    access_type='offline',
+                    include_granted_scopes='true',
+                    prompt='consent',
+                    redirect_uri=redirect_uri
+                )
+                print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
+            except Exception as e:
+                print(f"❌ Failed to generate authorization URL: {e}")
+                return jsonify({
+                    'error': 'Failed to generate authorization URL',
+                    'message': str(e)
+                }), 500
             
             # Store only the necessary flow data in session (not the entire flow object)
-            session['oauth2_flow_data'] = {
-                'client_config': creds_data,
-                'scopes': SCOPES,
-                'state': state,
-                'redirect_uri': redirect_uri
-            }
-            print("🔍 OAuth2 flow data stored in session")
+            try:
+                session['oauth2_flow_data'] = {
+                    'client_config': creds_data,
+                    'scopes': SCOPES,
+                    'state': state,
+                    'redirect_uri': redirect_uri
+                }
+                print("🔍 OAuth2 flow data stored in session")
+            except Exception as e:
+                print(f"❌ Failed to store flow data in session: {e}")
+                return jsonify({
+                    'error': 'Failed to store flow data in session',
+                    'message': str(e)
+                }), 500
             
             return jsonify({
                 'auth_url': auth_url,
@@ -82,8 +118,11 @@ def oauth2_init():
             
         finally:
             # Clean up temporary file
-            os.unlink(temp_credentials_path)
-            print(f"🔍 Cleaned up temporary file: {temp_credentials_path}")
+            try:
+                os.unlink(temp_credentials_path)
+                print(f"🔍 Cleaned up temporary file: {temp_credentials_path}")
+            except Exception as e:
+                print(f"⚠️  Failed to clean up temporary file: {e}")
             
     except Exception as e:
         print(f"❌ OAuth2 init error: {e}")
