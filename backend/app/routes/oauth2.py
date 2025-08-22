@@ -48,12 +48,21 @@ def oauth2_init():
             flow = InstalledAppFlow.from_client_secrets_file(
                 temp_credentials_path, SCOPES)
             
-            # Generate authorization URL
+            # Determine the correct redirect URI based on the request
+            if request.headers.get('Host', '').startswith('localhost'):
+                redirect_uri = 'http://localhost:8000/oauth2callback'
+            else:
+                redirect_uri = 'https://goms.up.railway.app/oauth2callback'
+            
+            print(f"🔍 Using redirect URI: {redirect_uri}")
+            
+            # Generate authorization URL with explicit redirect URI
             print("🔍 Generating authorization URL...")
             auth_url, state = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
-                prompt='consent'
+                prompt='consent',
+                redirect_uri=redirect_uri
             )
             print(f"🔍 Authorization URL generated: {auth_url[:50]}...")
             
@@ -61,7 +70,8 @@ def oauth2_init():
             session['oauth2_flow_data'] = {
                 'client_config': creds_data,
                 'scopes': SCOPES,
-                'state': state
+                'state': state,
+                'redirect_uri': redirect_uri
             }
             print("🔍 OAuth2 flow data stored in session")
             
@@ -117,8 +127,12 @@ def oauth2_callback():
             flow = InstalledAppFlow.from_client_secrets_file(
                 temp_credentials_path, flow_data['scopes'])
             
-            # Exchange authorization code for tokens
-            flow.fetch_token(code=code)
+            # Use the stored redirect URI
+            redirect_uri = flow_data.get('redirect_uri', 'https://goms.up.railway.app/oauth2callback')
+            print(f"🔍 Using stored redirect URI: {redirect_uri}")
+            
+            # Exchange authorization code for tokens with explicit redirect URI
+            flow.fetch_token(code=code, redirect_uri=redirect_uri)
             
             # Store credentials in session
             session['oauth2_credentials'] = {
