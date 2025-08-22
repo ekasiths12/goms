@@ -193,10 +193,12 @@ def oauth2_status():
                 print(f"🔍 Credentials type: {creds_data.get('type', 'unknown')}")
                 
                 if 'type' in creds_data and creds_data['type'] == 'service_account':
-                    print("🔍 Using service account authentication")
+                    service_account_email = creds_data.get('client_email', 'Unknown')
+                    print(f"🔍 Service account email: {service_account_email}")
                     return jsonify({
                         'status': 'service_account',
-                        'message': 'Using service account authentication'
+                        'message': f'Using service account authentication: {service_account_email}',
+                        'service_account_email': service_account_email
                     })
                 else:
                     print("🔍 OAuth2 credentials available but not authenticated")
