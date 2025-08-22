@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from extensions import db
 from app.models.image import Image
-from app.services.google_drive_service import GoogleDriveService
+from app.services.file_storage_service import FileStorageService
 
 # Create Blueprint
 images_bp = Blueprint('images', __name__)
@@ -40,78 +40,48 @@ def upload_image():
         fabric_color = request.form.get('fabric_color', 'unknown')
         stitching_serial_number = request.form.get('stitching_serial_number', None)
         
-        # Initialize Google Drive service
+        # Initialize file storage service
         try:
-            drive_service = GoogleDriveService()
+            storage_service = FileStorageService()
         except Exception as e:
-            print(f"⚠️  Google Drive service error: {str(e)}")
-            drive_service = None
+            print(f"⚠️  File storage service error: {str(e)}")
+            return jsonify({'error': f'File storage service not available: {str(e)}'}), 500
         
-        # Save file locally first
-        filename = secure_filename(file.filename)
-        upload_dir = 'static/uploads'
-        os.makedirs(upload_dir, exist_ok=True)
+        # Generate filename using the storage service
+        storage_filename = storage_service.generate_filename(garment_name, fabric_name, fabric_color, stitching_serial_number)
         
-        local_path = os.path.join(upload_dir, filename)
-        file.save(local_path)
-        
-        # Generate Google Drive filename
-        drive_filename = drive_service.generate_filename(garment_name, fabric_name, fabric_color, stitching_serial_number) if drive_service else None
-        
-        # Upload to Google Drive
+        # Upload to file storage
         try:
-            if drive_service and drive_service.is_available():
-                drive_result = drive_service.upload_image_from_path(local_path, drive_filename)
+            # Read file data
+            file_data = file.read()
             
-            # Save to database (without Google Drive columns for now)
+            # Upload to storage service
+            storage_result = storage_service.upload_image(file_data, storage_filename, file.content_type)
+            
+            # Save to database
             image = Image(
-                file_path=local_path,
+                file_path=storage_result['file_path'],
                 uploaded_at=datetime.utcnow()
             )
             
             db.session.add(image)
             db.session.commit()
             
-            # Return response with available data
+            # Return response
             response_data = {
                 'success': True,
-                'message': 'Image uploaded successfully',
+                'message': 'Image uploaded successfully to Railway volume storage',
                 'image_id': image.id,
-                'local_path': local_path
+                'file_path': storage_result['file_path'],
+                'filename': storage_result['filename'],
+                'size': storage_result['size'],
+                'file_url': storage_service.get_file_url(storage_result['file_path'])
             }
-            
-            # Add Google Drive info if available (but don't store in DB)
-            if drive_service and drive_service.is_available() and drive_result:
-                response_data.update({
-                    'message': 'Image uploaded successfully to local storage and Google Drive',
-                    'google_drive_id': drive_result['file_id'],
-                    'google_drive_link': drive_result['web_view_link'],
-                    'google_drive_filename': drive_result['name']
-                })
-            else:
-                response_data.update({
-                    'message': 'Image uploaded to local storage (Google Drive not configured)',
-                    'warning': 'Google Drive upload disabled - credentials not configured'
-                })
             
             return jsonify(response_data)
             
         except Exception as e:
-            # If Google Drive upload fails, still save locally
-            image = Image(
-                file_path=local_path,
-                uploaded_at=datetime.utcnow()
-            )
-            db.session.add(image)
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': 'Image uploaded to local storage (Google Drive upload failed)',
-                'image_id': image.id,
-                'local_path': local_path,
-                'warning': f'Google Drive upload failed: {str(e)}'
-            })
+            return jsonify({'error': f'Upload failed: {str(e)}'}), 500
             
     except Exception as e:
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
@@ -137,17 +107,17 @@ def delete_image(image_id):
         if not image:
             return jsonify({'error': 'Image not found'}), 404
         
-        # Delete from Google Drive if exists
-        if image.google_drive_id:
-            try:
-                drive_service = GoogleDriveService()
-                drive_service.delete_file(image.google_drive_id)
-            except Exception as e:
-                print(f"Error deleting from Google Drive: {e}")
+        # Delete from file storage
+        try:
+            storage_service = FileStorageService()
+            storage_service.delete_file(image.file_path)
+        except Exception as e:
+            print(f"Error deleting from file storage: {e}")
         
-        # Delete local file
-        if os.path.exists(image.file_path):
-            os.remove(image.file_path)
+        # Also try to delete local file if it exists (for backward compatibility)
+        absolute_path = storage_service.get_file_path(image.file_path) if 'storage_service' in locals() else image.file_path
+        if os.path.exists(absolute_path):
+            os.remove(absolute_path)
         
         # Delete from database
         db.session.delete(image)
@@ -158,12 +128,13 @@ def delete_image(image_id):
     except Exception as e:
         return jsonify({'error': f'Error deleting image: {str(e)}'}), 500
 
-@images_bp.route('/google-drive/list', methods=['GET'])
-def list_google_drive_files():
-    """List all files in Google Drive folder"""
+@images_bp.route('/list', methods=['GET'])
+def list_files():
+    """List all files in storage"""
     try:
-        drive_service = GoogleDriveService()
-        files = drive_service.list_files()
+        directory = request.args.get('directory', 'images')
+        storage_service = FileStorageService()
+        files = storage_service.list_files(directory)
         
         return jsonify({
             'success': True,
@@ -173,48 +144,23 @@ def list_google_drive_files():
     except Exception as e:
         return jsonify({'error': f'Error listing files: {str(e)}'}), 500
 
-@images_bp.route('/google-drive/upload', methods=['POST'])
-def upload_to_google_drive():
-    """Upload existing local image to Google Drive"""
+@images_bp.route('/status', methods=['GET'])
+def storage_status():
+    """Get storage service status"""
     try:
-        image_id = request.json.get('image_id')
-        garment_name = request.json.get('garment_name', 'unknown')
-        fabric_name = request.json.get('fabric_name', 'unknown')
-        fabric_color = request.json.get('fabric_color', 'unknown')
-        
-        if not image_id:
-            return jsonify({'error': 'Image ID required'}), 400
-        
-        image = Image.query.get(image_id)
-        if not image:
-            return jsonify({'error': 'Image not found'}), 404
-        
-        if not os.path.exists(image.file_path):
-            return jsonify({'error': 'Local image file not found'}), 404
-        
-        # Initialize Google Drive service
-        drive_service = GoogleDriveService()
-        
-        # Generate filename
-        drive_filename = drive_service.generate_filename(garment_name, fabric_name, fabric_color)
-        
-        # Upload to Google Drive
-        drive_result = drive_service.upload_image_from_path(image.file_path, drive_filename)
-        
-        # Update database
-        image.google_drive_id = drive_result['file_id']
-        image.google_drive_link = drive_result['web_view_link']
-        image.google_drive_filename = drive_result['name']
-        
-        db.session.commit()
+        storage_service = FileStorageService()
+        status = {
+            'available': storage_service.is_available(),
+            'base_path': storage_service.base_storage_path,
+            'images_path': storage_service.images_path,
+            'uploads_path': storage_service.uploads_path,
+            'pdfs_path': storage_service.pdfs_path
+        }
         
         return jsonify({
             'success': True,
-            'message': 'Image uploaded to Google Drive successfully',
-            'google_drive_id': drive_result['file_id'],
-            'google_drive_link': drive_result['web_view_link'],
-            'google_drive_filename': drive_result['name']
+            'status': status
         })
         
     except Exception as e:
-        return jsonify({'error': f'Upload to Google Drive failed: {str(e)}'}), 500
+        return jsonify({'error': f'Error getting storage status: {str(e)}'}), 500

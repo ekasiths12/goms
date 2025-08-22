@@ -2191,9 +2191,8 @@
                     if (uploadResult.success) {
                         imageData = {
                             image_id: uploadResult.image_id,
-                            google_drive_id: uploadResult.google_drive_id,
-                            google_drive_link: uploadResult.google_drive_link,
-                            google_drive_filename: uploadResult.google_drive_filename,
+                                            file_url: uploadResult.file_url,
+                filename: uploadResult.filename,
                             local_path: uploadResult.local_path
                         };
                     } else {

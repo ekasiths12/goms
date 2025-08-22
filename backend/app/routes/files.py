@@ -1,23 +1,92 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from main import db
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
+from app.services.file_storage_service import FileStorageService
 import traceback
 
 files_bp = Blueprint('files', __name__)
 
 @files_bp.route('/upload-image', methods=['POST'])
 def upload_image():
-    """Upload garment image - TODO: Implement"""
-    return {'message': 'Upload Image endpoint - TODO: Implement'}, 200
+    """Upload garment image - Redirects to images endpoint"""
+    return jsonify({'message': 'Please use /api/images/upload endpoint for image uploads'}), 200
 
 @files_bp.route('/download-pdf/<type>/<id>', methods=['GET'])
 def download_pdf(type, id):
     """Download PDF - TODO: Implement"""
-    return {'message': f'Download PDF endpoint - TODO: Implement for {type} {id}'}, 200
+    return jsonify({'message': 'PDF download endpoint - TODO: Implement'}), 200
+
+@files_bp.route('/static/<path:filename>', methods=['GET'])
+def serve_static_file(filename):
+    """Serve static files from Railway volume storage"""
+    try:
+        storage_service = FileStorageService()
+        
+        # Determine the directory based on the filename path
+        if filename.startswith('images/'):
+            directory = 'images'
+            relative_path = filename
+        elif filename.startswith('uploads/'):
+            directory = 'uploads'
+            relative_path = filename
+        elif filename.startswith('pdfs/'):
+            directory = 'pdfs'
+            relative_path = filename
+        else:
+            # Default to images directory
+            directory = 'images'
+            relative_path = filename
+        
+        # Get the absolute path
+        absolute_path = storage_service.get_file_path(relative_path)
+        
+        # Check if file exists
+        if not os.path.exists(absolute_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Get the directory path and filename
+        dir_path = os.path.dirname(absolute_path)
+        file_name = os.path.basename(absolute_path)
+        
+        # Serve the file
+        return send_from_directory(dir_path, file_name)
+        
+    except Exception as e:
+        return jsonify({'error': f'Error serving file: {str(e)}'}), 500
+
+@files_bp.route('/file-info/<path:filename>', methods=['GET'])
+def get_file_info(filename):
+    """Get information about a file"""
+    try:
+        storage_service = FileStorageService()
+        
+        # Check if file exists
+        if not storage_service.file_exists(filename):
+            return jsonify({'error': 'File not found'}), 404
+        
+        # Get file information
+        absolute_path = storage_service.get_file_path(filename)
+        file_stat = os.stat(absolute_path)
+        
+        file_info = {
+            'filename': os.path.basename(filename),
+            'path': filename,
+            'size': file_stat.st_size,
+            'modified': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
+            'url': storage_service.get_file_url(filename)
+        }
+        
+        return jsonify({
+            'success': True,
+            'file_info': file_info
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error getting file info: {str(e)}'}), 500
 
 @files_bp.route('/import-dat', methods=['POST'])
 def import_dat_file():

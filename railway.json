@@ -2,13 +2,28 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "backend/Dockerfile.railway"
+    "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
-    "startCommand": "cd backend && python railway_start.py && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 wsgi:app",
+    "startCommand": "python start.py",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 10,
+    "volumes": [
+      {
+        "name": "static-files",
+        "mountPath": "/app/static",
+        "size": "1GB"
+      }
+    ]
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "FLASK_ENV": "production",
+        "RAILWAY_VOLUME_PATH": "/app/static"
+      }
+    }
   }
 }

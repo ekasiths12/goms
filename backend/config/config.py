@@ -27,6 +27,9 @@ class Config:
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or 'static/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
+    # Railway volume storage configuration
+    RAILWAY_VOLUME_PATH = os.environ.get('RAILWAY_VOLUME_PATH') or '/app/static'
+    
     # PDF storage configuration
     PDF_FOLDER = os.environ.get('PDF_FOLDER') or 'static/pdfs'
     

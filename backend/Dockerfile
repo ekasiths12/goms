@@ -22,16 +22,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create necessary directories
+# Create necessary directories (these will be mounted as volumes in Railway)
 RUN mkdir -p static/uploads static/pdfs static/images
 
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
+ENV RAILWAY_VOLUME_PATH=/app/static
 
 # Expose port
 EXPOSE 8000
 
-# Run the Railway startup script and then the application
-CMD ["sh", "-c", "python railway_start.py && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 wsgi:app"]
+# Run the application
+CMD ["python", "start.py"]

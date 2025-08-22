@@ -47,7 +47,6 @@ def create_app(config_class=Config):
     from app.routes.customers import customers_bp
     from app.routes.files import files_bp
     from app.routes.images import images_bp
-    from app.routes.oauth2 import oauth2_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(invoices_bp, url_prefix='/api/invoices')
@@ -57,7 +56,6 @@ def create_app(config_class=Config):
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(files_bp, url_prefix='/api/files')
     app.register_blueprint(images_bp, url_prefix='/api/images')
-    app.register_blueprint(oauth2_bp, url_prefix='/api')
     
     # Test route
     @app.route('/test')
@@ -102,9 +100,7 @@ def create_app(config_class=Config):
     def fabric_invoices():
         return send_from_directory(app.static_folder, 'fabric-invoices.html')
     
-    @app.route('/oauth2-setup')
-    def oauth2_setup():
-        return send_from_directory(app.static_folder, 'oauth2-setup.html')
+
     
     @app.route('/stitching-records.html')
     def stitching_records():
