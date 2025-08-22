@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, send_from_directory, redirect, url_for
+from flask import Blueprint, render_template, send_from_directory, redirect, url_for, jsonify
 import os
 
 main_bp = Blueprint('main', __name__)
@@ -42,3 +42,40 @@ def static_files(filename):
 def favicon():
     """Serve favicon"""
     return send_from_directory('static', 'favicon.ico')
+
+@main_bp.route('/test-google-drive', methods=['GET'])
+def test_google_drive():
+    """Test Google Drive connection"""
+    try:
+        from app.services.google_drive_service import GoogleDriveService
+        
+        drive_service = GoogleDriveService()
+        
+        if not drive_service.is_available():
+            return jsonify({
+                'status': 'error',
+                'message': 'Google Drive service is not available',
+                'details': 'Check your GOOGLE_CREDENTIALS environment variable'
+            }), 500
+        
+        # Try to list files to test the connection
+        try:
+            results = drive_service.service.files().list(pageSize=1).execute()
+            return jsonify({
+                'status': 'success',
+                'message': 'Google Drive connection successful',
+                'details': f'Found {len(results.get("files", []))} files in Drive'
+            })
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': 'Google Drive connection failed',
+                'details': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to initialize Google Drive service',
+            'details': str(e)
+        }), 500
