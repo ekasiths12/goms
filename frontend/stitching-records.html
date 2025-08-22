@@ -945,7 +945,26 @@
                 if (deliveryStatusFilter === 'delivered') params.append('delivered_only', 'true');
                 if (deliveryStatusFilter === 'undelivered') params.append('undelivered_only', 'true');
                 
-                console.log('🌐 Fetching /api/stitching with filters...');
+                // Add sorting parameters
+                const sortColumnMapping = {
+                    0: 'created_at',
+                    1: 'stitching_invoice_number',
+                    2: 'item_name',
+                    3: 'quantity',
+                    4: 'unit_price',
+                    5: 'total_amount',
+                    6: 'customer',
+                    7: 'fabric_invoice_number',
+                    8: 'tax_invoice_number',
+                    9: 'packing_list_number'
+                };
+                
+                const sortColumn = sortColumnMapping[currentStitchingSortColumn] || 'created_at';
+                params.append('sort_column', sortColumn);
+                params.append('sort_direction', currentStitchingSortDirection);
+                
+                console.log('🌐 Fetching /api/stitching with filters and sorting...');
+                console.log('🔍 Sort column:', sortColumn, 'Direction:', currentStitchingSortDirection);
                 const apiBaseUrl = getApiBaseUrl();
                 const apiUrl = `${apiBaseUrl}/api/stitching?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
@@ -1130,6 +1149,7 @@
             console.log('✅ Stitching treeview populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
             updatePaginationControls();
             updateSelectAllCheckbox();
+            updateStitchingSortArrows();
         }
         
         function createFabricChildRow(parentRecord, fabric, type) {

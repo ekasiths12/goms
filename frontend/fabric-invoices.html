@@ -923,7 +923,7 @@
             }
             
             // Reload data with new sorting
-            loadData();
+            loadInvoiceData();
         }
         
         // Function to update sort arrows in headers
@@ -1105,7 +1105,29 @@
                 if (dateTo) params.append('date_to', dateTo);
                 if (showConsumed) params.append('show_consumed', 'true');
                 
-                console.log('🌐 Fetching /api/invoices with filters...');
+                // Add sorting parameters
+                const sortColumnMapping = {
+                    1: 'invoice_date',
+                    2: 'short_name',
+                    3: 'invoice_number',
+                    4: 'tax_invoice',
+                    5: 'item_code',
+                    6: 'color',
+                    7: 'delivery_note',
+                    8: 'in_stock',
+                    9: 'used',
+                    10: 'pending',
+                    11: 'price',
+                    12: 'total',
+                    13: 'delivered_location'
+                };
+                
+                const sortColumn = sortColumnMapping[currentSortColumn] || 'invoice_date';
+                params.append('sort_column', sortColumn);
+                params.append('sort_direction', currentSortDirection);
+                
+                console.log('🌐 Fetching /api/invoices with filters and sorting...');
+                console.log('🔍 Sort column:', sortColumn, 'Direction:', currentSortDirection);
                 // Use dynamic API base URL for local development vs Railway
                 const apiBaseUrl = getApiBaseUrl();
                 const apiUrl = `${apiBaseUrl}/api/invoices?${params.toString()}`;
@@ -1201,6 +1223,9 @@
             
             // Update filter data for enhanced dropdowns
             updateFilterData();
+            
+            // Update sort arrows
+            updateSortArrows();
             
             console.log('✅ Invoice table populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
         }
