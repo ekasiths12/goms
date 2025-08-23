@@ -98,6 +98,7 @@ class PackingListLine(db.Model):
             'fabric_unit_price': float(self.stitching_invoice.invoice_line.unit_price) if self.stitching_invoice and self.stitching_invoice.invoice_line else 0,
             'fabric_value': float(self.stitching_invoice.invoice_line.unit_price * self.stitching_invoice.yard_consumed) if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.yard_consumed else 0,
             'size_qty': self.stitching_invoice.get_size_qty() if self.stitching_invoice else {},
+            'size_qty_json': self.stitching_invoice.size_qty_json if self.stitching_invoice else None,
             'total_qty': sum(self.stitching_invoice.get_size_qty().values()) if self.stitching_invoice else 0,
             'price': float(self.stitching_invoice.price) if self.stitching_invoice else 0,
             'total_value': float(self.stitching_invoice.total_value) if self.stitching_invoice else 0,
