@@ -1148,7 +1148,16 @@
                 if (packingList.lines && packingList.lines.length > 0) {
                     console.log('📄 Adding', packingList.lines.length, 'child rows for', packingList.packing_list_serial);
                     packingList.lines.forEach(line => {
-                        const sizeQty = line.size_qty || {};
+                        let sizeQty = {};
+                        if (line.size_qty_json) {
+                            try {
+                                // Parse the JSON string from the database
+                                sizeQty = JSON.parse(line.size_qty_json.replace(/'/g, '"'));
+                            } catch (e) {
+                                console.error('Error parsing size_qty_json:', e, line.size_qty_json);
+                                sizeQty = {};
+                            }
+                        }
                         const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
                         
                         // Calculate fabric values
