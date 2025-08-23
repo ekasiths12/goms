@@ -238,7 +238,8 @@
         .chart-container canvas {
             max-width: 100%;
             max-height: 100%;
-            display: block;
+            display: block !important;
+            visibility: visible !important;
         }
 
         .loading-text {
@@ -529,6 +530,17 @@
                     });
                 }
                 
+                // Ensure all canvas elements are visible
+                canvasIds.forEach(id => {
+                    const canvas = document.getElementById(id);
+                    if (canvas) {
+                        canvas.style.display = 'block';
+                        canvas.style.visibility = 'visible';
+                        canvas.style.opacity = '1';
+                        console.log(`Made canvas visible: ${id}`);
+                    }
+                });
+                
                 showLoading();
                 
                 // Get filter values
@@ -631,6 +643,11 @@
                 return;
             }
             
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            
             const ctx = canvas.getContext('2d');
             
             if (charts.revenue) {
@@ -666,6 +683,11 @@
                 return;
             }
             
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            
             const ctx = canvas.getContext('2d');
             
             if (charts.customers) {
@@ -694,6 +716,11 @@
                 console.error('Fabric chart canvas not found');
                 return;
             }
+            
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -724,6 +751,11 @@
                 return;
             }
             
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            
             const ctx = canvas.getContext('2d');
             
             if (charts.production) {
@@ -752,6 +784,11 @@
                 console.error('Revenue breakdown chart canvas not found');
                 return;
             }
+            
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -791,6 +828,11 @@
                 console.error('Stock chart canvas not found');
                 return;
             }
+            
+            // Ensure canvas is visible
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
             
             const ctx = canvas.getContext('2d');
             if (charts.stock) {
