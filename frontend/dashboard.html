@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>Dashboard - Garment Management System</title>
+    <link rel="stylesheet" href="css/table-sorting.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #212121;
+            color: #eceff1;
+            font-size: 13px;
+        }
+
+        /* Navigation Bar - Same as other pages */
+        .nav-bar {
+            background: #23272f;
+            border-bottom: 1px solid #3949ab;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: #eceff1;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-tab:hover {
+            background-color: #3949ab;
+            color: #ffffff;
+        }
+
+        .nav-tab.active {
+            background-color: #3949ab;
+            color: #ffffff;
+            border-bottom-color: #5c6bc0;
+        }
+
+        .nav-user {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-user span {
+            color: #b0bec5;
+            font-size: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px;
+            min-height: calc(100vh - 60px);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 300;
+            color: #5c6bc0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* Dashboard specific styles */
+        .filters-section {
+            background: #2c2c2c;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .filters-title {
+            color: #eceff1;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-label {
+            color: #b0bec5;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .filter-input, .filter-select {
+            padding: 8px;
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #5c6bc0;
+            color: #eceff1;
+        }
+
+        .btn-primary:hover {
+            background: #7986cb;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: #2c2c2c;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: #5c6bc0;
+            box-shadow: 0 4px 12px rgba(92, 107, 192, 0.2);
+        }
+
+        .kpi-title {
+            color: #b0bec5;
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .kpi-value {
+            color: #5c6bc0;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .kpi-change {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .kpi-change.positive { color: #4caf50; }
+        .kpi-change.negative { color: #f44336; }
+        .kpi-change.neutral { color: #b0bec5; }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: #2c2c2c;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 350px;
+        }
+
+        .chart-title {
+            color: #eceff1;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-text {
+            color: #b0bec5;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .error-text {
+            color: #f44336;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation Bar - Same as other pages -->
+    <nav class="nav-bar">
+        <ul class="nav-tabs">
+            <li><a href="fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
+            <li><a href="stitching-records.html" class="nav-tab">Stitching Records</a></li>
+            <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
+            <li><a href="group-bills.html" class="nav-tab">Group Bills</a></li>
+            <li><a href="dashboard.html" class="nav-tab active">Dashboard</a></li>
+        </ul>
+        <div class="nav-user">
+            <span>Welcome, User</span>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Page Title -->
+        <h1 class="page-title">📊 Business Dashboard</h1>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <h3 class="filters-title">Filters</h3>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Date From:</label>
+                    <input type="date" id="dateFrom" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Date To:</label>
+                    <input type="date" id="dateTo" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Customer:</label>
+                    <select id="customerFilter" class="filter-select">
+                        <option value="">All Customers</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Location:</label>
+                    <select id="locationFilter" class="filter-select">
+                        <option value="">All Locations</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Garment:</label>
+                    <select id="garmentFilter" class="filter-select">
+                        <option value="">All Garments</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" onclick="updateDashboard()">Update Dashboard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Total Revenue</div>
+                <div class="kpi-value" id="totalRevenue">$0</div>
+                <div class="kpi-change neutral" id="revenueChange">Loading...</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Fabric Sales</div>
+                <div class="kpi-value" id="fabricSales">$0</div>
+                <div class="kpi-change neutral" id="fabricChange">Loading...</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Stitching Revenue</div>
+                <div class="kpi-value" id="stitchingRevenue">$0</div>
+                <div class="kpi-change neutral" id="stitchingChange">Loading...</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Active Orders</div>
+                <div class="kpi-value" id="activeOrders">0</div>
+                <div class="kpi-change neutral" id="ordersChange">orders</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Fabric Stock</div>
+                <div class="kpi-value" id="fabricStock">0</div>
+                <div class="kpi-change neutral" id="stockChange">yards</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Production Rate</div>
+                <div class="kpi-value" id="productionRate">0</div>
+                <div class="kpi-change neutral" id="productionChange">items/day</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Revenue Trends -->
+            <div class="chart-card">
+                <h3 class="chart-title">📈 Revenue Trends</h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Customers -->
+            <div class="chart-card">
+                <h3 class="chart-title">👥 Top Customers</h3>
+                <div class="chart-container">
+                    <canvas id="customersChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Fabric Consumption -->
+            <div class="chart-card">
+                <h3 class="chart-title">🧵 Fabric Consumption</h3>
+                <div class="chart-container">
+                    <canvas id="fabricChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Production Overview -->
+            <div class="chart-card">
+                <h3 class="chart-title">👔 Most Stitched Items</h3>
+                <div class="chart-container">
+                    <canvas id="productionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Revenue Breakdown -->
+            <div class="chart-card">
+                <h3 class="chart-title">💰 Revenue Breakdown</h3>
+                <div class="chart-container">
+                    <canvas id="revenueBreakdownChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stock Status -->
+            <div class="chart-card">
+                <h3 class="chart-title">📦 Stock Status</h3>
+                <div class="chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let charts = {};
+        
+        // API base URL function
+        function getApiBaseUrl() {
+            return window.location.origin;
+        }
+
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+        });
+
+        async function initializeDashboard() {
+            try {
+                // Load filter options
+                await loadFilterOptions();
+                
+                // Set default date range (last 30 days)
+                const today = new Date();
+                const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+                
+                document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+                document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+                
+                // Load dashboard data
+                await updateDashboard();
+                
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showError('Failed to initialize dashboard');
+            }
+        }
+
+        async function loadFilterOptions() {
+            try {
+                // Load customers
+                const customersResponse = await fetch(`${getApiBaseUrl()}/api/customers/`);
+                const customers = await customersResponse.json();
+                
+                const customerSelect = document.getElementById('customerFilter');
+                customers.forEach(customer => {
+                    const option = document.createElement('option');
+                    option.value = customer.short_name;
+                    option.textContent = customer.short_name;
+                    customerSelect.appendChild(option);
+                });
+
+                // Load locations
+                const locationsResponse = await fetch(`${getApiBaseUrl()}/api/invoices/delivery-locations`);
+                const locations = await locationsResponse.json();
+                
+                const locationSelect = document.getElementById('locationFilter');
+                locations.forEach(location => {
+                    const option = document.createElement('option');
+                    option.value = location.name;
+                    option.textContent = location.name;
+                    locationSelect.appendChild(option);
+                });
+
+                // Load garments
+                const garmentsResponse = await fetch(`${getApiBaseUrl()}/api/stitching/stitched-items`);
+                const garments = await garmentsResponse.json();
+                
+                const garmentSelect = document.getElementById('garmentFilter');
+                garments.forEach(garment => {
+                    const option = document.createElement('option');
+                    option.value = garment.name;
+                    option.textContent = garment.name;
+                    garmentSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Error loading filter options:', error);
+            }
+        }
+
+        async function updateDashboard() {
+            try {
+                showLoading();
+                
+                // Get filter values
+                const filters = getFilterValues();
+                
+                // Load all dashboard data in parallel
+                const [
+                    summaryData,
+                    revenueData,
+                    customersData,
+                    fabricData,
+                    productionData,
+                    stockData
+                ] = await Promise.all([
+                    fetchDashboardData('summary', filters),
+                    fetchDashboardData('revenue-trends', filters),
+                    fetchDashboardData('top-customers', filters),
+                    fetchDashboardData('fabric-consumption', filters),
+                    fetchDashboardData('production-overview', filters),
+                    fetchDashboardData('stock-status', filters)
+                ]);
+
+                // Update KPIs
+                updateKPIs(summaryData);
+                
+                // Update charts
+                updateRevenueChart(revenueData);
+                updateCustomersChart(customersData);
+                updateFabricChart(fabricData);
+                updateProductionChart(productionData);
+                updateRevenueBreakdownChart(summaryData);
+                updateStockChart(stockData);
+                
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+                showError('Failed to load dashboard data');
+                hideLoading();
+            }
+        }
+
+        function getFilterValues() {
+            return {
+                dateFrom: document.getElementById('dateFrom').value || null,
+                dateTo: document.getElementById('dateTo').value || null,
+                customer: document.getElementById('customerFilter').value || null,
+                location: document.getElementById('locationFilter').value || null,
+                garment: document.getElementById('garmentFilter').value || null
+            };
+        }
+
+        async function fetchDashboardData(endpoint, filters) {
+            const params = new URLSearchParams();
+            Object.keys(filters).forEach(key => {
+                if (filters[key]) {
+                    params.append(key, filters[key]);
+                }
+            });
+
+            const response = await fetch(`${getApiBaseUrl()}/api/dashboard/${endpoint}?${params}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        function updateKPIs(data) {
+            document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
+            document.getElementById('fabricSales').textContent = formatCurrency(data.fabricSales || 0);
+            document.getElementById('stitchingRevenue').textContent = formatCurrency(data.stitchingRevenue || 0);
+            document.getElementById('activeOrders').textContent = data.activeOrders || 0;
+            document.getElementById('fabricStock').textContent = formatNumber(data.fabricStock || 0);
+            document.getElementById('productionRate').textContent = formatNumber(data.productionRate || 0);
+
+            // Update change indicators
+            updateChangeIndicator('revenueChange', data.revenueChange);
+            updateChangeIndicator('fabricChange', data.fabricChange);
+            updateChangeIndicator('stitchingChange', data.stitchingChange);
+        }
+
+        function updateChangeIndicator(elementId, change) {
+            const element = document.getElementById(elementId);
+            if (change > 0) {
+                element.className = 'kpi-change positive';
+                element.textContent = `+${change.toFixed(1)}%`;
+            } else if (change < 0) {
+                element.className = 'kpi-change negative';
+                element.textContent = `${change.toFixed(1)}%`;
+            } else {
+                element.className = 'kpi-change neutral';
+                element.textContent = '0%';
+            }
+        }
+
+        function updateRevenueChart(data) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (charts.revenue) {
+                charts.revenue.destroy();
+            }
+
+            charts.revenue = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Fabric Sales',
+                        data: data.fabricSales || [],
+                        borderColor: '#5c6bc0',
+                        backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Stitching Revenue',
+                        data: data.stitchingRevenue || [],
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: getChartOptions()
+            });
+        }
+
+        function updateCustomersChart(data) {
+            const ctx = document.getElementById('customersChart').getContext('2d');
+            
+            if (charts.customers) {
+                charts.customers.destroy();
+            }
+
+            charts.customers = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: data.values || [],
+                        backgroundColor: '#5c6bc0',
+                        borderColor: '#5c6bc0',
+                        borderWidth: 1
+                    }]
+                },
+                options: getChartOptions()
+            });
+        }
+
+        function updateFabricChart(data) {
+            const ctx = document.getElementById('fabricChart').getContext('2d');
+            
+            if (charts.fabric) {
+                charts.fabric.destroy();
+            }
+
+            charts.fabric = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Yards Consumed',
+                        data: data.values || [],
+                        backgroundColor: '#ff9800',
+                        borderColor: '#ff9800',
+                        borderWidth: 1
+                    }]
+                },
+                options: getChartOptions()
+            });
+        }
+
+        function updateProductionChart(data) {
+            const ctx = document.getElementById('productionChart').getContext('2d');
+            
+            if (charts.production) {
+                charts.production.destroy();
+            }
+
+            charts.production = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Items Produced',
+                        data: data.values || [],
+                        backgroundColor: '#4caf50',
+                        borderColor: '#4caf50',
+                        borderWidth: 1
+                    }]
+                },
+                options: getChartOptions()
+            });
+        }
+
+        function updateRevenueBreakdownChart(data) {
+            const ctx = document.getElementById('revenueBreakdownChart').getContext('2d');
+            
+            if (charts.revenueBreakdown) {
+                charts.revenueBreakdown.destroy();
+            }
+
+            charts.revenueBreakdown = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Fabric Sales', 'Stitching Revenue'],
+                    datasets: [{
+                        data: [data.fabricSales || 0, data.stitchingRevenue || 0],
+                        backgroundColor: ['#5c6bc0', '#4caf50'],
+                        borderColor: ['#5c6bc0', '#4caf50'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    ...getChartOptions(),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStockChart(data) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            
+            if (charts.stock) {
+                charts.stock.destroy();
+            }
+
+            charts.stock = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
+                        borderColor: ['#4caf50', '#ff9800', '#f44336'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    ...getChartOptions(),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getChartOptions() {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#eceff1'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#b0bec5'
+                        },
+                        grid: {
+                            color: '#555'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#b0bec5'
+                        },
+                        grid: {
+                            color: '#555'
+                        }
+                    }
+                }
+            };
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(value);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-US').format(value);
+        }
+
+        function showLoading() {
+            const containers = document.querySelectorAll('.chart-container');
+            containers.forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.display = 'none';
+                }
+                container.innerHTML = '<div class="loading-text">Loading...</div>';
+            });
+        }
+
+        function hideLoading() {
+            const containers = document.querySelectorAll('.chart-container');
+            containers.forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.display = 'block';
+                }
+                const loadingText = container.querySelector('.loading-text');
+                if (loadingText) {
+                    loadingText.remove();
+                }
+            });
+        }
+
+        function showError(message) {
+            const containers = document.querySelectorAll('.chart-container');
+            containers.forEach(container => {
+                container.innerHTML = `<div class="error-text">${message}</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
