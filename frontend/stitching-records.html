@@ -1009,8 +1009,17 @@
 
                 
                 // Calculate values like Qt app
-                const sizeQty = record.size_qty || {};
-                const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+                let sizeQty = {};
+                if (record.size_qty_json) {
+                    try {
+                        // Parse the JSON string from the database
+                        sizeQty = JSON.parse(record.size_qty_json.replace(/'/g, '"'));
+                    } catch (e) {
+                        console.error('Error parsing size_qty_json:', e, record.size_qty_json);
+                        sizeQty = {};
+                    }
+                }
+                const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
                 const fabricUnitPrice = parseFloat(record.fabric_unit_price) || 0;
                 const yardsConsumed = record.yard_consumed || 0;
                 const fabricValue = fabricUnitPrice * yardsConsumed;
@@ -1137,8 +1146,16 @@
             childRow.className = 'treeview-child';
             childRow.setAttribute('data-type', type);
             
-            const sizeQty = parentRecord.size_qty || {};
-            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+            let sizeQty = {};
+            if (parentRecord.size_qty_json) {
+                try {
+                    sizeQty = JSON.parse(parentRecord.size_qty_json.replace(/'/g, '"'));
+                } catch (e) {
+                    console.error('Error parsing size_qty_json:', e, parentRecord.size_qty_json);
+                    sizeQty = {};
+                }
+            }
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
             const yardsPerPiece = totalQty > 0 ? fabric.consumption_yards / totalQty : 0;
             
             childRow.innerHTML = `
@@ -1178,8 +1195,16 @@
             childRow.className = 'treeview-child';
             childRow.setAttribute('data-type', 'lining');
             
-            const sizeQty = parentRecord.size_qty || {};
-            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (qty || 0), 0);
+            let sizeQty = {};
+            if (parentRecord.size_qty_json) {
+                try {
+                    sizeQty = JSON.parse(parentRecord.size_qty_json.replace(/'/g, '"'));
+                } catch (e) {
+                    console.error('Error parsing size_qty_json:', e, parentRecord.size_qty_json);
+                    sizeQty = {};
+                }
+            }
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
             const yardsPerPiece = totalQty > 0 ? lining.consumption_yards / totalQty : 0;
             
             childRow.innerHTML = `
@@ -1549,8 +1574,18 @@
             const modal = document.getElementById('stitchingDetailModal');
             const content = document.getElementById('stitchingDetailContent');
             
-            // Format size quantities
-            const sizeQty = record.size_qty || {};
+            // Parse size_qty_json for the record
+            let sizeQty = {};
+            if (record.size_qty_json) {
+                try {
+                    sizeQty = JSON.parse(record.size_qty_json.replace(/'/g, '"'));
+                } catch (e) {
+                    console.error('Error parsing size_qty_json:', e, record.size_qty_json);
+                    sizeQty = {};
+                }
+            }
+            
+            // Format size quantities using the parsed sizeQty
             const sizeQuantitiesHtml = Object.entries(sizeQty).map(([size, qty]) => `
                 <div class="size-item">
                     <div class="size-label">${size}</div>
@@ -1708,27 +1743,27 @@
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <div class="detail-label">S</div>
-                                <input type="number" id="amendSizeS" value="${record.size_qty.S || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeS" value="${sizeQty.S || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">M</div>
-                                <input type="number" id="amendSizeM" value="${record.size_qty.M || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeM" value="${sizeQty.M || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">L</div>
-                                <input type="number" id="amendSizeL" value="${record.size_qty.L || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeL" value="${sizeQty.L || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XL</div>
-                                <input type="number" id="amendSizeXL" value="${record.size_qty.XL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXL" value="${sizeQty.XL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XXL</div>
-                                <input type="number" id="amendSizeXXL" value="${record.size_qty.XXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXXL" value="${sizeQty.XXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XXXL</div>
-                                <input type="number" id="amendSizeXXXL" value="${record.size_qty.XXXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXXXL" value="${sizeQty.XXXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
                             </div>
                         </div>
                     </div>
