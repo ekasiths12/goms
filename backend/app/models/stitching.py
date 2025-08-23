@@ -27,12 +27,23 @@ class StitchingInvoice(db.Model):
     lining_fabrics = db.relationship('LiningFabric', backref='stitching_invoice', lazy=True, cascade='all, delete-orphan')
     packing_list_lines = db.relationship('PackingListLine', backref='stitching_invoice', lazy=True)
     group_lines = db.relationship('StitchingInvoiceGroupLine', backref='stitching_invoice', lazy=True)
+    image = db.relationship('Image', backref='stitching_invoices', lazy=True)
     
     def __repr__(self):
         return f'<StitchingInvoice {self.stitching_invoice_number}>'
     
     def to_dict(self):
         """Convert stitching invoice to dictionary"""
+        # Get image information if available
+        image_data = None
+        if self.image_id and self.image:
+            image_data = {
+                'id': self.image.id,
+                'file_path': self.image.file_path,
+                'image_url': self.image.get_image_url(),
+                'filename': self.image.file_path.split('/')[-1] if self.image.file_path else None
+            }
+        
         return {
             'id': self.id,
             'stitching_invoice_number': self.stitching_invoice_number,
@@ -47,6 +58,7 @@ class StitchingInvoice(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'invoice_line_id': self.invoice_line_id,
             'image_id': self.image_id,
+            'image': image_data,  # Add image information
             'billing_group_id': self.billing_group_id,
             'total_lining_cost': float(self.total_lining_cost) if self.total_lining_cost else 0,
             'total_fabric_cost': float(self.total_fabric_cost) if self.total_fabric_cost else 0,
