@@ -251,6 +251,7 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                 'total_value': float(stitching_invoice.total_value or 0),
                 'add_vat': stitching_invoice.add_vat,
                 'size_qty': stitching_invoice.get_size_qty(),
+                'image_id': stitching_invoice.image_id,  # Add image_id
                 'packing_list_serial': None,
                 'pl_created_at': None,
                 'pl_tax_invoice_number': None
@@ -264,6 +265,15 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                 line_data['pl_tax_invoice_number'] = packing_list_line.packing_list.tax_invoice_number
             
             lines.append(line_data)
+    
+    # Fetch image paths for all image_ids
+    image_map = {}
+    image_ids = [line['image_id'] for line in lines if line.get('image_id')]
+    if image_ids:
+        from app.models.image import Image
+        images = Image.query.filter(Image.id.in_(image_ids)).all()
+        for image in images:
+            image_map[image.id] = image.get_image_path_for_pdf()
     
     # Group by tax invoice number
     tax_groups = {}
@@ -343,7 +353,18 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             
             for line in pl_lines:
                 pdf.cell(col_widths[0], 18, str(line['stitching_invoice_number'] or ''), 1)
-                pdf.cell(col_widths[1], 18, '', 1)  # Image placeholder
+                
+                # Image cell
+                img_path = image_map.get(line.get('image_id'))
+                x = pdf.get_x()
+                y = pdf.get_y()
+                if img_path and os.path.exists(img_path):
+                    pdf.cell(col_widths[1], 18, '', 1)
+                    pdf.image(img_path, x+1, y+1, col_widths[1]-2, 16)
+                else:
+                    pdf.cell(col_widths[1], 18, '', 1)
+                pdf.set_xy(x+col_widths[1], y)
+                
                 pdf.cell(col_widths[2], 18, str(line['stitched_item'] or ''), 1)
                 pdf.cell(col_widths[3], 18, str(line['fabric_name'] or ''), 1)
                 pdf.cell(col_widths[4], 18, str(line['color'] or ''), 1)
