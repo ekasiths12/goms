@@ -81,13 +81,13 @@ def get_revenue_trends():
         # Query for fabric sales by date
         fabric_query = text("""
             SELECT 
-                DATE(i.created_at) as date,
+                DATE(i.invoice_date) as date,
                 SUM(il.yards_sent * il.unit_price) as fabric_sales
             FROM invoices i
             JOIN invoice_lines il ON i.id = il.invoice_id
-            WHERE i.created_at BETWEEN :date_from AND :date_to
-            GROUP BY DATE(i.created_at)
-            ORDER BY DATE(i.created_at)
+            WHERE i.invoice_date BETWEEN :date_from AND :date_to
+            GROUP BY DATE(i.invoice_date)
+            ORDER BY DATE(i.invoice_date)
         """)
         
         fabric_results = db.session.execute(fabric_query, {
@@ -167,8 +167,8 @@ def get_top_customers():
             FROM customers c
             LEFT JOIN invoices i ON c.id = i.customer_id
             LEFT JOIN invoice_lines il ON i.id = il.invoice_id
-            """ + (f"WHERE i.created_at >= '{date_from}'" if date_from else "") + """
-            """ + (f"{'AND' if date_from else 'WHERE'} i.created_at <= '{date_to}'" if date_to else "") + """
+            """ + (f"WHERE i.invoice_date >= '{date_from}'" if date_from else "") + """
+            """ + (f"{'AND' if date_from else 'WHERE'} i.invoice_date <= '{date_to}'" if date_to else "") + """
             GROUP BY c.id, c.short_name
             HAVING total_revenue > 0
             ORDER BY total_revenue DESC
@@ -203,8 +203,8 @@ def get_fabric_consumption():
             FROM invoice_lines il
             JOIN invoices i ON il.invoice_id = i.id
             WHERE COALESCE(il.yards_consumed, 0) > 0
-            """ + (f"AND i.created_at >= '{date_from}'" if date_from else "") + """
-            """ + (f"AND i.created_at <= '{date_to}'" if date_to else "") + """
+            """ + (f"AND i.invoice_date >= '{date_from}'" if date_from else "") + """
+            """ + (f"AND i.invoice_date <= '{date_to}'" if date_to else "") + """
             GROUP BY il.item_name
             ORDER BY consumed DESC
             LIMIT 10
