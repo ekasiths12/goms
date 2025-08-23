@@ -420,7 +420,10 @@
 
         // Initialize dashboard on page load
         document.addEventListener('DOMContentLoaded', function() {
-            initializeDashboard();
+            // Add a small delay to ensure all elements are rendered
+            setTimeout(() => {
+                initializeDashboard();
+            }, 100);
         });
 
         async function initializeDashboard() {
@@ -585,7 +588,13 @@
         }
 
         function updateRevenueChart(data) {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas) {
+                console.error('Revenue chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             if (charts.revenue) {
                 charts.revenue.destroy();
@@ -614,7 +623,13 @@
         }
 
         function updateCustomersChart(data) {
-            const ctx = document.getElementById('customersChart').getContext('2d');
+            const canvas = document.getElementById('customersChart');
+            if (!canvas) {
+                console.error('Customers chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             if (charts.customers) {
                 charts.customers.destroy();
@@ -637,7 +652,13 @@
         }
 
         function updateFabricChart(data) {
-            const ctx = document.getElementById('fabricChart').getContext('2d');
+            const canvas = document.getElementById('fabricChart');
+            if (!canvas) {
+                console.error('Fabric chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             if (charts.fabric) {
                 charts.fabric.destroy();
@@ -660,7 +681,13 @@
         }
 
         function updateProductionChart(data) {
-            const ctx = document.getElementById('productionChart').getContext('2d');
+            const canvas = document.getElementById('productionChart');
+            if (!canvas) {
+                console.error('Production chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             if (charts.production) {
                 charts.production.destroy();
@@ -683,7 +710,13 @@
         }
 
         function updateRevenueBreakdownChart(data) {
-            const ctx = document.getElementById('revenueBreakdownChart').getContext('2d');
+            const canvas = document.getElementById('revenueBreakdownChart');
+            if (!canvas) {
+                console.error('Revenue breakdown chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
             
             if (charts.revenueBreakdown) {
                 charts.revenueBreakdown.destroy();
@@ -716,8 +749,13 @@
         }
 
         function updateStockChart(data) {
-            const ctx = document.getElementById('stockChart').getContext('2d');
+            const canvas = document.getElementById('stockChart');
+            if (!canvas) {
+                console.error('Stock chart canvas not found');
+                return;
+            }
             
+            const ctx = canvas.getContext('2d');
             if (charts.stock) {
                 charts.stock.destroy();
             }
