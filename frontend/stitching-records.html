@@ -313,6 +313,24 @@
             background: #3949ab;
         }
 
+        .treeview-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .treeview-container::-webkit-scrollbar-track {
+            background: #424242;
+            border-radius: 4px;
+        }
+
+        .treeview-container::-webkit-scrollbar-thumb {
+            background: #5c6bc0;
+            border-radius: 4px;
+        }
+
+        .treeview-container::-webkit-scrollbar-thumb:hover {
+            background: #3949ab;
+        }
+
         .pagination-controls {
             display: flex;
             justify-content: space-between;
@@ -548,6 +566,8 @@
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
+            max-height: 600px;
+            overflow-y: auto;
         }
 
         .treeview-header {
