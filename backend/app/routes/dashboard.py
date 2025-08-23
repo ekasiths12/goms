@@ -6,6 +6,7 @@ from app.models.invoice import Invoice, InvoiceLine
 from app.models.stitching import StitchingInvoice
 from app.models.customer import Customer
 from app.models.packing_list import PackingList
+from app.models.group_bill import StitchingInvoiceGroup
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -16,30 +17,98 @@ FABRIC_COMMISSION_RATE = 0.051
 def get_dashboard_summary():
     """Get dashboard summary data including KPIs"""
     try:
-        # Simple queries to start with
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
         
-        # Calculate stitching revenue (full amount - you keep 100% of stitching)
-        stitching_revenue = db.session.query(
-            func.sum(StitchingInvoice.total_value).label('total')
-        ).scalar() or 0
+        # Build filter conditions
+        where_conditions = []
+        params = {}
         
-        # Total revenue (only stitching revenue - no fabric commission)
-        total_revenue = float(stitching_revenue)
+        if date_from:
+            where_conditions.append("sig.invoice_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("sig.invoice_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
         
-        # Active orders (count of stitching records)
-        active_orders = db.session.query(StitchingInvoice).count()
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # Calculate fabric commission (based on group bill dates)
+        fabric_query = text(f"""
+            SELECT 
+                COALESCE(SUM(il.yards_sent * il.unit_price), 0) as fabric_sales_total,
+                COALESCE(SUM(il.yards_sent * il.unit_price * {FABRIC_COMMISSION_RATE}), 0) as fabric_commission
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE {where_clause}
+        """)
+        
+        fabric_result = db.session.execute(fabric_query, params).fetchone()
+        fabric_sales_total = float(fabric_result.fabric_sales_total or 0)
+        fabric_commission = float(fabric_result.fabric_commission or 0)
+        
+        # Calculate stitching revenue (based on group bill dates)
+        stitching_query = text(f"""
+            SELECT COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE {where_clause}
+        """)
+        
+        stitching_result = db.session.execute(stitching_query, params).fetchone()
+        stitching_revenue = float(stitching_result.stitching_revenue or 0)
+        
+        # Total revenue
+        total_revenue = fabric_commission + stitching_revenue
+        
+        # Active orders (count of unbilled stitching records)
+        active_orders_query = text("""
+            SELECT COUNT(*) as count
+            FROM stitching_invoices si
+            WHERE si.billing_group_id IS NULL
+        """)
+        active_orders_result = db.session.execute(active_orders_query).fetchone()
+        active_orders = int(active_orders_result.count or 0)
         
         # Fabric stock (pending yards)
-        fabric_stock = db.session.query(
-            func.sum(InvoiceLine.yards_sent - func.coalesce(InvoiceLine.yards_consumed, 0)).label('pending')
-        ).filter(InvoiceLine.yards_sent > func.coalesce(InvoiceLine.yards_consumed, 0)).scalar() or 0
+        fabric_stock_query = text("""
+            SELECT COALESCE(SUM(il.yards_sent - COALESCE(il.yards_consumed, 0)), 0) as pending_yards
+            FROM invoice_lines il
+            WHERE (il.yards_sent - COALESCE(il.yards_consumed, 0)) > 0
+        """)
+        fabric_stock_result = db.session.execute(fabric_stock_query).fetchone()
+        fabric_stock = float(fabric_stock_result.pending_yards or 0)
         
         # Production rate (records per day - last 30 days)
         thirty_days_ago = datetime.now() - timedelta(days=30)
-        recent_production_count = db.session.query(StitchingInvoice).filter(
-            StitchingInvoice.created_at >= thirty_days_ago
-        ).count()
-        
+        production_query = text("""
+            SELECT COUNT(*) as count
+            FROM stitching_invoices si
+            WHERE si.created_at >= :thirty_days_ago
+        """)
+        production_result = db.session.execute(production_query, {
+            'thirty_days_ago': thirty_days_ago
+        }).fetchone()
+        recent_production_count = int(production_result.count or 0)
         production_rate = recent_production_count / 30 if recent_production_count > 0 else 0
         
         # Calculate percentage changes (mock data for now)
@@ -49,11 +118,14 @@ def get_dashboard_summary():
         
         return jsonify({
             'totalRevenue': float(total_revenue),
+            'fabricSales': float(fabric_commission),  # Show commission amount
+            'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
             'stitchingRevenue': float(stitching_revenue),
             'activeOrders': active_orders,
             'fabricStock': float(fabric_stock),
             'productionRate': round(production_rate, 1),
             'revenueChange': revenue_change,
+            'fabricChange': fabric_change,
             'stitchingChange': stitching_change
         }), 200
         
@@ -62,11 +134,14 @@ def get_dashboard_summary():
 
 @dashboard_bp.route('/revenue-trends', methods=['GET'])
 def get_revenue_trends():
-    """Get revenue trends over time"""
+    """Get revenue trends over time based on group bill dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
         
         # Set default date range if not provided
         if not date_from:
@@ -74,43 +149,79 @@ def get_revenue_trends():
         if not date_to:
             date_to = datetime.now().strftime('%Y-%m-%d')
         
-        # Query for stitching revenue by group bill date
-        stitching_query = text("""
+        # Build filter conditions
+        where_conditions = []
+        params = {
+            'date_from': date_from,
+            'date_to': date_to,
+            'commission_rate': FABRIC_COMMISSION_RATE
+        }
+        
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # Query for revenue by group bill date
+        query = text(f"""
             SELECT 
-                DATE(si.created_at) as date,
-                SUM(si.total_value) as stitching_revenue
-            FROM stitching_invoices si
-            WHERE si.created_at BETWEEN :date_from AND :date_to
-            GROUP BY DATE(si.created_at)
-            ORDER BY DATE(si.created_at)
+                DATE(sig.invoice_date) as date,
+                COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE sig.invoice_date BETWEEN :date_from AND :date_to
+            AND {where_clause}
+            GROUP BY DATE(sig.invoice_date)
+            ORDER BY DATE(sig.invoice_date)
         """)
         
-        stitching_results = db.session.execute(stitching_query, {
-            'date_from': date_from,
-            'date_to': date_to
-        }).fetchall()
-        
-
-        
-        # Combine results
-        dates = []
-        stitching_revenue = []
+        results = db.session.execute(query, params).fetchall()
         
         # Create date range
         start_date = datetime.strptime(date_from, '%Y-%m-%d')
         end_date = datetime.strptime(date_to, '%Y-%m-%d')
         current_date = start_date
         
-        stitching_dict = {str(row.date): float(row.stitching_revenue or 0) for row in stitching_results}
+        dates = []
+        fabric_commission = []
+        stitching_revenue = []
+        
+        # Create dictionary for quick lookup
+        data_dict = {}
+        for row in results:
+            date_str = str(row.date)
+            data_dict[date_str] = {
+                'fabric_commission': float(row.fabric_commission or 0),
+                'stitching_revenue': float(row.stitching_revenue or 0)
+            }
         
         while current_date <= end_date:
             date_str = current_date.strftime('%Y-%m-%d')
             dates.append(current_date.strftime('%m/%d'))
-            stitching_revenue.append(stitching_dict.get(date_str, 0))
+            
+            if date_str in data_dict:
+                fabric_commission.append(data_dict[date_str]['fabric_commission'])
+                stitching_revenue.append(data_dict[date_str]['stitching_revenue'])
+            else:
+                fabric_commission.append(0)
+                stitching_revenue.append(0)
+            
             current_date += timedelta(days=1)
         
         return jsonify({
             'labels': dates,
+            'fabricSales': fabric_commission,
             'stitchingRevenue': stitching_revenue
         }), 200
         
@@ -119,40 +230,55 @@ def get_revenue_trends():
 
 @dashboard_bp.route('/top-customers', methods=['GET'])
 def get_top_customers():
-    """Get top customers by revenue"""
+    """Get top customers by revenue with split commission/stitching"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
         
-        query = text("""
+        # Build filter conditions
+        where_conditions = []
+        params = {'commission_rate': FABRIC_COMMISSION_RATE}
+        
+        if date_from:
+            where_conditions.append("sig.invoice_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("sig.invoice_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(
-                    (SELECT SUM(si.total_value) 
-                     FROM stitching_invoices si 
-                     JOIN invoice_lines il2 ON si.invoice_line_id = il2.id
-                     JOIN invoices i2 ON il2.invoice_id = i2.id
-                     WHERE i2.customer_id = c.id
-                     """ + (f"AND si.created_at >= '{date_from}'" if date_from else "") + """
-                     """ + (f"AND si.created_at <= '{date_to}'" if date_to else "") + """
-                    ), 0
-                ) as stitching_revenue
-            FROM customers c
-            LEFT JOIN invoices i ON c.id = i.customer_id
-            LEFT JOIN invoice_lines il ON i.id = il.invoice_id
-            """ + (f"WHERE i.invoice_date >= '{date_from}'" if date_from else "") + """
-            """ + (f"{'AND' if date_from else 'WHERE'} i.invoice_date <= '{date_to}'" if date_to else "") + """
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE {where_clause}
             GROUP BY c.id, c.short_name
             HAVING (fabric_commission + stitching_revenue) > 0
             ORDER BY (fabric_commission + stitching_revenue) DESC
             LIMIT 10
         """)
         
-        results = db.session.execute(query, {
-            'commission_rate': FABRIC_COMMISSION_RATE
-        }).fetchall()
+        results = db.session.execute(query, params).fetchall()
         
         labels = [row.short_name for row in results]
         fabric_commission = [float(row.fabric_commission) for row in results]
@@ -169,43 +295,63 @@ def get_top_customers():
 
 @dashboard_bp.route('/fabric-consumption', methods=['GET'])
 def get_fabric_consumption():
-    """Get fabric consumption by yards per garment per location"""
+    """Get fabric consumption by location (yards per garment)"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
         location = request.args.get('location')
         
-        # Build location filter
-        location_filter = ""
-        if location:
-            location_filter = f"AND si.delivery_location = '{location}'"
+        # Build filter conditions
+        where_conditions = []
+        params = {}
         
-        query = text("""
+        if date_from:
+            where_conditions.append("sig.invoice_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("sig.invoice_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
             SELECT 
-                il.item_name,
-                SUM(COALESCE(il.yards_consumed, 0)) as total_yards,
+                COALESCE(il.delivered_location, 'Unknown') as location,
+                SUM(COALESCE(si.yard_consumed, 0)) as total_yards,
                 COUNT(DISTINCT si.id) as garment_count,
                 CASE 
                     WHEN COUNT(DISTINCT si.id) > 0 
-                    THEN SUM(COALESCE(il.yards_consumed, 0)) / COUNT(DISTINCT si.id)
+                    THEN SUM(COALESCE(si.yard_consumed, 0)) / COUNT(DISTINCT si.id)
                     ELSE 0 
                 END as yards_per_garment
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            LEFT JOIN stitching_invoices si ON il.id = si.invoice_line_id
-            WHERE COALESCE(il.yards_consumed, 0) > 0
-            """ + (f"AND si.created_at >= '{date_from}'" if date_from else "") + """
-            """ + (f"{'AND' if date_from else 'AND'} si.created_at <= '{date_to}'" if date_to else "") + """
-            GROUP BY il.item_name
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE COALESCE(si.yard_consumed, 0) > 0
+            AND {where_clause}
+            GROUP BY il.delivered_location
             HAVING garment_count > 0
             ORDER BY yards_per_garment DESC
             LIMIT 10
         """)
         
-        results = db.session.execute(query).fetchall()
+        results = db.session.execute(query, params).fetchall()
         
-        labels = [row.item_name for row in results]
+        labels = [row.location for row in results]
         values = [float(row.yards_per_garment) for row in results]
         
         return jsonify({
@@ -218,36 +364,54 @@ def get_fabric_consumption():
 
 @dashboard_bp.route('/production-overview', methods=['GET'])
 def get_production_overview():
-    """Get production overview by stitched items"""
+    """Get most stitched items based on group bill dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
         garment = request.args.get('garment')
+        location = request.args.get('location')
         
-        query_conditions = []
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
         if date_from:
-            query_conditions.append(f"created_at >= '{date_from}'")
+            where_conditions.append("sig.invoice_date >= :date_from")
+            params['date_from'] = date_from
         if date_to:
-            query_conditions.append(f"created_at <= '{date_to}'")
+            where_conditions.append("sig.invoice_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
         if garment:
-            query_conditions.append(f"stitched_item LIKE '%{garment}%'")
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
         
-        where_clause = "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
         query = text(f"""
             SELECT 
-                stitched_item,
+                si.stitched_item,
                 COUNT(*) as total_items
-            FROM stitching_invoices
-            {where_clause}
-            GROUP BY stitched_item
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY si.stitched_item
             HAVING total_items > 0
             ORDER BY total_items DESC
             LIMIT 10
         """)
         
-        results = db.session.execute(query).fetchall()
+        results = db.session.execute(query, params).fetchall()
         
         labels = [row.stitched_item for row in results]
         values = [int(row.total_items) for row in results]
@@ -262,23 +426,51 @@ def get_production_overview():
 
 @dashboard_bp.route('/stock-status', methods=['GET'])
 def get_stock_status():
-    """Get fabric stock overview"""
+    """Get fabric stock overview by location"""
     try:
-        # Query for fabric stock by type
-        query = text("""
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
+        if date_from:
+            where_conditions.append("i.invoice_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("i.invoice_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
             SELECT 
-                il.item_name,
-                SUM(yards_sent - COALESCE(yards_consumed, 0)) as pending_yards
+                COALESCE(il.delivered_location, 'Unknown') as location,
+                SUM(il.yards_sent - COALESCE(il.yards_consumed, 0)) as pending_yards
             FROM invoice_lines il
-            WHERE (yards_sent - COALESCE(yards_consumed, 0)) > 0
-            GROUP BY il.item_name
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE (il.yards_sent - COALESCE(il.yards_consumed, 0)) > 0
+            AND {where_clause}
+            GROUP BY il.delivered_location
             ORDER BY pending_yards DESC
             LIMIT 10
         """)
         
-        results = db.session.execute(query).fetchall()
+        results = db.session.execute(query, params).fetchall()
         
-        labels = [row.item_name for row in results]
+        labels = [row.location for row in results]
         values = [float(row.pending_yards) for row in results]
         
         return jsonify({
@@ -291,29 +483,73 @@ def get_stock_status():
 
 @dashboard_bp.route('/production-rate', methods=['GET'])
 def get_production_rate():
-    """Get production rate over time"""
+    """Get production rate over time based on group bill dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
         
-        query = text("""
+        # Set default date range if not provided
+        if not date_from:
+            date_from = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        if not date_to:
+            date_to = datetime.now().strftime('%Y-%m-%d')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {
+            'date_from': date_from,
+            'date_to': date_to
+        }
+        
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
             SELECT 
-                DATE(created_at) as date,
+                DATE(sig.invoice_date) as date,
                 COUNT(*) as items_produced
-            FROM stitching_invoices
-            WHERE created_at BETWEEN :date_from AND :date_to
-            GROUP BY DATE(created_at)
-            ORDER BY DATE(created_at)
+            FROM stitching_invoice_groups sig
+            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
+            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON sig.customer_id = c.id
+            WHERE sig.invoice_date BETWEEN :date_from AND :date_to
+            AND {where_clause}
+            GROUP BY DATE(sig.invoice_date)
+            ORDER BY DATE(sig.invoice_date)
         """)
         
-        results = db.session.execute(query, {
-            'date_from': date_from or (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'),
-            'date_to': date_to or datetime.now().strftime('%Y-%m-%d')
-        }).fetchall()
+        results = db.session.execute(query, params).fetchall()
         
-        dates = [row.date.strftime('%m/%d') for row in results]
-        values = [int(row.items_produced) for row in results]
+        # Create date range
+        start_date = datetime.strptime(date_from, '%Y-%m-%d')
+        end_date = datetime.strptime(date_to, '%Y-%m-%d')
+        current_date = start_date
+        
+        dates = []
+        values = []
+        
+        # Create dictionary for quick lookup
+        data_dict = {str(row.date): int(row.items_produced) for row in results}
+        
+        while current_date <= end_date:
+            date_str = current_date.strftime('%Y-%m-%d')
+            dates.append(current_date.strftime('%m/%d'))
+            values.append(data_dict.get(date_str, 0))
+            current_date += timedelta(days=1)
         
         return jsonify({
             'labels': dates,
@@ -325,25 +561,5 @@ def get_production_rate():
 
 @dashboard_bp.route('/test', methods=['GET'])
 def test_dashboard():
-    """Test endpoint for dashboard API"""
-    return jsonify({
-        'message': 'Dashboard API is working',
-        'status': 'ok'
-    }), 200
-
-@dashboard_bp.route('/simple-test', methods=['GET'])
-def simple_test():
-    """Simple test to check basic queries"""
-    try:
-        # Test basic counts
-        invoice_count = db.session.query(InvoiceLine).count()
-        stitching_count = db.session.query(StitchingInvoice).count()
-        
-        return jsonify({
-            'invoiceLines': invoice_count,
-            'stitchingRecords': stitching_count,
-            'message': 'Simple queries working'
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """Test endpoint for dashboard"""
+    return jsonify({'message': 'Dashboard API is working!'}), 200
