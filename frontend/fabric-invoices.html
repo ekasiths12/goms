@@ -2584,6 +2584,7 @@
 
         // Customer ID Management Functions
         let customerIds = [];
+        let customerIdMappings = [];
 
         async function loadCustomerIds() {
             try {
@@ -2593,6 +2594,14 @@
                 if (response.ok) {
                     customerIds = await response.json();
                     console.log('✅ Loaded customer IDs:', customerIds.length, 'items:', customerIds);
+                    
+                    // Load customer ID mappings with short names
+                    const mappingsResponse = await fetch(`${getApiBaseUrl()}/api/customers/customer-id-mappings`);
+                    if (mappingsResponse.ok) {
+                        customerIdMappings = await mappingsResponse.json();
+                        console.log('✅ Loaded customer ID mappings:', customerIdMappings.length, 'items');
+                    }
+                    
                     displayCustomerIds();
                 } else {
                     console.error('❌ Failed to load customer IDs, status:', response.status);
@@ -2613,9 +2622,27 @@
             list.innerHTML = '';
             customerIds.sort().forEach(id => {
                 const div = document.createElement('div');
-                div.style.cssText = 'padding: 5px; margin: 2px 0; background: #555; border-radius: 3px; cursor: pointer;';
-                div.textContent = id;
-                div.onclick = () => div.classList.toggle('selected');
+                div.style.cssText = 'padding: 5px; margin: 2px 0; background: #555; border-radius: 3px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s;';
+                div.onclick = () => {
+                    div.classList.toggle('selected');
+                    // Update background color for visual feedback
+                    if (div.classList.contains('selected')) {
+                        div.style.backgroundColor = '#2196F3';
+                        div.style.color = 'white';
+                    } else {
+                        div.style.backgroundColor = '#555';
+                        div.style.color = 'inherit';
+                    }
+                };
+                
+                // Find mapping for this customer ID
+                const mapping = customerIdMappings.find(m => m.customer_id === id);
+                const shortName = mapping ? mapping.short_name : '';
+                
+                div.innerHTML = `
+                    <span>${id}</span>
+                    <span style="color: #90caf9; font-size: 0.9em; margin-left: 10px;">${shortName || 'No name'}</span>
+                `;
                 div.ondblclick = () => removeCustomerId(id);
                 list.appendChild(div);
             });
@@ -2652,7 +2679,9 @@
             }
             
             selected.forEach(el => {
-                const id = el.textContent;
+                // Get the customer ID from the first span element (the ID, not the name)
+                const idSpan = el.querySelector('span:first-child');
+                const id = idSpan ? idSpan.textContent : el.textContent.split(' ')[0];
                 customerIds = customerIds.filter(cid => cid !== id);
             });
             

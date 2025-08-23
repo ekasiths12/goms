@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.models.customer import Customer
+from app.models.customer_id_mapping import CustomerIdMapping
 from main import db
 import json
 import os
@@ -173,17 +174,10 @@ def get_active_customers():
 def get_customer_ids():
     """Get selected customer IDs for .dat import filtering"""
     try:
-        print(f"🔍 Looking for customer IDs file at: {CUSTOMER_ID_FILE}")
-        print(f"🔍 Current working directory: {os.getcwd()}")
-        print(f"🔍 File exists: {os.path.exists(CUSTOMER_ID_FILE)}")
-        
-        if os.path.exists(CUSTOMER_ID_FILE):
-            with open(CUSTOMER_ID_FILE, 'r') as f:
-                customer_ids = json.load(f)
-            print(f"✅ Loaded {len(customer_ids)} customer IDs from {CUSTOMER_ID_FILE}")
-        else:
-            customer_ids = []
-            print(f"⚠️ Customer IDs file not found at {CUSTOMER_ID_FILE}")
+        print("🔍 Loading customer IDs from database...")
+        mappings = CustomerIdMapping.get_all_mappings()
+        customer_ids = [mapping.customer_id for mapping in mappings]
+        print(f"✅ Loaded {len(customer_ids)} customer IDs from database")
         return jsonify(customer_ids)
     except Exception as e:
         print(f"❌ Error loading customer IDs: {e}")
@@ -196,12 +190,31 @@ def save_customer_ids():
         data = request.get_json()
         customer_ids = data.get('customer_ids', [])
         
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(CUSTOMER_ID_FILE), exist_ok=True)
+        print(f"💾 Saving {len(customer_ids)} customer IDs to database")
         
-        with open(CUSTOMER_ID_FILE, 'w') as f:
-            json.dump(customer_ids, f)
+        # Clear existing mappings
+        CustomerIdMapping.query.delete()
         
-        return {'message': 'Customer IDs saved successfully'}, 200
+        # Add new mappings
+        for customer_id in customer_ids:
+            mapping = CustomerIdMapping(customer_id=customer_id)
+            db.session.add(mapping)
+        
+        db.session.commit()
+        print(f"✅ Successfully saved {len(customer_ids)} customer IDs to database")
+        
+        return jsonify({'success': True, 'message': f'Saved {len(customer_ids)} customer IDs'})
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error saving customer IDs: {e}")
+        return {'error': str(e)}, 500
+
+@customers_bp.route('/customer-id-mappings', methods=['GET'])
+def get_customer_id_mappings():
+    """Get customer ID mappings with short names"""
+    try:
+        mappings = CustomerIdMapping.get_all_mappings()
+        result = [mapping.to_dict() for mapping in mappings]
+        return jsonify(result)
     except Exception as e:
         return {'error': str(e)}, 500

@@ -5,6 +5,7 @@ from datetime import datetime
 from main import db
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
+from app.models.customer_id_mapping import CustomerIdMapping
 from app.services.storage_service_factory import StorageServiceFactory
 import traceback
 
@@ -217,6 +218,9 @@ def import_dat_file_core(file, selected_customer_ids=None):
             else:
                 print(f"📋 Found existing customer: ID={customer.id}, CustomerID={customer.customer_id}, Name={customer.short_name}")
             
+            # Create or update customer ID mapping with short name
+            CustomerIdMapping.create_or_update(customer_id_normalized, short_name)
+            
             # Handle duplicate invoice numbers by adding line numbers (like old Qt app)
             if invoice_number in invoice_line_counts:
                 invoice_line_counts[invoice_number] += 1
@@ -299,5 +303,5 @@ def import_dat_file_core(file, selected_customer_ids=None):
             'skipped_count': 0,
             'errors': errors,
             'summary': summary,
-            'file_path': file.filename if file else 'unknown'
+            'file_path': file.filename
         }

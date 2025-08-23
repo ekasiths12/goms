@@ -1,4 +1,5 @@
 from .customer import Customer
+from .customer_id_mapping import CustomerIdMapping
 from .invoice import Invoice, InvoiceLine
 from .stitching import StitchingInvoice, GarmentFabric, LiningFabric
 from .packing_list import PackingList, PackingListLine
@@ -8,6 +9,7 @@ from .serial_counter import SerialCounter
 
 __all__ = [
     'Customer',
+    'CustomerIdMapping',
     'Invoice',
     'InvoiceLine', 
     'StitchingInvoice',
