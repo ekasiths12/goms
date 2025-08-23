@@ -27,14 +27,17 @@ class Config:
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or 'static/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
-    # Railway volume storage configuration
-    RAILWAY_VOLUME_PATH = os.environ.get('RAILWAY_VOLUME_PATH') or '/app/static'
+    # AWS S3 configuration
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+    AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME')
     
-    # PDF storage configuration
-    PDF_FOLDER = os.environ.get('PDF_FOLDER') or 'static/pdfs'
+    # PDF storage configuration (now in S3)
+    PDF_FOLDER = 'pdfs'
     
-    # Image storage configuration
-    IMAGE_FOLDER = os.environ.get('IMAGE_FOLDER') or 'static/images'
+    # Image storage configuration (now in S3)
+    IMAGE_FOLDER = 'images'
     
     # Application settings
     ITEMS_PER_PAGE = 50

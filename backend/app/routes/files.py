@@ -1,11 +1,11 @@
-from flask import Blueprint, request, jsonify, send_from_directory, current_app
+from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from main import db
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
-from app.services.file_storage_service import FileStorageService
+from app.services.s3_storage_service import S3StorageService
 import traceback
 
 files_bp = Blueprint('files', __name__)
@@ -22,68 +22,63 @@ def download_pdf(type, id):
 
 @files_bp.route('/static/<path:filename>', methods=['GET'])
 def serve_static_file(filename):
-    """Serve static files from Railway volume storage"""
+    """Redirect to S3 URL for static files"""
     try:
-        storage_service = FileStorageService()
+        # Files are now served directly from S3, so redirect to S3 URL
+        storage_service = S3StorageService()
         
-        # Determine the directory based on the filename path
+        # Determine the S3 key based on the filename path
         if filename.startswith('images/'):
-            directory = 'images'
-            relative_path = filename
+            s3_key = filename
         elif filename.startswith('uploads/'):
-            directory = 'uploads'
-            relative_path = filename
+            s3_key = filename
         elif filename.startswith('pdfs/'):
-            directory = 'pdfs'
-            relative_path = filename
+            s3_key = filename
         else:
             # Default to images directory
-            directory = 'images'
-            relative_path = filename
+            s3_key = f"images/{filename}"
         
-        # Get the absolute path
-        absolute_path = storage_service.get_file_path(relative_path)
+        # Generate S3 URL
+        s3_url = storage_service.get_file_url(s3_key)
         
-        # Check if file exists
-        if not os.path.exists(absolute_path):
-            return jsonify({'error': 'File not found'}), 404
-        
-        # Get the directory path and filename
-        dir_path = os.path.dirname(absolute_path)
-        file_name = os.path.basename(absolute_path)
-        
-        # Serve the file
-        return send_from_directory(dir_path, file_name)
+        # Redirect to S3 URL
+        return jsonify({
+            'redirect_url': s3_url,
+            'message': 'File is now served from AWS S3. Please use the redirect_url to access the file.'
+        }), 302
         
     except Exception as e:
-        return jsonify({'error': f'Error serving file: {str(e)}'}), 500
+        return jsonify({'error': f'Error generating S3 URL: {str(e)}'}), 500
 
 @files_bp.route('/file-info/<path:filename>', methods=['GET'])
 def get_file_info(filename):
-    """Get information about a file"""
+    """Get information about a file in S3"""
     try:
-        storage_service = FileStorageService()
+        storage_service = S3StorageService()
         
-        # Check if file exists
+        # Check if file exists in S3
         if not storage_service.file_exists(filename):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found in S3'}), 404
         
-        # Get file information
-        absolute_path = storage_service.get_file_path(filename)
-        file_stat = os.stat(absolute_path)
-        
-        file_info = {
-            'filename': os.path.basename(filename),
-            'path': filename,
-            'size': file_stat.st_size,
-            'modified': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
-            'url': storage_service.get_file_url(filename)
-        }
-        
-        return jsonify({
-            'success': True,
-            'file_info': file_info
-        })
+        # Get file information from S3
+        try:
+            response = storage_service.s3_client.head_object(Bucket=storage_service.bucket_name, Key=filename)
+            file_info = {
+                'filename': os.path.basename(filename),
+                'path': filename,
+                'size': response['ContentLength'],
+                'modified': response['LastModified'].isoformat(),
+                'url': storage_service.get_file_url(filename),
+                'content_type': response.get('ContentType', 'unknown')
+            }
+            
+            return jsonify({
+                'success': True,
+                'file_info': file_info
+            })
+            
+        except Exception as e:
+            return jsonify({'error': f'Error getting S3 file info: {str(e)}'}), 500
         
     except Exception as e:
         return jsonify({'error': f'Error getting file info: {str(e)}'}), 500

@@ -183,7 +183,7 @@ def create_stitching_record():
             if image_id:
                 image = Image.query.get(image_id)
                 if image:
-                    # The image is already saved with Railway volume storage
+                    # The image is already saved with AWS S3
                     # No additional processing needed
                     pass
         
