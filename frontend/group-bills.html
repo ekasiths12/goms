@@ -930,7 +930,6 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th style="width: 80px;">Created At</th>
                         <th style="width: 140px;">Bill #</th>
                         <th style="width: 140px;">PL #</th>
                         <th style="width: 80px;">Garment</th>
@@ -1168,11 +1167,11 @@
                     <td class="checkbox-wrapper">
                         <input type="checkbox" class="group-bill-checkbox" data-group-id="${groupBill.id}" onclick="toggleGroupBillSelection(event, ${groupBill.id})">
                     </td>
-                    <td>${formatDate(groupBill.invoice_date || groupBill.created_at)}</td>
                     <td onclick="toggleGroupExpansion(${groupBill.id})">
                         <span class="expand-indicator">▶</span> ${groupBill.group_number || ''}
                     </td>
                     <td>Summary (${groupBill.line_count || 0} records)</td>
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -1217,6 +1216,7 @@
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
                         <td>${formatNumber(groupBill.details.total_fabric_used || 0)}</td>
                         <td></td>
                         <td>${formatCurrency(groupBill.details.total_fabric_value || 0)}</td>
@@ -1244,9 +1244,10 @@
                             fabricDetailRow.style.display = 'none';
                             fabricDetailRow.innerHTML = `
                                 <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                                 <td>${formatDate(record.created_at)}</td>
-                                <td></td>
-                                <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
                                 <td>${record.customer || ''}</td>
@@ -1293,6 +1294,7 @@
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
                         <td>${formatInteger(groupBill.details.size_totals?.S || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.M || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.L || 0)}</td>
@@ -1317,9 +1319,10 @@
                             stitchingDetailRow.style.display = 'none';
                             stitchingDetailRow.innerHTML = `
                                 <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                                 <td>${formatDate(record.created_at)}</td>
-                                <td></td>
-                                <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
                                 <td>${record.customer || ''}</td>
