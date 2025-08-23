@@ -40,6 +40,7 @@ class StitchingInvoice(db.Model):
             'yard_consumed': float(self.yard_consumed) if self.yard_consumed else 0,
             'stitched_item': self.stitched_item,
             'size_qty': self.get_size_qty(),
+            'size_qty_json': self.size_qty_json,  # Add the raw JSON string
             'price': float(self.price) if self.price else 0,
             'total_value': float(self.total_value) if self.total_value else 0,
             'add_vat': self.add_vat,
