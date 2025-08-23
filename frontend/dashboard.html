@@ -340,18 +340,14 @@
                 <div class="kpi-value" id="totalRevenue">$0</div>
                 <div class="kpi-change neutral" id="revenueChange">Loading...</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-title">Fabric Commission (5.1%)</div>
-                <div class="kpi-value" id="fabricSales">$0</div>
-                <div class="kpi-change neutral" id="fabricChange">Loading...</div>
-            </div>
+
             <div class="kpi-card">
                 <div class="kpi-title">Stitching Revenue</div>
                 <div class="kpi-value" id="stitchingRevenue">$0</div>
                 <div class="kpi-change neutral" id="stitchingChange">Loading...</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Active Orders</div>
+                <div class="kpi-title">Orders</div>
                 <div class="kpi-value" id="activeOrders">0</div>
                 <div class="kpi-change neutral" id="ordersChange">orders</div>
             </div>
@@ -371,7 +367,7 @@
         <div class="charts-grid">
             <!-- Revenue Trends -->
             <div class="chart-card">
-                <h3 class="chart-title">📈 Revenue Trends (Commission + Stitching)</h3>
+                <h3 class="chart-title">📈 Revenue Trends</h3>
                 <div class="chart-container" data-chart="revenueChart">
                     <canvas id="revenueChart"></canvas>
                 </div>
@@ -379,7 +375,7 @@
 
             <!-- Top Customers -->
             <div class="chart-card">
-                <h3 class="chart-title">👥 Top Customers (By Your Revenue)</h3>
+                <h3 class="chart-title">👥 Top Customers</h3>
                 <div class="chart-container" data-chart="customersChart">
                     <canvas id="customersChart"></canvas>
                 </div>
@@ -387,13 +383,13 @@
 
             <!-- Fabric Consumption -->
             <div class="chart-card">
-                <h3 class="chart-title">🧵 Fabric Consumption (By Commission Value)</h3>
+                <h3 class="chart-title">🧵 Fabric Consumption (Yards per Garment)</h3>
                 <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
             </div>
 
-            <!-- Production Overview -->
+            <!-- Most Stitched Items -->
             <div class="chart-card">
                 <h3 class="chart-title">👔 Most Stitched Items</h3>
                 <div class="chart-container" data-chart="productionChart">
@@ -401,19 +397,19 @@
                 </div>
             </div>
 
-            <!-- Revenue Breakdown -->
+            <!-- Fabric Stock -->
             <div class="chart-card">
-                <h3 class="chart-title">💰 Your Revenue Breakdown</h3>
-                <div class="chart-container" data-chart="revenueBreakdownChart">
-                    <canvas id="revenueBreakdownChart"></canvas>
+                <h3 class="chart-title">📦 Fabric Stock</h3>
+                <div class="chart-container" data-chart="stockChart">
+                    <canvas id="stockChart"></canvas>
                 </div>
             </div>
 
-            <!-- Stock Status -->
+            <!-- Production Rate -->
             <div class="chart-card">
-                <h3 class="chart-title">📦 Stock Status</h3>
-                <div class="chart-container" data-chart="stockChart">
-                    <canvas id="stockChart"></canvas>
+                <h3 class="chart-title">📊 Production Rate</h3>
+                <div class="chart-container" data-chart="productionRateChart">
+                    <canvas id="productionRateChart"></canvas>
                 </div>
             </div>
         </div>
@@ -437,8 +433,8 @@
                 console.log('customersChart:', document.getElementById('customersChart'));
                 console.log('fabricChart:', document.getElementById('fabricChart'));
                 console.log('productionChart:', document.getElementById('productionChart'));
-                console.log('revenueBreakdownChart:', document.getElementById('revenueBreakdownChart'));
                 console.log('stockChart:', document.getElementById('stockChart'));
+                console.log('productionRateChart:', document.getElementById('productionRateChart'));
                 initializeDashboard();
             }, 500);
         });
@@ -510,7 +506,7 @@
         async function updateDashboard() {
             try {
                 // Check if canvas elements exist and create them if missing
-                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'revenueBreakdownChart', 'stockChart'];
+                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'stockChart', 'productionRateChart'];
                 
                 // Ensure all canvas elements exist and are visible
                 canvasIds.forEach(id => {
@@ -552,14 +548,16 @@
                     customersData,
                     fabricData,
                     productionData,
-                    stockData
+                    stockData,
+                    productionRateData
                 ] = await Promise.all([
                     fetchDashboardData('summary', filters),
                     fetchDashboardData('revenue-trends', filters),
                     fetchDashboardData('top-customers', filters),
                     fetchDashboardData('fabric-consumption', filters),
                     fetchDashboardData('production-overview', filters),
-                    fetchDashboardData('stock-status', filters)
+                    fetchDashboardData('stock-status', filters),
+                    fetchDashboardData('production-rate', filters)
                 ]);
 
                 // Update KPIs
@@ -570,8 +568,8 @@
                 updateCustomersChart(customersData);
                 updateFabricChart(fabricData);
                 updateProductionChart(productionData);
-                updateRevenueBreakdownChart(summaryData);
                 updateStockChart(stockData);
+                updateProductionRateChart(productionRateData);
                 
                 hideLoading();
                 
@@ -609,7 +607,6 @@
 
         function updateKPIs(data) {
             document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
-            document.getElementById('fabricSales').textContent = formatCurrency(data.fabricSales || 0);
             document.getElementById('stitchingRevenue').textContent = formatCurrency(data.stitchingRevenue || 0);
             document.getElementById('activeOrders').textContent = data.activeOrders || 0;
             document.getElementById('fabricStock').textContent = formatNumber(data.fabricStock || 0);
@@ -617,7 +614,6 @@
 
             // Update change indicators
             updateChangeIndicator('revenueChange', data.revenueChange);
-            updateChangeIndicator('fabricChange', data.fabricChange);
             updateChangeIndicator('stitchingChange', data.stitchingChange);
         }
 
@@ -671,20 +667,14 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                                                    label: 'Fabric Commission (5.1%)',
-                        data: data.fabricSales || [],
-                        borderColor: '#5c6bc0',
-                        backgroundColor: 'rgba(92, 107, 192, 0.1)',
-                        tension: 0.4
-                    }, {
-                                                    label: 'Stitching Revenue (100%)',
+                        label: 'Stitching Revenue',
                         data: data.stitchingRevenue || [],
                         borderColor: '#4caf50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
                         tension: 0.4
                     }]
                 },
-                options: getChartOptions()
+                options: getChartOptions('Revenue Trends Over Time', true)
             });
         }
 
@@ -724,14 +714,20 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Revenue',
-                        data: data.values || [],
+                        label: 'Fabric Commission',
+                        data: data.fabricCommission || [],
                         backgroundColor: '#5c6bc0',
                         borderColor: '#5c6bc0',
                         borderWidth: 1
+                    }, {
+                        label: 'Stitching Revenue',
+                        data: data.stitchingRevenue || [],
+                        backgroundColor: '#4caf50',
+                        borderColor: '#4caf50',
+                        borderWidth: 1
                     }]
                 },
-                options: getChartOptions()
+                options: getChartOptions('Top Customers by Revenue')
             });
         }
 
@@ -771,14 +767,14 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Yards Consumed',
+                        label: 'Yards per Garment',
                         data: data.values || [],
                         backgroundColor: '#ff9800',
                         borderColor: '#ff9800',
                         borderWidth: 1
                     }]
                 },
-                options: getChartOptions()
+                options: getChartOptions('Fabric Consumption (Yards per Garment)')
             });
         }
 
@@ -829,20 +825,20 @@
             });
         }
 
-        function updateRevenueBreakdownChart(data) {
-            let canvas = document.getElementById('revenueBreakdownChart');
+        function updateProductionRateChart(data) {
+            let canvas = document.getElementById('productionRateChart');
             if (!canvas) {
                 // Try to create the canvas if it doesn't exist
-                const container = document.querySelector('[data-chart="revenueBreakdownChart"]');
+                const container = document.querySelector('[data-chart="productionRateChart"]');
                 if (container) {
                     canvas = document.createElement('canvas');
-                    canvas.id = 'revenueBreakdownChart';
+                    canvas.id = 'productionRateChart';
                     canvas.width = 400;
                     canvas.height = 280;
                     container.appendChild(canvas);
-                    console.log('Created revenue breakdown chart canvas');
+                    console.log('Created production rate chart canvas');
                 } else {
-                    console.error('Revenue breakdown chart canvas not found and container not available');
+                    console.error('Production rate chart canvas not found and container not available');
                     return;
                 }
             }
@@ -856,33 +852,23 @@
             
             const ctx = canvas.getContext('2d');
             
-            if (charts.revenueBreakdown) {
-                charts.revenueBreakdown.destroy();
+            if (charts.productionRate) {
+                charts.productionRate.destroy();
             }
 
-            charts.revenueBreakdown = new Chart(ctx, {
-                type: 'pie',
+            charts.productionRate = new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: ['Fabric Commission (5.1%)', 'Stitching Revenue (100%)'],
+                    labels: data.labels || [],
                     datasets: [{
-                        data: [data.fabricSales || 0, data.stitchingRevenue || 0],
-                        backgroundColor: ['#5c6bc0', '#4caf50'],
-                        borderColor: ['#5c6bc0', '#4caf50'],
-                        borderWidth: 2
+                        label: 'Items Produced',
+                        data: data.values || [],
+                        borderColor: '#9c27b0',
+                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                        tension: 0.4
                     }]
                 },
-                options: {
-                    ...getChartOptions(),
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#eceff1',
-                                usePointStyle: true
-                            }
-                        }
-                    }
-                }
+                options: getChartOptions('Production Rate Over Time', true)
             });
         }
 
@@ -917,39 +903,37 @@
             }
 
             charts.stock = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
                     labels: data.labels || [],
                     datasets: [{
+                        label: 'Pending Yards',
                         data: data.values || [],
-                        backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
-                        borderColor: ['#4caf50', '#ff9800', '#f44336'],
-                        borderWidth: 2
+                        backgroundColor: '#4caf50',
+                        borderColor: '#4caf50',
+                        borderWidth: 1
                     }]
                 },
-                options: {
-                    ...getChartOptions(),
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#eceff1',
-                                usePointStyle: true
-                            }
-                        }
-                    }
-                }
+                options: getChartOptions('Fabric Stock (Pending Yards)')
             });
         }
 
-        function getChartOptions() {
-            return {
+        function getChartOptions(title = '', showPercentage = false) {
+            const options = {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         labels: {
                             color: '#eceff1'
+                        }
+                    },
+                    title: {
+                        display: !!title,
+                        text: title,
+                        color: '#eceff1',
+                        font: {
+                            size: 14
                         }
                     }
                 },
@@ -964,7 +948,10 @@
                     },
                     y: {
                         ticks: {
-                            color: '#b0bec5'
+                            color: '#b0bec5',
+                            callback: showPercentage ? function(value) {
+                                return value + '%';
+                            } : undefined
                         },
                         grid: {
                             color: '#555'
@@ -972,6 +959,7 @@
                     }
                 }
             };
+            return options;
         }
 
         function formatCurrency(value) {
