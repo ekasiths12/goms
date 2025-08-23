@@ -70,8 +70,9 @@ class S3StorageService:
                 self.bucket_name,
                 s3_key,
                 ExtraArgs={
-                    'ContentType': mime_type,
-                    'ACL': 'public-read'  # Make files publicly accessible
+                    'ContentType': mime_type
+                    # Removed ACL since bucket doesn't support it
+                    # Files will be publicly accessible via bucket policy instead
                 }
             )
             
