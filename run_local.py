@@ -49,6 +49,18 @@ def setup_environment():
     for key, value in env_vars.items():
         os.environ[key] = value
         print(f"   {key}={value}")
+    
+    # Create local storage directories
+    print("📁 Setting up local storage directories...")
+    backend_dir = Path(__file__).parent / 'backend'
+    static_dir = backend_dir / 'static' / 'uploads'
+    
+    # Create directories
+    (static_dir / 'images').mkdir(parents=True, exist_ok=True)
+    (static_dir / 'uploads').mkdir(parents=True, exist_ok=True)
+    (static_dir / 'pdfs').mkdir(parents=True, exist_ok=True)
+    
+    print(f"   ✅ Local storage ready at: {static_dir}")
 
 def start_server():
     """Start the Flask development server"""

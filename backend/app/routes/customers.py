@@ -8,7 +8,11 @@ from datetime import datetime
 customers_bp = Blueprint('customers', __name__)
 
 # Customer ID file path (similar to old Qt app)
-CUSTOMER_ID_FILE = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'customer_ids.json')
+CUSTOMER_ID_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'customer_ids.json')
+
+# Fallback for Railway deployment
+if not os.path.exists(CUSTOMER_ID_FILE):
+    CUSTOMER_ID_FILE = os.path.join(os.getcwd(), 'customer_ids.json')
 
 @customers_bp.route('/', methods=['GET'])
 def get_customers():
@@ -169,13 +173,20 @@ def get_active_customers():
 def get_customer_ids():
     """Get selected customer IDs for .dat import filtering"""
     try:
+        print(f"🔍 Looking for customer IDs file at: {CUSTOMER_ID_FILE}")
+        print(f"🔍 Current working directory: {os.getcwd()}")
+        print(f"🔍 File exists: {os.path.exists(CUSTOMER_ID_FILE)}")
+        
         if os.path.exists(CUSTOMER_ID_FILE):
             with open(CUSTOMER_ID_FILE, 'r') as f:
                 customer_ids = json.load(f)
+            print(f"✅ Loaded {len(customer_ids)} customer IDs from {CUSTOMER_ID_FILE}")
         else:
             customer_ids = []
+            print(f"⚠️ Customer IDs file not found at {CUSTOMER_ID_FILE}")
         return jsonify(customer_ids)
     except Exception as e:
+        print(f"❌ Error loading customer IDs: {e}")
         return {'error': str(e)}, 500
 
 @customers_bp.route('/customer-ids', methods=['POST'])

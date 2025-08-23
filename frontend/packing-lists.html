@@ -378,19 +378,42 @@
             cursor: default;
         }
 
-        .sub-child-row {
+        .secondary-fabric-row {
             background: #1e1e1e;
             display: none;
         }
 
-        .sub-child-row.expanded {
+        .secondary-fabric-row.expanded {
             display: table-row;
         }
 
-        .sub-child-row td {
-            padding-left: 40px;
+        .secondary-fabric-row td {
+            padding-left: 20px;
             background: #1e1e1e;
             color: #b0bec5;
+        }
+
+        .secondary-fabric-row td:first-child {
+            cursor: default;
+        }
+
+        .lining-fabric-row {
+            background: #1a1a1a;
+            display: none;
+        }
+
+        .lining-fabric-row.expanded {
+            display: table-row;
+        }
+
+        .lining-fabric-row td {
+            padding-left: 20px;
+            background: #1a1a1a;
+            color: #90a4ae;
+        }
+
+        .lining-fabric-row td:first-child {
+            cursor: default;
         }
 
         /* Checkbox styling */
@@ -1300,6 +1323,68 @@
                                 <td>${formatNumber(line.total_value || 0)}</td>
                             </tr>
                         `;
+                        
+                        // Add secondary fabric rows if they exist
+                        if (line.garment_fabrics && line.garment_fabrics.length > 0) {
+                            line.garment_fabrics.forEach(fabric => {
+                                const fabricValue = parseFloat(fabric.total_fabric_cost || 0);
+                                html += `
+                                    <tr class="secondary-fabric-row" data-packing-list-id="${packingList.id}" data-stitching-id="${line.stitching_invoice_id}">
+                                        <td></td>
+                                        <td>${formatDate(line.created_at)}</td>
+                                        <td>${packingList.packing_list_serial || ''}</td>
+                                        <td>${line.stitching_invoice_number || ''}</td>
+                                        <td>${line.stitched_item || ''}</td>
+                                        <td style="padding-left: 20px; color: #666;">↳ ${fabric.lining_name || fabric.fabric_name || ''}</td>
+                                        <td>${fabric.color || ''}</td>
+                                        <td>${packingList.customer_name || ''}</td>
+                                        <td>${fabric.beta_tax_invoice_number || ''}</td>
+                                        <td>${fabric.tax_invoice_number || ''}</td>
+                                        <td>${line.group_bill_number || ''}</td>
+                                        <td>${fabric.fabric_invoice_number || ''}</td>
+                                        <td>${fabric.delivery_note || ''}</td>
+                                        <td>${formatNumber(parseFloat(fabric.consumption_yards || 0))}</td>
+                                        <td>${formatNumber(parseFloat(fabric.unit_price || 0))}</td>
+                                        <td>${formatNumber(fabricValue)}</td>
+                                        <td colspan="6"></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                `;
+                            });
+                        }
+                        
+                        // Add lining fabric rows if they exist
+                        if (line.lining_fabrics && line.lining_fabrics.length > 0) {
+                            line.lining_fabrics.forEach(lining => {
+                                const liningValue = parseFloat(lining.total_cost || 0);
+                                html += `
+                                    <tr class="lining-fabric-row" data-packing-list-id="${packingList.id}" data-stitching-id="${line.stitching_invoice_id}">
+                                        <td></td>
+                                        <td>${formatDate(line.created_at)}</td>
+                                        <td>${packingList.packing_list_serial || ''}</td>
+                                        <td>${line.stitching_invoice_number || ''}</td>
+                                        <td>${line.stitched_item || ''}</td>
+                                        <td style="padding-left: 20px; color: #666;">↳ Lining: ${lining.lining_name || ''}</td>
+                                        <td>${lining.color || ''}</td>
+                                        <td>${packingList.customer_name || ''}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>${line.group_bill_number || ''}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>${formatNumber(parseFloat(lining.consumption_yards || 0))}</td>
+                                        <td>${formatNumber(parseFloat(lining.unit_price || 0))}</td>
+                                        <td>${formatNumber(liningValue)}</td>
+                                        <td colspan="6"></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                `;
+                            });
+                        }
                     });
                 }
             });
@@ -1311,12 +1396,15 @@
 
         function toggleExpansion(packingListId) {
             const childRows = document.querySelectorAll(`tr[data-packing-list-id="${packingListId}"].child-row`);
+            const secondaryFabricRows = document.querySelectorAll(`tr[data-packing-list-id="${packingListId}"].secondary-fabric-row`);
+            const liningFabricRows = document.querySelectorAll(`tr[data-packing-list-id="${packingListId}"].lining-fabric-row`);
             const parentRow = document.querySelector(`tr[data-packing-list-id="${packingListId}"].parent-row`);
             const expandIndicator = parentRow.querySelector('.expand-indicator');
             
-            const isExpanded = childRows[0] && childRows[0].classList.contains('expanded');
+            const allDetailRows = [...childRows, ...secondaryFabricRows, ...liningFabricRows];
+            const isExpanded = allDetailRows[0] && allDetailRows[0].classList.contains('expanded');
             
-            childRows.forEach(row => {
+            allDetailRows.forEach(row => {
                 if (isExpanded) {
                     row.classList.remove('expanded');
                 } else {

@@ -32,33 +32,37 @@ class Image(db.Model):
         return cls.query.filter_by(file_path=file_path).first()
     
     def get_image_url(self):
-        """Get the image URL for S3 storage"""
+        """Get the image URL for storage service"""
         if self.file_path:
-            from app.services.s3_storage_service import S3StorageService
+            from app.services.storage_service_factory import StorageServiceFactory
             try:
-                storage_service = S3StorageService()
+                storage_service = StorageServiceFactory.get_storage_service()
                 return storage_service.get_file_url(self.file_path)
             except:
-                # Fallback to direct S3 URL if service not available
-                bucket_name = os.environ.get('AWS_S3_BUCKET_NAME')
-                if bucket_name:
-                    return f"https://{bucket_name}.s3.amazonaws.com/{self.file_path}"
-                return None
+                # Fallback to direct URL if service not available
+                return f"/static/{self.file_path}"
         return None
     
     def get_image_path_for_pdf(self):
         """Get image path suitable for PDF generation"""
         if self.file_path:
-            # For S3 storage, we need to download the file temporarily for PDF generation
-            from app.services.s3_storage_service import S3StorageService
+            from app.services.storage_service_factory import StorageServiceFactory
             try:
-                storage_service = S3StorageService()
-                # Create temporary file path
+                storage_service = StorageServiceFactory.get_storage_service()
+                
+                # For local storage, return the direct path
+                if hasattr(storage_service, 'base_path'):
+                    # Local storage service
+                    full_path = storage_service.base_path / self.file_path
+                    if full_path.exists():
+                        return str(full_path)
+                
+                # For S3 storage, download to temp location
                 temp_dir = '/tmp'
                 os.makedirs(temp_dir, exist_ok=True)
                 temp_file_path = os.path.join(temp_dir, f"temp_image_{self.id}_{os.path.basename(self.file_path)}")
                 
-                # Download from S3 to temp location
+                # Download from storage to temp location
                 if storage_service.download_file(self.file_path, temp_file_path):
                     return temp_file_path
                 else:

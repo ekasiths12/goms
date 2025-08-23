@@ -360,8 +360,8 @@ def format_ddmmyy(date_obj):
         return date_obj.strftime('%d/%m/%y')
     return str(date_obj)
 
-def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
-    """Generate PDF for packing list"""
+def generate_packing_list_pdf_old(packing_list_id, show_garment_cost=False):
+    """Generate PDF for packing list - OLD VERSION (BACKUP)"""
     try:
         # Get packing list details
         packing_list = PackingList.query.get(packing_list_id)
@@ -568,6 +568,296 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
     except Exception as e:
         raise Exception(f"PDF generation failed: {str(e)}")
 
+def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
+    """Generate PDF for packing list - APPLE MINIMAL BLACK & WHITE 2-COLUMN DESIGN"""
+    try:
+        # Get packing list details
+        packing_list = PackingList.query.get(packing_list_id)
+        if not packing_list:
+            raise Exception("Packing list not found")
+        
+        # Get all stitching records in this packing list with fabric details
+        lines = []
+        for line in packing_list.packing_list_lines:
+            if line.stitching_invoice:
+                stitching = line.stitching_invoice
+                line_data = {
+                    'id': stitching.id,
+                    'stitching_invoice_number': stitching.stitching_invoice_number,
+                    'stitched_item': stitching.stitched_item,
+                    'size_qty_json': stitching.size_qty_json,
+                    'price': stitching.price,
+                    'add_vat': stitching.add_vat,
+                    'yard_consumed': stitching.yard_consumed,
+                    'image_id': stitching.image_id,
+                    'color': stitching.invoice_line.color if stitching.invoice_line else None,
+                    'fabric_name': stitching.invoice_line.item_name if stitching.invoice_line else None,
+                    'fabric_unit_price': stitching.invoice_line.unit_price if stitching.invoice_line else None,
+                }
+                lines.append(line_data)
+        
+        # Fetch image paths for all image_ids
+        image_map = {}
+        image_ids = [line['image_id'] for line in lines if line.get('image_id')]
+        if image_ids:
+            images = Image.query.filter(Image.id.in_(image_ids)).all()
+            for image in images:
+                image_path = image.get_image_path_for_pdf()
+                if image_path:
+                    image_map[image.id] = image_path
+        
+        # Generate PDF in LANDSCAPE for 2-column layout
+        pdf = FPDF('L', 'mm', 'A4')
+        pdf.add_page()
+        
+        # Apple minimal black & white color scheme
+        black = (0, 0, 0)
+        white = (255, 255, 255)
+        light_gray = (245, 245, 245)
+        dark_gray = (64, 64, 64)
+        medium_gray = (128, 128, 128)
+        
+        # Ultra-minimal header (minimal space)
+        pdf.set_fill_color(*white)
+        pdf.rect(0, 0, 297, 12, 'F')
+        
+        # Company name with minimal typography
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_xy(0, 2)
+        pdf.cell(297, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
+        
+        # Subtitle (minimal)
+        pdf.set_font("Arial", '', 6)
+        pdf.set_xy(0, 7)
+        pdf.cell(297, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
+        
+        # Minimal document title
+        pdf.set_fill_color(*black)
+        pdf.rect(5, 15, 287, 6, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.set_xy(5, 17)
+        pdf.cell(287, 3, "PACKING LIST", ln=0, align='C')
+        
+        # Ultra-compact info bar (minimal space)
+        pdf.set_fill_color(*light_gray)
+        pdf.rect(5, 25, 287, 6, 'F')
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        
+        # Minimal info layout
+        pdf.set_xy(10, 27)
+        pdf.cell(12, 2, "PL#:", 0)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(25, 2, packing_list.packing_list_serial, 0)
+        
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(12, 2, "Date:", 0)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        display_date = packing_list.delivery_date or packing_list.created_at.date()
+        pdf.cell(20, 2, format_ddmmyy(display_date), 0)
+        
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(15, 2, "Customer:", 0)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        customer_name = packing_list.customer.short_name if packing_list.customer else 'N/A'
+        pdf.cell(35, 2, customer_name, 0)
+        
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(12, 2, "SKU:", 0)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(12, 2, str(len(lines)), 0)
+        
+        # Calculate total quantity
+        total_qty_delivered = 0
+        for line in lines:
+            try:
+                size_qty = json.loads(line.get('size_qty_json', '{}'))
+                total_qty_delivered += sum(size_qty.get(sz, 0) for sz in ["S", "M", "L", "XL", "XXL", "XXXL"])
+            except:
+                pass
+        
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(12, 2, "Total:", 0)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        pdf.cell(12, 2, str(total_qty_delivered), 0)
+        
+        # Comments section (if any) - minimal
+        if packing_list.comments:
+            pdf.set_xy(10, 33)
+            pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+            pdf.cell(12, 2, "Notes:", 0)
+            pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+            comment_text = packing_list.comments[:50] + "..." if len(packing_list.comments) > 50 else packing_list.comments
+            pdf.cell(270, 2, comment_text, 0)
+        
+        # 2-COLUMN LAYOUT DESIGN
+        table_start_y = 37 if packing_list.comments else 35
+        
+        # Split the page into 2 columns - reduced margins for more space
+        left_column_x = 5
+        right_column_x = 151  # Half of 297mm - 5mm margin
+        column_width = 141  # (297 - 15) / 2 = 141, more space for content
+        
+        # Column headers for both sides - optimized size column names to save space
+        headers = ["Image", "Garment", "Fabric / Serial", "Color", "S", "M", "L", "XL", "2XL", "3XL", "Total"]
+        
+        # Column widths for compact layout - increased image size, reduced gaps, optimized size column names
+        col_widths = [18, 22, 34, 12, 5, 5, 5, 5, 5, 5, 8]  # Removed serial column, increased fabric/serial column (22->34), optimized other columns
+        if show_garment_cost:
+            col_widths.append(15)  # Add cost column
+            headers.append("Cost")
+        
+        # Adjust to fit column width
+        total_width = sum(col_widths)
+        if total_width > column_width:
+            scale_factor = column_width / total_width
+            col_widths = [w * scale_factor for w in col_widths]
+        
+        # Draw both column headers
+        for col_idx, col_x in enumerate([left_column_x, right_column_x]):
+            # Header background
+            pdf.set_fill_color(*dark_gray)
+            pdf.rect(col_x, table_start_y, column_width, 4, 'F')
+            pdf.set_text_color(*white)
+            pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+            
+            # Header text
+            x_pos = col_x
+            for i, header in enumerate(headers):
+                pdf.set_xy(x_pos, table_start_y + 1)
+                pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
+                x_pos += col_widths[i]
+        
+        # Table content with 2-column layout
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7) FOR ALL LINE ITEMS
+        
+        # Split lines into 2 columns
+        lines_per_column = (len(lines) + 1) // 2  # Round up
+        
+        for line_idx, line in enumerate(lines):
+            # Determine which column this line goes in
+            if line_idx < lines_per_column:
+                col_x = left_column_x
+                row_y = table_start_y + 4 + (line_idx * 20)  # Increased row height for larger images
+            else:
+                col_x = right_column_x
+                row_y = table_start_y + 4 + ((line_idx - lines_per_column) * 20)  # Increased row height for larger images
+            
+            # Minimal alternating row colors
+            if line_idx % 2 == 0:
+                pdf.set_fill_color(*white)
+            else:
+                pdf.set_fill_color(*light_gray)
+            
+            pdf.rect(col_x, row_y, column_width, 22, 'F')  # Increased height for 2-line cost breakdown
+            
+            # Add minimal border
+            pdf.set_draw_color(200, 200, 200)
+            pdf.rect(col_x, row_y, column_width, 22, 'D')  # Increased height for 2-line cost breakdown
+            
+            x_pos = col_x
+            
+            # Image (10% wider and 5% longer than old layout for better visibility)
+            img_path = image_map.get(line.get('image_id'))
+            if img_path and os.path.exists(img_path):
+                try:
+                    # Calculate 10% wider and 5% longer: 16px * 1.1 = 17.6px width, 16px * 1.05 = 16.8px height
+                    img_width = round((col_widths[0] - 2) * 1.1)  # 10% wider
+                    img_height = round(16 * 1.05)  # 5% longer (16.8px rounded to 17px)
+                    pdf.image(img_path, x_pos + 1, row_y + 1, img_width, img_height)
+                except:
+                    pass
+            x_pos += col_widths[0]
+            
+            # Garment name
+            pdf.set_xy(x_pos + 1, row_y + 1)
+            garment_text = str(line['stitched_item'] or '')
+            if len(garment_text) > 15:
+                garment_text = garment_text[:12] + "..."
+            pdf.cell(col_widths[1] - 2, 16, garment_text, 0, 0, 'C')
+            x_pos += col_widths[1]
+            
+            # Fabric/Serial - COMBINED COLUMN
+            pdf.set_xy(x_pos + 1, row_y + 1)
+            fabric_text = str(line['fabric_name'] or '')
+            if len(fabric_text) > 25:
+                fabric_text = fabric_text[:22] + "..."
+            pdf.cell(col_widths[2] - 2, 8, fabric_text, 0, 0, 'C')
+            
+            # Serial number below fabric name
+            serial_text = str(line['stitching_invoice_number'] or '')
+            pdf.set_xy(x_pos + 1, row_y + 9)
+            pdf.cell(col_widths[2] - 2, 8, serial_text, 0, 0, 'C')
+            x_pos += col_widths[2]
+            
+            # Color - INCREASED WIDTH, MORE TEXT VISIBLE
+            pdf.set_xy(x_pos + 1, row_y + 1)
+            color_text = str(line['color'] or '')
+            if len(color_text) > 10:
+                color_text = color_text[:7] + "..."
+            pdf.cell(col_widths[3] - 2, 16, color_text, 0, 0, 'C')
+            x_pos += col_widths[3]
+            
+            # Size quantities - ALL VISIBLE in separate columns
+            try:
+                size_qty = json.loads(line['size_qty_json']) if line['size_qty_json'] else {}
+            except Exception:
+                size_qty = {}
+            
+            # Individual size columns for complete visibility
+            for sz in ["S", "M", "L", "XL", "XXL", "XXXL"]:
+                qty = size_qty.get(sz, 0)
+                pdf.set_xy(x_pos + 1, row_y + 1)
+                pdf.cell(col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 16, str(qty), 0, 0, 'C')
+                x_pos += col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)]
+            
+            # Total quantity - SAME FONT SIZE
+            total_qty = sum(size_qty.get(sz, 0) for sz in ["S", "M", "L", "XL", "XXL", "XXXL"])  # Size names unchanged in data, only display names changed
+            pdf.set_xy(x_pos + 1, row_y + 1)
+            pdf.set_font("Arial", 'B', 7)  # Bold but same size (increased from 6 to 7)
+            pdf.cell(col_widths[10] - 2, 16, str(total_qty), 0, 0, 'C')
+            pdf.set_font("Arial", '', 7)  # Reset to normal weight but same size (increased from 6 to 7)
+            x_pos += col_widths[10]
+            
+            # Cost column (if enabled)
+            if show_garment_cost and total_qty > 0:
+                cost_per_garment = calculate_garment_cost_per_piece(line, total_qty)
+                cost_text = f"{cost_per_garment:.2f}"
+                pdf.set_xy(x_pos + 1, row_y + 1)
+                pdf.cell(col_widths[11] - 2, 16, cost_text, 0, 0, 'C')
+                x_pos += col_widths[11]
+            
+            # Add horizontal cost breakdown if enabled (below the row)
+            if show_garment_cost and total_qty > 0:
+                add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, column_width)
+        
+        # Minimal footer
+        footer_y = table_start_y + 4 + (max(lines_per_column, len(lines) - lines_per_column) * 22) + (12 if show_garment_cost else 4)  # Increased row height to 22px
+        pdf.set_fill_color(*black)
+        pdf.rect(0, footer_y, 297, 6, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.set_xy(0, footer_y + 2)
+        pdf.cell(297, 3, f"PACKING LIST COMPLETED - TOTAL: {total_qty_delivered} PIECES", ln=0, align='C')
+        
+        # Save PDF
+        safe_serial = packing_list.packing_list_serial.replace('/', '_')
+        dir_path = os.path.join('packing_lists', safe_serial)
+        os.makedirs(dir_path, exist_ok=True)
+        pdf_name = f"{packing_list.packing_list_serial}.pdf"
+        if show_garment_cost:
+            pdf_name = f"{packing_list.packing_list_serial}_with_cost.pdf"
+        out_path = os.path.join(dir_path, pdf_name)
+        pdf.output(out_path)
+        
+        return out_path
+        
+    except Exception as e:
+        raise Exception(f"PDF generation failed: {str(e)}")
+
 def calculate_garment_cost_per_piece(line, total_qty):
     """Calculate garment cost per piece including all fabrics and sewing"""
     # Main fabric cost
@@ -690,3 +980,327 @@ def add_cost_breakdown_to_pdf(pdf, line, total_qty):
     
     pdf.cell(0, 2, f"  Total: {thb}{total_cost_per_garment:.2f}/pc", ln=1)
     pdf.ln(1)
+
+def add_cost_breakdown_modern(pdf, line, total_qty, start_y):
+    """Add modern cost breakdown to PDF"""
+    stitching = StitchingInvoice.query.get(line['id'])
+    if not stitching:
+        return
+    
+    # Get all fabric costs
+    main_fabric_used = float(line.get('yard_consumed', 0))
+    main_fabric_price = float(line.get('fabric_unit_price', 0))
+    main_fabric_cost = main_fabric_used * main_fabric_price
+    
+    # Get multi-fabric costs
+    multi_fabric_cost = 0
+    multi_fabrics_list = []
+    for fabric in stitching.garment_fabrics:
+        multi_fabric_cost += float(fabric.total_fabric_cost or 0)
+        multi_fabrics_list.append(fabric)
+    
+    # Get lining fabric costs
+    lining_cost = 0
+    lining_fabrics_list = []
+    for lining in stitching.lining_fabrics:
+        lining_cost += float(lining.total_cost or 0)
+        lining_fabrics_list.append(lining)
+    
+    # Calculate total fabric cost
+    total_fabric_cost = main_fabric_cost + multi_fabric_cost + lining_cost
+    fabric_cost_per_garment = total_fabric_cost / total_qty
+    
+    # Calculate sewing cost with VAT if applicable
+    sewing_price = float(line.get('price', 0))
+    if line.get('add_vat'):
+        base_sewing_cost = sewing_price
+        vat_amount = base_sewing_cost * 0.07
+        sewing_cost_per_garment = base_sewing_cost + vat_amount
+    else:
+        sewing_cost_per_garment = sewing_price
+    
+    total_cost_per_garment = fabric_cost_per_garment + sewing_cost_per_garment
+    
+    # Modern cost breakdown card
+    pdf.set_fill_color(248, 249, 250)  # Very light gray
+    pdf.rect(25, start_y, 160, 20, 'F')
+    pdf.set_draw_color(200, 200, 200)
+    pdf.rect(25, start_y, 160, 20, 'D')
+    
+    # Cost breakdown header
+    pdf.set_font("Arial", 'B', 6)  # Consistent font size
+    pdf.set_text_color(52, 73, 94)  # Dark slate
+    pdf.set_xy(30, start_y + 2)
+    pdf.cell(150, 4, f"Cost Breakdown: {line['stitched_item']}", ln=1)
+    
+    pdf.set_font("Arial", '', 6)
+    pdf.set_text_color(0, 0, 0)
+    
+    # Compact cost display
+    cost_text = f"Fabric: THB {fabric_cost_per_garment:.2f} | Stitching: THB {sewing_cost_per_garment:.2f} | Total: THB {total_cost_per_garment:.2f}"
+    
+    pdf.set_xy(30, start_y + 8)
+    pdf.cell(150, 3, cost_text, ln=1)
+    
+    # Additional details if space allows
+    if main_fabric_used > 0 and main_fabric_price > 0:
+        yards_per_piece = main_fabric_used/total_qty
+        pdf.set_xy(30, start_y + 12)
+        pdf.cell(150, 3, f"Main: {line.get('fabric_name', '')} - {yards_per_piece:.2f}yd/pc × THB {main_fabric_price:.2f}", ln=1)
+    
+    if multi_fabrics_list or lining_fabrics_list:
+        pdf.set_xy(30, start_y + 16)
+        additional_text = ""
+        if multi_fabrics_list:
+            additional_text += f"Add: {len(multi_fabrics_list)} fabrics "
+        if lining_fabrics_list:
+            additional_text += f"Lining: {len(lining_fabrics_list)} items"
+        pdf.cell(150, 3, additional_text, ln=1)
+
+def add_cost_breakdown_apple(pdf, line, total_qty, start_y):
+    """Add Apple-style cost breakdown to PDF - Customer-friendly Thai language"""
+    try:
+        # Calculate costs
+        fabric_cost_per_garment = 0
+        sewing_cost_per_garment = 0
+        
+        if line.get('fabric_unit_price') and line.get('yard_consumed'):
+            fabric_cost_per_garment = (line['fabric_unit_price'] * line['yard_consumed']) / total_qty
+        
+        if line.get('price'):
+            sewing_cost_per_garment = line['price']
+        
+        total_cost_per_garment = fabric_cost_per_garment + sewing_cost_per_garment
+        
+        # Apple-style cost breakdown with Thai language
+        apple_light_gray = (248, 248, 248)
+        apple_dark_gray = (58, 58, 60)
+        
+        pdf.set_fill_color(*apple_light_gray)
+        pdf.rect(20, start_y, 257, 12, 'F')
+        pdf.set_draw_color(230, 230, 230)
+        pdf.rect(20, start_y, 257, 12, 'D')
+        
+        pdf.set_text_color(*apple_dark_gray)
+        pdf.set_font("Arial", 'B', 6)  # Consistent font size
+        pdf.set_xy(25, start_y + 2)
+        pdf.cell(247, 3, "COST BREAKDOWN:", ln=1)
+        
+        pdf.set_font("Arial", '', 6)  # Consistent font size
+        pdf.set_xy(25, start_y + 6)
+        
+        # Customer-friendly cost breakdown
+        cost_text = f"Fabric: {fabric_cost_per_garment:.2f} THB | Sewing: {sewing_cost_per_garment:.2f} THB | Total: {total_cost_per_garment:.2f} THB"
+        pdf.cell(247, 3, cost_text, ln=1)
+        
+        # Additional details if available
+        if line.get('yard_consumed'):
+            pdf.set_xy(25, start_y + 9)
+            detail_text = f"Fabric Used: {line['yard_consumed']:.2f} yards"
+            pdf.cell(247, 3, detail_text, ln=1)
+        
+    except Exception as e:
+        print(f"Error in Apple cost breakdown: {str(e)}")
+
+def add_cost_breakdown_apple_right(pdf, line, total_qty, row_y, page_width):
+    """Add Apple-style detailed cost breakdown to PDF on the right side of each line"""
+    try:
+        # Get stitching details for comprehensive cost calculation
+        stitching = StitchingInvoice.query.get(line['id'])
+        if not stitching:
+            return
+        
+        # Get all fabric costs
+        main_fabric_used = float(line.get('yard_consumed', 0))
+        main_fabric_price = float(line.get('fabric_unit_price', 0))
+        main_fabric_cost = main_fabric_used * main_fabric_price
+        
+        # Get multi-fabric costs
+        multi_fabric_cost = 0
+        multi_fabrics_list = []
+        for fabric in stitching.garment_fabrics:
+            multi_fabric_cost += float(fabric.total_fabric_cost or 0)
+            multi_fabrics_list.append(fabric)
+        
+        # Get lining fabric costs
+        lining_cost = 0
+        lining_fabrics_list = []
+        for lining in stitching.lining_fabrics:
+            lining_cost += float(lining.total_cost or 0)
+            lining_fabrics_list.append(lining)
+        
+        # Calculate total fabric cost
+        total_fabric_cost = main_fabric_cost + multi_fabric_cost + lining_cost
+        fabric_cost_per_garment = total_fabric_cost / total_qty
+        
+        # Calculate sewing cost with VAT if applicable
+        sewing_price = float(line.get('price', 0))
+        if line.get('add_vat'):
+            base_sewing_cost = sewing_price
+            vat_amount = base_sewing_cost * 0.07
+            sewing_cost_per_garment = base_sewing_cost + vat_amount
+        else:
+            sewing_cost_per_garment = sewing_price
+        
+        total_cost_per_garment = fabric_cost_per_garment + sewing_cost_per_garment
+        
+        # Apple-style cost breakdown on the right side
+        apple_light_gray = (248, 248, 248)
+        apple_dark_gray = (58, 58, 60)
+        
+        # Position the cost breakdown on the right side - make it wider for detailed info
+        breakdown_width = 120  # Wider for detailed breakdown
+        breakdown_x = page_width - breakdown_width - 10  # 10px margin from right edge
+        
+        # Create a subtle background for the cost breakdown
+        pdf.set_fill_color(*apple_light_gray)
+        pdf.rect(breakdown_x, row_y, breakdown_width, 8, 'F')
+        pdf.set_draw_color(230, 230, 230)
+        pdf.rect(breakdown_x, row_y, breakdown_width, 8, 'D')
+        
+        pdf.set_text_color(*apple_dark_gray)
+        pdf.set_font("Arial", 'B', 4)
+        pdf.set_xy(breakdown_x + 2, row_y + 1)
+        pdf.cell(breakdown_width - 4, 2, "COST BREAKDOWN:", ln=1)
+        
+        pdf.set_font("Arial", '', 4)
+        pdf.set_xy(breakdown_x + 2, row_y + 3)
+        
+        # Detailed cost display
+        if main_fabric_used > 0 and main_fabric_price > 0:
+            yards_per_piece = main_fabric_used/total_qty
+            cost_text = f"Fabric: {yards_per_piece:.2f}yd×{main_fabric_price:.1f}={fabric_cost_per_garment:.1f}"
+        else:
+            cost_text = f"Fabric: {fabric_cost_per_garment:.1f}"
+        
+        pdf.cell(breakdown_width - 4, 2, cost_text, ln=1)
+        
+        # Sewing cost with VAT info
+        pdf.set_xy(breakdown_x + 2, row_y + 5)
+        if line.get('add_vat'):
+            vat_amount = sewing_price * 0.07
+            sewing_text = f"Sew: {sewing_price:.1f}+{vat_amount:.1f}VAT={sewing_cost_per_garment:.1f}"
+        else:
+            sewing_text = f"Sew: {sewing_cost_per_garment:.1f}"
+        pdf.cell(breakdown_width - 4, 2, sewing_text, ln=1)
+        
+        # Total cost
+        pdf.set_xy(breakdown_x + 2, row_y + 7)
+        total_text = f"Total: {total_cost_per_garment:.1f} THB"
+        pdf.set_font("Arial", 'B', 4)
+        pdf.cell(breakdown_width - 4, 2, total_text, ln=1)
+        
+    except Exception as e:
+        print(f"Error in Apple right-side cost breakdown: {str(e)}")
+
+def add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, column_width):
+    """Add minimal horizontal cost breakdown to PDF - compact and clear"""
+    try:
+        # Get stitching details for comprehensive cost calculation
+        stitching = StitchingInvoice.query.get(line['id'])
+        if not stitching:
+            return
+        
+        # Get all fabric costs
+        main_fabric_used = float(line.get('yard_consumed', 0))
+        main_fabric_price = float(line.get('fabric_unit_price', 0))
+        main_fabric_cost = main_fabric_used * main_fabric_price
+        
+        # Get multi-fabric costs
+        multi_fabric_cost = 0
+        multi_fabrics_list = []
+        for fabric in stitching.garment_fabrics:
+            multi_fabric_cost += float(fabric.total_fabric_cost or 0)
+            multi_fabrics_list.append(fabric)
+        
+        # Get lining fabric costs
+        lining_cost = 0
+        lining_fabrics_list = []
+        for lining in stitching.lining_fabrics:
+            lining_cost += float(lining.total_cost or 0)
+            lining_fabrics_list.append(lining)
+        
+        # Calculate total fabric cost
+        total_fabric_cost = main_fabric_cost + multi_fabric_cost + lining_cost
+        fabric_cost_per_garment = total_fabric_cost / total_qty
+        
+        # Calculate sewing cost with VAT if applicable
+        sewing_price = float(line.get('price', 0))
+        if line.get('add_vat'):
+            base_sewing_cost = sewing_price
+            vat_amount = base_sewing_cost * 0.07
+            sewing_cost_per_garment = base_sewing_cost + vat_amount
+        else:
+            sewing_cost_per_garment = sewing_price
+        
+        total_cost_per_garment = fabric_cost_per_garment + sewing_cost_per_garment
+        
+        # Minimal horizontal cost breakdown
+        light_gray = (245, 245, 245)
+        dark_gray = (64, 64, 64)
+        
+        # Create a subtle background for the cost breakdown - properly aligned
+        pdf.set_fill_color(*light_gray)
+        pdf.rect(col_x, row_y + 18, column_width, 6, 'F')  # Increased height to accommodate both lines within box
+        pdf.set_draw_color(200, 200, 200)
+        pdf.rect(col_x, row_y + 18, column_width, 6, 'D')  # Increased height to accommodate both lines within box
+        
+        pdf.set_text_color(*dark_gray)
+        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
+        pdf.set_xy(col_x + 2, row_y + 19)
+        pdf.cell(column_width - 4, 1, "COST:", ln=0)
+        
+        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
+        
+        # Enhanced cost breakdown with detailed explanations - 2 lines
+        line1_details = []
+        line2_details = []
+        
+        # Line 1: Main fabric and consumption calculation
+        if main_fabric_used > 0 and main_fabric_price > 0:
+            yards_per_piece = main_fabric_used/total_qty
+            main_fabric_cost_per_piece = main_fabric_cost/total_qty
+            line1_details.append(f"Main: {yards_per_piece:.2f}yd/pc×{main_fabric_price:.1f}={main_fabric_cost_per_piece:.1f}")
+        
+        # Add secondary fabrics to line 1
+        if multi_fabrics_list:
+            for fabric in multi_fabrics_list:
+                consumption = float(fabric.consumption_yards or 0)
+                unit_price = float(fabric.unit_price or 0)
+                if consumption > 0 and unit_price > 0:
+                    yards_per_piece = consumption/total_qty
+                    cost_per_piece = (consumption * unit_price)/total_qty
+                    line1_details.append(f"Sec: {yards_per_piece:.2f}yd/pc×{unit_price:.1f}={cost_per_piece:.1f}")
+        
+        # Add lining fabrics to line 1
+        if lining_fabrics_list:
+            for lining in lining_fabrics_list:
+                consumption = float(lining.consumption_yards or 0)
+                unit_price = float(lining.unit_price or 0)
+                if consumption > 0 and unit_price > 0:
+                    yards_per_piece = consumption/total_qty
+                    cost_per_piece = (consumption * unit_price)/total_qty
+                    line1_details.append(f"Lining: {yards_per_piece:.2f}yd/pc×{unit_price:.1f}={cost_per_piece:.1f}")
+        
+        # Line 2: Sewing cost and total
+        if line.get('add_vat'):
+            vat_amount = sewing_price * 0.07
+            line2_details.append(f"Sew: {sewing_price:.1f}+{vat_amount:.1f}VAT={sewing_cost_per_garment:.1f}")
+        else:
+            line2_details.append(f"Sew: {sewing_cost_per_garment:.1f}")
+        
+        line2_details.append(f"Total: {total_cost_per_garment:.1f} THB")
+        
+        # Join lines with separators
+        line1_text = " | ".join(line1_details) if line1_details else f"Fabric: {fabric_cost_per_garment:.1f}"
+        line2_text = " | ".join(line2_details)
+        
+        # Display on 2 lines with proper spacing within the cost breakdown box
+        pdf.set_xy(col_x + 15, row_y + 19)  # Line 1: Start right after "COST:" label
+        pdf.cell(column_width - 15, 1, line1_text, ln=0)  # ln=0 to not advance to next line
+        
+        pdf.set_xy(col_x + 15, row_y + 22)  # Line 2: 3px below line 1, 2px from bottom of cost box
+        pdf.cell(column_width - 15, 1, line2_text, ln=1)
+        
+    except Exception as e:
+        print(f"Error in minimal horizontal cost breakdown: {str(e)}")

@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from extensions import db
 from app.models.image import Image
-from app.services.s3_storage_service import S3StorageService
+from app.services.storage_service_factory import StorageServiceFactory
 
 # Create Blueprint
 images_bp = Blueprint('images', __name__)
@@ -40,12 +40,12 @@ def upload_image():
         fabric_color = request.form.get('fabric_color', 'unknown')
         stitching_serial_number = request.form.get('stitching_serial_number', None)
         
-        # Initialize S3 storage service
+        # Initialize storage service (S3 or local)
         try:
-            storage_service = S3StorageService()
+            storage_service = StorageServiceFactory.get_storage_service()
         except Exception as e:
-            print(f"⚠️  S3 storage service error: {str(e)}")
-            return jsonify({'error': f'S3 storage service not available: {str(e)}'}), 500
+            print(f"⚠️  Storage service error: {str(e)}")
+            return jsonify({'error': f'Storage service not available: {str(e)}'}), 500
         
         # Generate filename using the storage service
         storage_filename = storage_service.generate_filename(garment_name, fabric_name, fabric_color, stitching_serial_number)
@@ -70,12 +70,12 @@ def upload_image():
             # Return response
             response_data = {
                 'success': True,
-                'message': 'Image uploaded successfully to AWS S3',
+                'message': 'Image uploaded successfully',
                 'image_id': image.id,
                 'file_path': storage_result['file_path'],
                 'filename': storage_result['filename'],
                 'size': storage_result['size'],
-                'file_url': storage_result['s3_url']
+                'file_url': storage_result.get('s3_url') or storage_result.get('local_url')
             }
             
             return jsonify(response_data)
@@ -107,28 +107,28 @@ def delete_image(image_id):
         if not image:
             return jsonify({'error': 'Image not found'}), 404
         
-        # Delete from S3
+        # Delete from storage service
         try:
-            storage_service = S3StorageService()
-            storage_service.delete_file(image.file_path)  # file_path is now S3 key
+            storage_service = StorageServiceFactory.get_storage_service()
+            storage_service.delete_file(image.file_path)  # file_path is now storage key
         except Exception as e:
-            print(f"Error deleting from S3: {e}")
+            print(f"Error deleting from storage: {e}")
         
         # Delete from database
         db.session.delete(image)
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Image deleted successfully from S3'})
+        return jsonify({'success': True, 'message': 'Image deleted successfully'})
         
     except Exception as e:
         return jsonify({'error': f'Error deleting image: {str(e)}'}), 500
 
 @images_bp.route('/list', methods=['GET'])
 def list_files():
-    """List all files in S3 storage"""
+    """List all files in storage"""
     try:
         folder = request.args.get('folder', 'images')
-        storage_service = S3StorageService()
+        storage_service = StorageServiceFactory.get_storage_service()
         files = storage_service.list_files(folder)
         
         return jsonify({
@@ -137,19 +137,24 @@ def list_files():
         })
         
     except Exception as e:
-        return jsonify({'error': f'Error listing files from S3: {str(e)}'}), 500
+        return jsonify({'error': f'Error listing files from storage: {str(e)}'}), 500
 
 @images_bp.route('/status', methods=['GET'])
 def storage_status():
-    """Get S3 storage service status"""
+    """Get storage service status"""
     try:
-        storage_service = S3StorageService()
+        storage_info = StorageServiceFactory.get_storage_service_info()
+        storage_service = StorageServiceFactory.get_storage_service()
+        
         status = {
             'available': storage_service.is_available(),
-            'bucket_name': storage_service.bucket_name,
-            'images_folder': storage_service.images_folder,
-            'uploads_folder': storage_service.uploads_folder,
-            'pdfs_folder': storage_service.pdfs_folder
+            'service_type': storage_info['selected_service'],
+            's3_configured': storage_info['s3_configured'],
+            's3_available': storage_info['s3_available'],
+            'local_available': storage_info['local_available'],
+            'images_folder': str(storage_service.images_folder),
+            'uploads_folder': str(storage_service.uploads_folder),
+            'pdfs_folder': str(storage_service.pdfs_folder)
         }
         
         return jsonify({
@@ -158,4 +163,4 @@ def storage_status():
         })
         
     except Exception as e:
-        return jsonify({'error': f'Error getting S3 storage status: {str(e)}'}), 500
+        return jsonify({'error': f'Error getting storage status: {str(e)}'}), 500

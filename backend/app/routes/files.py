@@ -5,7 +5,7 @@ from datetime import datetime
 from main import db
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
-from app.services.s3_storage_service import S3StorageService
+from app.services.storage_service_factory import StorageServiceFactory
 import traceback
 
 files_bp = Blueprint('files', __name__)
@@ -24,8 +24,8 @@ def download_pdf(type, id):
 def serve_static_file(filename):
     """Redirect to S3 URL for static files"""
     try:
-        # Files are now served directly from S3, so redirect to S3 URL
-        storage_service = S3StorageService()
+        # Files are now served from storage service (S3 or local)
+        storage_service = StorageServiceFactory.get_storage_service()
         
         # Determine the S3 key based on the filename path
         if filename.startswith('images/'):
@@ -54,7 +54,7 @@ def serve_static_file(filename):
 def get_file_info(filename):
     """Get information about a file in S3"""
     try:
-        storage_service = S3StorageService()
+        storage_service = StorageServiceFactory.get_storage_service()
         
         # Check if file exists in S3
         if not storage_service.file_exists(filename):

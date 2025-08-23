@@ -597,6 +597,32 @@
             padding-left: 60px;
         }
 
+        .secondary-fabric-row {
+            background: #1e1e1e;
+        }
+
+        .secondary-fabric-row td {
+            background: #1e1e1e;
+            color: #b0bec5;
+        }
+
+        .secondary-fabric-row td:nth-child(2) {
+            padding-left: 80px;
+        }
+
+        .lining-fabric-row {
+            background: #1a1a1a;
+        }
+
+        .lining-fabric-row td {
+            background: #1a1a1a;
+            color: #90a4ae;
+        }
+
+        .lining-fabric-row td:nth-child(2) {
+            padding-left: 80px;
+        }
+
         /* Make it clear that rows are not clickable */
         .data-table tr {
             cursor: default;
@@ -1274,6 +1300,47 @@
                             `;
                             tbody.appendChild(fabricDetailRow);
                         });
+                        
+                        // Add secondary fabric rows for each record
+                        groupBill.details.individual_records.filter(record => record.fabric_invoice_number && record.garment_fabrics && record.garment_fabrics.length > 0).forEach(record => {
+                            record.garment_fabrics.forEach(fabric => {
+                                const fabricValue = parseFloat(fabric.total_fabric_cost || 0);
+                                const secondaryFabricRow = document.createElement('tr');
+                                secondaryFabricRow.className = 'detail-row secondary-fabric-row';
+                                secondaryFabricRow.setAttribute('data-group-id', groupBill.id);
+                                secondaryFabricRow.setAttribute('data-pl-serial', record.packing_list_serial || 'No PL');
+                                secondaryFabricRow.style.display = 'none';
+                                secondaryFabricRow.innerHTML = `
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>${record.packing_list_serial || ''}</td>
+                                    <td></td>
+                                    <td style="padding-left: 20px; color: #666;">↳ ${fabric.lining_name || fabric.fabric_name || ''}</td>
+                                    <td>${fabric.color || ''}</td>
+                                    <td>${record.customer || ''}</td>
+                                    <td>${fabric.beta_tax_invoice_number || ''}</td>
+                                    <td>${fabric.tax_invoice_number || ''}</td>
+                                    <td>${fabric.fabric_invoice_number || ''}</td>
+                                    <td>${fabric.delivery_note || ''}</td>
+                                    <td>${formatNumber(parseFloat(fabric.consumption_yards || 0))}</td>
+                                    <td>${formatNumber(parseFloat(fabric.unit_price || 0))}</td>
+                                    <td>${formatCurrency(fabricValue)}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                `;
+                                tbody.appendChild(secondaryFabricRow);
+                            });
+                        });
                     }
                     
                     // Stitching Invoice Summary Row
@@ -1362,6 +1429,47 @@
                                 <td></td>
                             `;
                             tbody.appendChild(stitchingDetailRow);
+                        });
+                        
+                        // Add lining fabric rows for each record
+                        groupBill.details.individual_records.filter(record => record.stitching_invoice_number && record.lining_fabrics && record.lining_fabrics.length > 0).forEach(record => {
+                            record.lining_fabrics.forEach(lining => {
+                                const liningValue = parseFloat(lining.total_cost || 0);
+                                const liningFabricRow = document.createElement('tr');
+                                liningFabricRow.className = 'detail-row lining-fabric-row';
+                                liningFabricRow.setAttribute('data-group-id', groupBill.id);
+                                liningFabricRow.setAttribute('data-pl-serial', record.packing_list_serial || 'No PL');
+                                liningFabricRow.style.display = 'none';
+                                liningFabricRow.innerHTML = `
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>${record.packing_list_serial || ''}</td>
+                                    <td></td>
+                                    <td style="padding-left: 20px; color: #666;">↳ Lining: ${lining.lining_name || ''}</td>
+                                    <td>${lining.color || ''}</td>
+                                    <td>${record.customer || ''}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>${formatNumber(parseFloat(lining.consumption_yards || 0))}</td>
+                                    <td>${formatNumber(parseFloat(lining.unit_price || 0))}</td>
+                                    <td>${formatCurrency(liningValue)}</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                `;
+                                tbody.appendChild(liningFabricRow);
+                            });
                         });
                     }
 
@@ -1692,6 +1800,7 @@
             const expandIndicator = fabricRow.querySelector('.expand-indicator');
             const plFabricRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].pl-fabric-row`);
             const fabricDetailRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].fabric-detail-row`);
+            const secondaryFabricRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].secondary-fabric-row`);
             
             const isExpanded = expandIndicator.classList.contains('expanded');
             
@@ -1701,12 +1810,14 @@
                 expandIndicator.textContent = '▶';
                 plFabricRows.forEach(row => row.style.display = 'none');
                 fabricDetailRows.forEach(row => row.style.display = 'none');
+                secondaryFabricRows.forEach(row => row.style.display = 'none');
             } else {
                 // Expand
                 expandIndicator.classList.add('expanded');
                 expandIndicator.textContent = '▼';
                 plFabricRows.forEach(row => row.style.display = 'table-row');
                 fabricDetailRows.forEach(row => row.style.display = 'table-row');
+                secondaryFabricRows.forEach(row => row.style.display = 'table-row');
             }
         }
 
@@ -1715,6 +1826,7 @@
             const expandIndicator = stitchingRow.querySelector('.expand-indicator');
             const plStitchingRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].pl-stitching-row`);
             const stitchingDetailRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].stitching-detail-row`);
+            const liningFabricRows = document.querySelectorAll(`tr[data-group-id="${groupId}"].lining-fabric-row`);
             
             const isExpanded = expandIndicator.classList.contains('expanded');
             
@@ -1724,12 +1836,14 @@
                 expandIndicator.textContent = '▶';
                 plStitchingRows.forEach(row => row.style.display = 'none');
                 stitchingDetailRows.forEach(row => row.style.display = 'none');
+                liningFabricRows.forEach(row => row.style.display = 'none');
             } else {
                 // Expand
                 expandIndicator.classList.add('expanded');
                 expandIndicator.textContent = '▼';
                 plStitchingRows.forEach(row => row.style.display = 'table-row');
                 stitchingDetailRows.forEach(row => row.style.display = 'table-row');
+                liningFabricRows.forEach(row => row.style.display = 'table-row');
             }
         }
 

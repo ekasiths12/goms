@@ -299,4 +299,4 @@ if __name__ == '__main__':
             print(f"❌ Database connection failed: {e}")
             print("💡 Make sure MySQL is running and database is accessible")
     
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=False, host='0.0.0.0', port=8000)
