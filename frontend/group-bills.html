@@ -1520,9 +1520,17 @@
         function getSizeQuantity(sizeQtyJson, size) {
             if (!sizeQtyJson) return 0;
             try {
-                const sizeQty = typeof sizeQtyJson === 'string' ? JSON.parse(sizeQtyJson) : sizeQtyJson;
+                let sizeQty;
+                if (typeof sizeQtyJson === 'string') {
+                    // Handle single quotes in JSON string by replacing with double quotes
+                    const jsonString = sizeQtyJson.replace(/'/g, '"');
+                    sizeQty = JSON.parse(jsonString);
+                } else {
+                    sizeQty = sizeQtyJson;
+                }
                 return sizeQty[size] || 0;
             } catch (error) {
+                console.error('Error parsing size_qty_json:', error, sizeQtyJson);
                 return 0;
             }
         }
@@ -1530,9 +1538,17 @@
         function getTotalQuantity(sizeQtyJson) {
             if (!sizeQtyJson) return 0;
             try {
-                const sizeQty = typeof sizeQtyJson === 'string' ? JSON.parse(sizeQtyJson) : sizeQtyJson;
+                let sizeQty;
+                if (typeof sizeQtyJson === 'string') {
+                    // Handle single quotes in JSON string by replacing with double quotes
+                    const jsonString = sizeQtyJson.replace(/'/g, '"');
+                    sizeQty = JSON.parse(jsonString);
+                } else {
+                    sizeQty = sizeQtyJson;
+                }
                 return (sizeQty.S || 0) + (sizeQty.M || 0) + (sizeQty.L || 0) + (sizeQty.XL || 0) + (sizeQty.XXL || 0) + (sizeQty.XXXL || 0);
             } catch (error) {
+                console.error('Error parsing size_qty_json:', error, sizeQtyJson);
                 return 0;
             }
         }
