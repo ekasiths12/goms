@@ -601,7 +601,7 @@ def get_group_bill_details(group_id):
                     'stitched_item': stitching_invoice.stitched_item,
                     'item_name': stitching_invoice.item_name,
                     'color': stitching_invoice.invoice_line.color if stitching_invoice.invoice_line else None,
-                    'tax_invoice_number': stitching_invoice.invoice_line.invoice.tax_invoice_number if stitching_invoice.invoice_line and stitching_invoice.invoice_line.invoice else None,
+                    'beta_tax_invoice_number': stitching_invoice.invoice_line.invoice.tax_invoice_number if stitching_invoice.invoice_line and stitching_invoice.invoice_line.invoice else None,
                     'fabric_invoice_number': stitching_invoice.invoice_line.invoice.invoice_number if stitching_invoice.invoice_line and stitching_invoice.invoice_line.invoice else None,
                     'delivery_note': stitching_invoice.invoice_line.delivery_note if stitching_invoice.invoice_line else None,
                     'customer': stitching_invoice.invoice_line.invoice.customer.short_name if stitching_invoice.invoice_line and stitching_invoice.invoice_line.invoice and stitching_invoice.invoice_line.invoice.customer else None,
@@ -613,7 +613,7 @@ def get_group_bill_details(group_id):
                     'created_at': stitching_invoice.created_at,
                     'packing_list_serial': packing_list.packing_list_serial if packing_list else None,
                     'pl_created_at': packing_list.created_at if packing_list else None,
-                    'pl_tax_invoice_number': packing_list.tax_invoice_number if packing_list else None
+                    'tax_invoice_number': packing_list.tax_invoice_number if packing_list else None
                 }
                 records.append(record_dict)
         

@@ -90,7 +90,8 @@ class PackingListLine(db.Model):
             'fabric_name': self.stitching_invoice.item_name if self.stitching_invoice else None,
             'color': self.stitching_invoice.invoice_line.color if self.stitching_invoice and self.stitching_invoice.invoice_line else None,
             'customer_name': self.packing_list.customer.short_name if self.packing_list and self.packing_list.customer else None,
-            'tax_invoice_number': self.packing_list.tax_invoice_number if self.packing_list else None,
+            'tax_invoice_number': self.packing_list.tax_invoice_number if self.packing_list else None,  # MSK Tax #
+            'beta_tax_invoice_number': self.stitching_invoice.invoice_line.invoice.tax_invoice_number if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.invoice_line.invoice else None,  # Beta Tax #
             'group_bill_number': self.stitching_invoice.billing_group.group_number if self.stitching_invoice and self.stitching_invoice.billing_group else None,
             'fabric_invoice_number': self.stitching_invoice.invoice_line.invoice.invoice_number if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.invoice_line.invoice else None,
             'delivery_note': self.stitching_invoice.invoice_line.delivery_note if self.stitching_invoice and self.stitching_invoice.invoice_line else None,

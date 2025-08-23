@@ -930,13 +930,15 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
+                        <th style="width: 80px;">Created At</th>
                         <th style="width: 140px;">Bill #</th>
                         <th style="width: 140px;">PL #</th>
                         <th style="width: 80px;">Garment</th>
                         <th style="width: 100px;">Fabric</th>
                         <th style="width: 80px;">Color</th>
                         <th style="width: 120px;">Customer</th>
-                        <th style="width: 100px;">Tax Inv #</th>
+                        <th style="width: 100px;">Beta T#</th>
+                        <th style="width: 100px;">MSK T#</th>
                         <th style="width: 100px;">Fabric Inv.</th>
                         <th style="width: 100px;">Fabric DN.</th>
                         <th style="width: 70px;">Fab Used</th>
@@ -951,7 +953,6 @@
                         <th style="width: 70px;">Total Qty</th>
                         <th style="width: 70px;">Sew Cost</th>
                         <th style="width: 80px;">Sew Value</th>
-                        <th style="width: 80px;">Created At</th>
                         <th style="width: 100px;">Actions</th>
                     </tr>
                 </thead>
@@ -1167,6 +1168,7 @@
                     <td class="checkbox-wrapper">
                         <input type="checkbox" class="group-bill-checkbox" data-group-id="${groupBill.id}" onclick="toggleGroupBillSelection(event, ${groupBill.id})">
                     </td>
+                    <td>${formatDate(groupBill.invoice_date || groupBill.created_at)}</td>
                     <td onclick="toggleGroupExpansion(${groupBill.id})">
                         <span class="expand-indicator">▶</span> ${groupBill.group_number || ''}
                     </td>
@@ -1190,7 +1192,6 @@
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td>${formatDate(groupBill.invoice_date || groupBill.created_at)}</td>
                     <td></td>
                 `;
                 tbody.appendChild(parentRow);
@@ -1203,6 +1204,7 @@
                     fabricRow.setAttribute('data-group-id', groupBill.id);
                     fabricRow.style.display = 'none';
                     fabricRow.innerHTML = `
+                        <td></td>
                         <td></td>
                         <td onclick="toggleFabricExpansion(${groupBill.id})">
                             <span class="expand-indicator">▶</span> Fabric Invoice
@@ -1228,7 +1230,6 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
                     `;
                     tbody.appendChild(fabricRow);
                     
@@ -1243,12 +1244,13 @@
                             fabricDetailRow.style.display = 'none';
                             fabricDetailRow.innerHTML = `
                                 <td></td>
-                                <td></td>
+                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
                                 <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
                                 <td>${record.customer || ''}</td>
+                                <td>${record.beta_tax_invoice_number || ''}</td>
                                 <td>${record.tax_invoice_number || ''}</td>
                                 <td>${record.fabric_invoice_number || ''}</td>
                                 <td>${record.delivery_note || ''}</td>
@@ -1264,7 +1266,6 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
                             `;
                             tbody.appendChild(fabricDetailRow);
@@ -1278,10 +1279,10 @@
                     stitchingRow.style.display = 'none';
                     stitchingRow.innerHTML = `
                         <td></td>
+                        <td></td>
                         <td onclick="toggleStitchingExpansion(${groupBill.id})">
                             <span class="expand-indicator">▶</span> Stitching Invoice
                         </td>
-                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -1298,8 +1299,7 @@
                         <td>${formatInteger(groupBill.details.size_totals?.XL || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.XXL || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.XXXL || 0)}</td>
-                        <td>${formatInteger(groupBill.details.total_items || 0)}</td>
-                        <td></td>
+                        <td>${formatInteger(groupBill.details.total_stitching_qty || 0)}</td>
                         <td>${formatCurrency(groupBill.details.total_stitching_value || 0)}</td>
                         <td></td>
                         <td></td>
@@ -1308,8 +1308,8 @@
                     
                     // Level 3: Stitching Invoice Details (under Stitching Invoice)
                     if (groupBill.details.individual_records && groupBill.details.individual_records.length > 0) {
-                        // Stitching Detail Rows (for all records)
-                        groupBill.details.individual_records.forEach(record => {
+                        // Stitching Detail Rows (for records with stitching invoices)
+                        groupBill.details.individual_records.filter(record => record.stitching_invoice_number).forEach(record => {
                             const stitchingDetailRow = document.createElement('tr');
                             stitchingDetailRow.className = 'detail-row stitching-detail-row';
                             stitchingDetailRow.setAttribute('data-group-id', groupBill.id);
@@ -1317,28 +1317,28 @@
                             stitchingDetailRow.style.display = 'none';
                             stitchingDetailRow.innerHTML = `
                                 <td></td>
+                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
-                                <td>${record.packing_list_serial || ''}</td>
-                                <td>${record.stitched_item || ''}</td>
+                                <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
                                 <td>${record.customer || ''}</td>
-                                <td>${record.pl_tax_invoice_number || ''}</td>
+                                <td>${record.beta_tax_invoice_number || ''}</td>
+                                <td>${record.tax_invoice_number || ''}</td>
+                                <td>${record.fabric_invoice_number || ''}</td>
+                                <td>${record.delivery_note || ''}</td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'S'))}</td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'M'))}</td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'L'))}</td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'XL'))}</td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'XXL'))}</td>
-                                <td>${formatInteger(getSizeQuantity(record.size_qty_json, 'XXXL'))}</td>
-                                <td>${formatInteger(getTotalQuantity(record.size_qty_json))}</td>
-                                <td>${formatNumber(record.price || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.S || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.M || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.L || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.XL || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.XXL || 0)}</td>
+                                <td>${formatInteger(record.size_qty?.XXXL || 0)}</td>
+                                <td>${formatInteger(record.total_qty || 0)}</td>
+                                <td>${formatCurrency(record.stitching_cost || 0)}</td>
                                 <td>${formatCurrency(record.total_value || 0)}</td>
-                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
                             `;
                             tbody.appendChild(stitchingDetailRow);
@@ -1347,6 +1347,8 @@
 
                 }
             });
+            
+            updatePaginationControls();
         }
 
         function toggleSelectAll() {

@@ -718,7 +718,7 @@
                         <th>Date</th>
                         <th>Short Name</th>
                         <th>Invoice Number</th>
-                        <th>Tax Invoice #</th>
+                        <th>Beta T#</th>
                         <th>Item Code</th>
                         <th>Color</th>
                         <th>Delivery Note</th>
@@ -1291,7 +1291,7 @@
                 e.preventDefault();
                 closeAllDropdowns();
                 dropdown.classList.add('show');
-                searchInput.focus();
+                // Don't auto-focus the search input - let user click on it if they want to search
                 populateFilterOptions(filterId, dataKey, '');
             });
 
@@ -1407,6 +1407,7 @@
             filterData.customers = [...new Set(invoiceData.map(inv => inv.customer?.short_name).filter(Boolean))];
             filterData.invoiceNumbers = [...new Set(invoiceData.map(inv => inv.invoice_number).filter(Boolean))];
             filterData.taxInvoices = [...new Set(invoiceData.map(inv => inv.tax_invoice_number).filter(Boolean))];
+
             filterData.itemCodes = [...new Set(invoiceData.map(inv => inv.item_name).filter(Boolean))];
             filterData.deliveryNotes = [...new Set(invoiceData.map(inv => inv.delivery_note).filter(Boolean))];
             filterData.locations = [...new Set(invoiceData.map(inv => inv.delivered_location).filter(Boolean))];
@@ -2586,22 +2587,29 @@
 
         async function loadCustomerIds() {
             try {
+                console.log('🔄 Loading customer IDs...');
                 const response = await fetch(`${getApiBaseUrl()}/api/customers/customer-ids`);
+                console.log('📡 Customer IDs response status:', response.status);
                 if (response.ok) {
                     customerIds = await response.json();
+                    console.log('✅ Loaded customer IDs:', customerIds.length, 'items:', customerIds);
                     displayCustomerIds();
                 } else {
-                    console.error('Failed to load customer IDs');
+                    console.error('❌ Failed to load customer IDs, status:', response.status);
                 }
             } catch (error) {
-                console.error('Error loading customer IDs:', error);
+                console.error('❌ Error loading customer IDs:', error);
             }
         }
 
         function displayCustomerIds() {
             const list = document.getElementById('customerIdList');
-            if (!list) return;
+            if (!list) {
+                console.error('❌ Could not find customerIdList element');
+                return;
+            }
             
+            console.log('🔄 Displaying customer IDs:', customerIds.length, 'items');
             list.innerHTML = '';
             customerIds.sort().forEach(id => {
                 const div = document.createElement('div');
@@ -2611,6 +2619,7 @@
                 div.ondblclick = () => removeCustomerId(id);
                 list.appendChild(div);
             });
+            console.log('✅ Displayed', customerIds.length, 'customer IDs in the dialog');
         }
 
         async function addCustomerId() {

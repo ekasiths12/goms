@@ -820,7 +820,8 @@
                         <th style="width: 100px;">Fabric</th>
                         <th style="width: 80px;">Color</th>
                         <th style="width: 120px;">Customer</th>
-                        <th style="width: 100px;">Tax Inv #</th>
+                        <th style="width: 100px;">Beta T#</th>
+                        <th style="width: 100px;">MSK T#</th>
                         <th style="width: 140px;">Group Bill #</th>
                         <th style="width: 100px;">Fabric Inv.</th>
                         <th style="width: 100px;">Fabric DN.</th>
@@ -863,7 +864,10 @@
     </div>
 
     <script>
+        // Global variables
         let packingListData = [];
+        let filteredPackingListData = []; // Add this to track filtered data
+        let selectedPackingListIds = [];
         let currentPage = 1;
         const itemsPerPage = 50;
 
@@ -1014,7 +1018,7 @@
             const dateTo = document.getElementById('dateToFilter').value;
             const billingStatus = document.querySelector('input[name="billingStatus"]:checked').value;
 
-            const filteredData = packingListData.filter(packingList => {
+            filteredPackingListData = packingListData.filter(packingList => {
                 // PL Serial filter
                 if (plFilter && !packingList.packing_list_serial.toLowerCase().includes(plFilter)) {
                     return false;
@@ -1096,7 +1100,7 @@
             });
 
             currentPage = 1; // Reset to first page when filtering
-            populatePackingListTable(filteredData);
+            populatePackingListTable(filteredPackingListData);
         }
 
         function isDateInRange(date, filterDate, type) {
@@ -1154,6 +1158,7 @@
                 console.log('📊 Received packing list data:', data.length, 'records');
                 
                 packingListData = data;
+                filteredPackingListData = data; // Initialize filtered data with all data
                 currentPage = 1; // Reset to first page when new data is loaded
                 populatePackingListTable(data);
                 console.log('✅ Packing list data loaded successfully');
@@ -1212,6 +1217,7 @@
                         <td></td>
                         <td></td>
                         <td>${packingList.customer_name || ''}</td>
+                        <td>${packingList.beta_tax_invoice_number || ''}</td>
                         <td>${packingList.tax_invoice_number || ''}</td>
                         <td>${packingList.group_bill_number || ''}</td>
                         <td></td>
@@ -1267,6 +1273,7 @@
                                 <td>${line.fabric_name || ''}</td>
                                 <td>${line.color || ''}</td>
                                 <td>${packingList.customer_name || ''}</td>
+                                <td>${line.beta_tax_invoice_number || ''}</td>
                                 <td>${line.tax_invoice_number || ''}</td>
                                 <td>${line.group_bill_number || ''}</td>
                                 <td>${line.fabric_invoice_number || ''}</td>
@@ -1675,7 +1682,7 @@
 
         // Pagination Functions
         function getTotalPages() {
-            return Math.ceil(packingListData.length / itemsPerPage);
+            return Math.ceil(filteredPackingListData.length / itemsPerPage);
         }
 
         function goToPage(page) {
@@ -1684,18 +1691,18 @@
                 return;
             }
             currentPage = page;
-            populatePackingListTable(packingListData);
+            populatePackingListTable(filteredPackingListData);
         }
 
         function updatePaginationControls() {
             const totalPages = getTotalPages();
             const startRecord = (currentPage - 1) * itemsPerPage + 1;
-            const endRecord = Math.min(currentPage * itemsPerPage, packingListData.length);
+            const endRecord = Math.min(currentPage * itemsPerPage, filteredPackingListData.length);
             
             // Update pagination info
             const paginationInfo = document.getElementById('paginationInfo');
             if (paginationInfo) {
-                paginationInfo.textContent = `Showing ${startRecord} to ${endRecord} of ${packingListData.length} records`;
+                paginationInfo.textContent = `Showing ${startRecord} to ${endRecord} of ${filteredPackingListData.length} records`;
             }
             
             // Update button states

@@ -779,13 +779,14 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="selectAllTree" onchange="toggleSelectAllTree()"></th>
+                            <th>Created At</th>
                             <th>PL #</th>
                             <th>Serial #</th>
                             <th>Garment</th>
                             <th>Fabric</th>
                             <th>Color</th>
                             <th>Customer</th>
-                            <th>Tax Inv #</th>
+                            <th>Beta T#</th>
                             <th>Fabric Inv.</th>
                             <th>Fabric DN.</th>
                             <th>Fab Used</th>
@@ -802,7 +803,6 @@
                             <th>Sew Value</th>
                             <th>Yd/Pcs</th>
                             <th>Grmt Cost</th>
-                            <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -1101,6 +1101,7 @@
                 
                 parentRow.innerHTML = `
                     <td><input type="checkbox" onchange="event.stopPropagation(); toggleRowSelection(${actualIndex})" ${isSelected ? 'checked' : ''}></td>
+                    <td>${createdDate}</td>
                     <td>${record.packing_list_number || ''}</td>
                     <td>${expandIndicator}${record.stitching_invoice_number || ''}</td>
                     <td>${record.stitched_item || ''}</td>
@@ -1124,7 +1125,6 @@
                     <td>${record.total_value.toFixed(2)}</td>
                     <td>${yardsPerPiece.toFixed(3)}</td>
                     <td>${garmentCostPerPiece.toFixed(2)}</td>
-                    <td>${createdDate}</td>
                     <td>
                         <button onclick="event.stopPropagation(); viewStitchingDetail(${record.id})" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;">View</button>
                         <button onclick="event.stopPropagation(); deleteStitchingRecord(${record.id})" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">Delete</button>
@@ -1181,6 +1181,7 @@
             childRow.innerHTML = `
                 <td></td>
                 <td></td>
+                <td></td>
                 <td>  └─ ${fabric.fabric_name || ''}</td>
                 <td></td>
                 <td>${fabric.fabric_name || ''}</td>
@@ -1202,7 +1203,6 @@
                 <td></td>
                 <td></td>
                 <td>${yardsPerPiece.toFixed(3)}</td>
-                <td></td>
                 <td></td>
                 <td></td>
             `;
@@ -1230,6 +1230,7 @@
             childRow.innerHTML = `
                 <td></td>
                 <td></td>
+                <td></td>
                 <td>  └─ ${lining.lining_name || ''}</td>
                 <td></td>
                 <td>${lining.lining_name || ''}</td>
@@ -1251,7 +1252,6 @@
                 <td></td>
                 <td></td>
                 <td>${yardsPerPiece.toFixed(3)}</td>
-                <td></td>
                 <td></td>
                 <td></td>
             `;
