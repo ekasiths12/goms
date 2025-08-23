@@ -5,7 +5,7 @@ from extensions import db
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.stitching import StitchingInvoice
 from app.models.customer import Customer
-from app.models.packing_list import PackingList
+from app.models.packing_list import PackingList, PackingListLine
 from app.models.group_bill import StitchingInvoiceGroup
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -29,10 +29,10 @@ def get_dashboard_summary():
         params = {}
         
         if date_from:
-            where_conditions.append("sig.invoice_date >= :date_from")
+            where_conditions.append("pl.delivery_date >= :date_from")
             params['date_from'] = date_from
         if date_to:
-            where_conditions.append("sig.invoice_date <= :date_to")
+            where_conditions.append("pl.delivery_date <= :date_to")
             params['date_to'] = date_to
         if customer:
             where_conditions.append("c.short_name = :customer")
@@ -46,17 +46,17 @@ def get_dashboard_summary():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Calculate fabric commission (based on group bill dates)
+        # Calculate fabric commission (based on packing list delivery dates)
         fabric_query = text(f"""
             SELECT 
                 COALESCE(SUM(il.yards_sent * il.unit_price), 0) as fabric_sales_total,
                 COALESCE(SUM(il.yards_sent * il.unit_price * {FABRIC_COMMISSION_RATE}), 0) as fabric_commission
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON sig.customer_id = c.id
+            JOIN customers c ON pl.customer_id = c.id
             WHERE {where_clause}
         """)
         
@@ -64,13 +64,13 @@ def get_dashboard_summary():
         fabric_sales_total = float(fabric_result.fabric_sales_total or 0)
         fabric_commission = float(fabric_result.fabric_commission or 0)
         
-        # Calculate stitching revenue (based on group bill dates)
+        # Calculate stitching revenue (based on packing list delivery dates)
         stitching_query = text(f"""
             SELECT COALESCE(SUM(si.total_value), 0) as stitching_revenue
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
-            JOIN customers c ON sig.customer_id = c.id
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN customers c ON pl.customer_id = c.id
             WHERE {where_clause}
         """)
         
@@ -98,17 +98,17 @@ def get_dashboard_summary():
         fabric_stock_result = db.session.execute(fabric_stock_query).fetchone()
         fabric_stock = float(fabric_stock_result.pending_yards or 0)
         
-        # Production rate (records per day - last 30 days)
+        # Production rate (total items per day - last 30 days)
         thirty_days_ago = datetime.now() - timedelta(days=30)
         production_query = text("""
-            SELECT COUNT(*) as count
-            FROM stitching_invoices si
-            WHERE si.created_at >= :thirty_days_ago
+            SELECT COALESCE(SUM(pl.total_items), 0) as total_items
+            FROM packing_lists pl
+            WHERE pl.delivery_date >= :thirty_days_ago
         """)
         production_result = db.session.execute(production_query, {
             'thirty_days_ago': thirty_days_ago
         }).fetchone()
-        recent_production_count = int(production_result.count or 0)
+        recent_production_count = int(production_result.total_items or 0)
         production_rate = recent_production_count / 30 if recent_production_count > 0 else 0
         
         # Calculate percentage changes (mock data for now)
@@ -134,7 +134,7 @@ def get_dashboard_summary():
 
 @dashboard_bp.route('/revenue-trends', methods=['GET'])
 def get_revenue_trends():
-    """Get revenue trends over time based on group bill dates"""
+    """Get revenue trends over time based on packing list delivery dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -169,21 +169,21 @@ def get_revenue_trends():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Query for revenue by group bill date
+        # Query for revenue by packing list delivery date
         query = text(f"""
             SELECT 
-                DATE(sig.invoice_date) as date,
+                DATE(pl.delivery_date) as date,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
                 COALESCE(SUM(si.total_value), 0) as stitching_revenue
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON sig.customer_id = c.id
-            WHERE sig.invoice_date BETWEEN :date_from AND :date_to
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE pl.delivery_date BETWEEN :date_from AND :date_to
             AND {where_clause}
-            GROUP BY DATE(sig.invoice_date)
-            ORDER BY DATE(sig.invoice_date)
+            GROUP BY DATE(pl.delivery_date)
+            ORDER BY DATE(pl.delivery_date)
         """)
         
         results = db.session.execute(query, params).fetchall()
@@ -230,7 +230,7 @@ def get_revenue_trends():
 
 @dashboard_bp.route('/top-customers', methods=['GET'])
 def get_top_customers():
-    """Get top customers by revenue with split commission/stitching"""
+    """Get top customers by revenue with split commission/stitching based on delivery dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -244,10 +244,10 @@ def get_top_customers():
         params = {'commission_rate': FABRIC_COMMISSION_RATE}
         
         if date_from:
-            where_conditions.append("sig.invoice_date >= :date_from")
+            where_conditions.append("pl.delivery_date >= :date_from")
             params['date_from'] = date_from
         if date_to:
-            where_conditions.append("sig.invoice_date <= :date_to")
+            where_conditions.append("pl.delivery_date <= :date_to")
             params['date_to'] = date_to
         if customer:
             where_conditions.append("c.short_name = :customer")
@@ -266,11 +266,11 @@ def get_top_customers():
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
                 COALESCE(SUM(si.total_value), 0) as stitching_revenue
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON sig.customer_id = c.id
+            JOIN customers c ON pl.customer_id = c.id
             WHERE {where_clause}
             GROUP BY c.id, c.short_name
             HAVING (fabric_commission + stitching_revenue) > 0
@@ -295,7 +295,7 @@ def get_top_customers():
 
 @dashboard_bp.route('/fabric-consumption', methods=['GET'])
 def get_fabric_consumption():
-    """Get fabric consumption by location (yards per garment)"""
+    """Get fabric consumption by garment type (total yards / total quantity)"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -309,79 +309,10 @@ def get_fabric_consumption():
         params = {}
         
         if date_from:
-            where_conditions.append("sig.invoice_date >= :date_from")
+            where_conditions.append("pl.delivery_date >= :date_from")
             params['date_from'] = date_from
         if date_to:
-            where_conditions.append("sig.invoice_date <= :date_to")
-            params['date_to'] = date_to
-        if customer:
-            where_conditions.append("c.short_name = :customer")
-            params['customer'] = customer
-        if garment:
-            where_conditions.append("si.stitched_item = :garment")
-            params['garment'] = garment
-        if location:
-            where_conditions.append("il.delivered_location = :location")
-            params['location'] = location
-        
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
-        
-        query = text(f"""
-            SELECT 
-                COALESCE(il.delivered_location, 'Unknown') as location,
-                SUM(COALESCE(si.yard_consumed, 0)) as total_yards,
-                COUNT(DISTINCT si.id) as garment_count,
-                CASE 
-                    WHEN COUNT(DISTINCT si.id) > 0 
-                    THEN SUM(COALESCE(si.yard_consumed, 0)) / COUNT(DISTINCT si.id)
-                    ELSE 0 
-                END as yards_per_garment
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
-            JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON sig.customer_id = c.id
-            WHERE COALESCE(si.yard_consumed, 0) > 0
-            AND {where_clause}
-            GROUP BY il.delivered_location
-            HAVING garment_count > 0
-            ORDER BY yards_per_garment DESC
-            LIMIT 10
-        """)
-        
-        results = db.session.execute(query, params).fetchall()
-        
-        labels = [row.location for row in results]
-        values = [float(row.yards_per_garment) for row in results]
-        
-        return jsonify({
-            'labels': labels,
-            'values': values
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@dashboard_bp.route('/production-overview', methods=['GET'])
-def get_production_overview():
-    """Get most stitched items based on group bill dates"""
-    try:
-        # Get filter parameters
-        date_from = request.args.get('dateFrom')
-        date_to = request.args.get('dateTo')
-        customer = request.args.get('customer')
-        garment = request.args.get('garment')
-        location = request.args.get('location')
-        
-        # Build filter conditions
-        where_conditions = []
-        params = {}
-        
-        if date_from:
-            where_conditions.append("sig.invoice_date >= :date_from")
-            params['date_from'] = date_from
-        if date_to:
-            where_conditions.append("sig.invoice_date <= :date_to")
+            where_conditions.append("pl.delivery_date <= :date_to")
             params['date_to'] = date_to
         if customer:
             where_conditions.append("c.short_name = :customer")
@@ -398,23 +329,116 @@ def get_production_overview():
         query = text(f"""
             SELECT 
                 si.stitched_item,
-                COUNT(*) as total_items
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+                SUM(COALESCE(si.yard_consumed, 0)) as total_yards,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        THEN JSON_LENGTH(si.size_qty_json)
+                        ELSE 0 
+                    END
+                ) as total_quantity,
+                CASE 
+                    WHEN SUM(
+                        CASE 
+                            WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                            THEN JSON_LENGTH(si.size_qty_json)
+                            ELSE 0 
+                        END
+                    ) > 0 
+                    THEN SUM(COALESCE(si.yard_consumed, 0)) / SUM(
+                        CASE 
+                            WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                            THEN JSON_LENGTH(si.size_qty_json)
+                            ELSE 0 
+                        END
+                    )
+                    ELSE 0 
+                END as yards_per_item
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON sig.customer_id = c.id
-            WHERE {where_clause}
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE COALESCE(si.yard_consumed, 0) > 0
+            AND {where_clause}
             GROUP BY si.stitched_item
-            HAVING total_items > 0
-            ORDER BY total_items DESC
+            HAVING total_quantity > 0
+            ORDER BY yards_per_item DESC
             LIMIT 10
         """)
         
         results = db.session.execute(query, params).fetchall()
         
         labels = [row.stitched_item for row in results]
-        values = [int(row.total_items) for row in results]
+        values = [float(row.yards_per_item) for row in results]
+        
+        return jsonify({
+            'labels': labels,
+            'values': values
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/production-overview', methods=['GET'])
+def get_production_overview():
+    """Get most stitched items by total quantity based on delivery dates"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
+        if date_from:
+            where_conditions.append("pl.delivery_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("pl.delivery_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                si.stitched_item,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        THEN JSON_LENGTH(si.size_qty_json)
+                        ELSE 0 
+                    END
+                ) as total_quantity
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY si.stitched_item
+            HAVING total_quantity > 0
+            ORDER BY total_quantity DESC
+            LIMIT 10
+        """)
+        
+        results = db.session.execute(query, params).fetchall()
+        
+        labels = [row.stitched_item for row in results]
+        values = [int(row.total_quantity) for row in results]
         
         return jsonify({
             'labels': labels,
@@ -483,7 +507,7 @@ def get_stock_status():
 
 @dashboard_bp.route('/production-rate', methods=['GET'])
 def get_production_rate():
-    """Get production rate over time based on group bill dates"""
+    """Get production rate over time based on delivery dates (total quantity per day)"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -519,17 +543,23 @@ def get_production_rate():
         
         query = text(f"""
             SELECT 
-                DATE(sig.invoice_date) as date,
-                COUNT(*) as items_produced
-            FROM stitching_invoice_groups sig
-            JOIN stitching_invoice_group_lines sigl ON sig.id = sigl.group_id
-            JOIN stitching_invoices si ON sigl.stitching_invoice_id = si.id
+                DATE(pl.delivery_date) as date,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        THEN JSON_LENGTH(si.size_qty_json)
+                        ELSE 0 
+                    END
+                ) as items_produced
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON sig.customer_id = c.id
-            WHERE sig.invoice_date BETWEEN :date_from AND :date_to
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE pl.delivery_date BETWEEN :date_from AND :date_to
             AND {where_clause}
-            GROUP BY DATE(sig.invoice_date)
-            ORDER BY DATE(sig.invoice_date)
+            GROUP BY DATE(pl.delivery_date)
+            ORDER BY DATE(pl.delivery_date)
         """)
         
         results = db.session.execute(query, params).fetchall()

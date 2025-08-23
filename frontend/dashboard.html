@@ -343,7 +343,7 @@
 
             <!-- Fabric Consumption -->
             <div class="chart-card">
-                <h3 class="chart-title">🧵 Fabric Consumption (Yards per Garment)</h3>
+                <h3 class="chart-title">🧵 Fabric Consumption (Yards per Item)</h3>
                 <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
@@ -351,17 +351,9 @@
 
             <!-- Most Stitched Items -->
             <div class="chart-card">
-                <h3 class="chart-title">👔 Most Stitched Items</h3>
+                <h3 class="chart-title">👔 Most Stitched Items (By Quantity)</h3>
                 <div class="chart-container" data-chart="productionChart">
                     <canvas id="productionChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Revenue Breakdown -->
-            <div class="chart-card">
-                <h3 class="chart-title">💰 Revenue Breakdown</h3>
-                <div class="chart-container" data-chart="revenueBreakdownChart">
-                    <canvas id="revenueBreakdownChart"></canvas>
                 </div>
             </div>
 
@@ -375,7 +367,7 @@
 
             <!-- Production Rate -->
             <div class="chart-card">
-                <h3 class="chart-title">📊 Production Rate</h3>
+                <h3 class="chart-title">📊 Production Rate (Items per Day)</h3>
                 <div class="chart-container" data-chart="productionRateChart">
                     <canvas id="productionRateChart"></canvas>
                 </div>
@@ -404,7 +396,6 @@
                 console.log('customersChart:', document.getElementById('customersChart'));
                 console.log('fabricChart:', document.getElementById('fabricChart'));
                 console.log('productionChart:', document.getElementById('productionChart'));
-                console.log('revenueBreakdownChart:', document.getElementById('revenueBreakdownChart'));
                 console.log('stockChart:', document.getElementById('stockChart'));
                 console.log('productionRateChart:', document.getElementById('productionRateChart'));
                 initializeDashboard();
@@ -414,7 +405,7 @@
         async function initializeDashboard() {
             try {
                 // Check if canvas elements exist and create them if missing
-                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'revenueBreakdownChart', 'stockChart', 'productionRateChart'];
+                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'stockChart', 'productionRateChart'];
                 
                 // Ensure all canvas elements exist and are visible
                 canvasIds.forEach(canvasId => {
@@ -525,7 +516,6 @@
                 updateCustomersChart(customersData);
                 updateFabricChart(fabricData);
                 updateProductionChart(productionData);
-                updateRevenueBreakdownChart(summaryData);
                 updateStockChart(stockData);
                 updateProductionRateChart(productionRateData);
                 
@@ -861,58 +851,6 @@
                             },
                             grid: {
                                 color: 'rgba(176, 190, 197, 0.1)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateRevenueBreakdownChart(data) {
-            let canvas = document.getElementById('revenueBreakdownChart');
-            if (!canvas) {
-                const container = document.querySelector('[data-chart="revenueBreakdownChart"]');
-                if (container) {
-                    canvas = document.createElement('canvas');
-                    canvas.id = 'revenueBreakdownChart';
-                    canvas.width = 400;
-                    canvas.height = 280;
-                    container.appendChild(canvas);
-                }
-            }
-            
-            canvas.style.display = 'block';
-            canvas.style.visibility = 'visible';
-            canvas.style.opacity = '1';
-            canvas.style.position = 'relative';
-            canvas.style.zIndex = '1';
-            
-            const ctx = canvas.getContext('2d');
-            
-            if (charts.revenueBreakdown) {
-                charts.revenueBreakdown.destroy();
-            }
-            
-            charts.revenueBreakdown = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Fabric Commission', 'Stitching Revenue'],
-                    datasets: [{
-                        data: [data.fabricSales || 0, data.stitchingRevenue || 0],
-                        backgroundColor: ['#5c6bc0', '#4caf50'],
-                        borderColor: ['#5c6bc0', '#4caf50'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#eceff1',
-                                usePointStyle: true
                             }
                         }
                     }
