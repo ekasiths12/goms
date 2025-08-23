@@ -9,6 +9,9 @@ from app.models.packing_list import PackingList
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
+# Commission rate for fabric sales (5.1%)
+FABRIC_COMMISSION_RATE = 0.051
+
 @dashboard_bp.route('/summary', methods=['GET'])
 def get_dashboard_summary():
     """Get dashboard summary data including KPIs"""
@@ -16,17 +19,20 @@ def get_dashboard_summary():
         # Simple queries to start with
         
         # Calculate fabric sales (total invoice value)
-        fabric_sales = db.session.query(
+        fabric_sales_total = db.session.query(
             func.sum(InvoiceLine.yards_sent * InvoiceLine.unit_price).label('total')
         ).scalar() or 0
         
-        # Calculate stitching revenue
+        # Calculate fabric commission (5.1% of fabric sales)
+        fabric_commission = float(fabric_sales_total) * FABRIC_COMMISSION_RATE
+        
+        # Calculate stitching revenue (full amount - you keep 100% of stitching)
         stitching_revenue = db.session.query(
             func.sum(StitchingInvoice.total_value).label('total')
         ).scalar() or 0
         
-        # Total revenue
-        total_revenue = fabric_sales + stitching_revenue
+        # Total revenue (commission + full stitching revenue)
+        total_revenue = fabric_commission + float(stitching_revenue)
         
         # Active orders (count of stitching records)
         active_orders = db.session.query(StitchingInvoice).count()
@@ -51,7 +57,8 @@ def get_dashboard_summary():
         
         return jsonify({
             'totalRevenue': float(total_revenue),
-            'fabricSales': float(fabric_sales),
+            'fabricSales': float(fabric_commission),  # Show commission amount
+            'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
             'stitchingRevenue': float(stitching_revenue),
             'activeOrders': active_orders,
             'fabricStock': float(fabric_stock),
@@ -78,11 +85,12 @@ def get_revenue_trends():
         if not date_to:
             date_to = datetime.now().strftime('%Y-%m-%d')
         
-        # Query for fabric sales by date
+        # Query for fabric sales by date (with commission calculation)
         fabric_query = text("""
             SELECT 
                 DATE(i.invoice_date) as date,
-                SUM(il.yards_sent * il.unit_price) as fabric_sales
+                SUM(il.yards_sent * il.unit_price) as fabric_sales_total,
+                SUM(il.yards_sent * il.unit_price * :commission_rate) as fabric_commission
             FROM invoices i
             JOIN invoice_lines il ON i.id = il.invoice_id
             WHERE i.invoice_date BETWEEN :date_from AND :date_to
@@ -92,7 +100,8 @@ def get_revenue_trends():
         
         fabric_results = db.session.execute(fabric_query, {
             'date_from': date_from, 
-            'date_to': date_to
+            'date_to': date_to,
+            'commission_rate': FABRIC_COMMISSION_RATE
         }).fetchall()
         
         # Query for stitching revenue by date
@@ -113,7 +122,7 @@ def get_revenue_trends():
         
         # Combine results
         dates = []
-        fabric_sales = []
+        fabric_commission = []
         stitching_revenue = []
         
         # Create date range
@@ -121,19 +130,19 @@ def get_revenue_trends():
         end_date = datetime.strptime(date_to, '%Y-%m-%d')
         current_date = start_date
         
-        fabric_dict = {str(row.date): float(row.fabric_sales or 0) for row in fabric_results}
+        fabric_dict = {str(row.date): float(row.fabric_commission or 0) for row in fabric_results}
         stitching_dict = {str(row.date): float(row.stitching_revenue or 0) for row in stitching_results}
         
         while current_date <= end_date:
             date_str = current_date.strftime('%Y-%m-%d')
             dates.append(current_date.strftime('%m/%d'))
-            fabric_sales.append(fabric_dict.get(date_str, 0))
+            fabric_commission.append(fabric_dict.get(date_str, 0))
             stitching_revenue.append(stitching_dict.get(date_str, 0))
             current_date += timedelta(days=1)
         
         return jsonify({
             'labels': dates,
-            'fabricSales': fabric_sales,
+            'fabricSales': fabric_commission,  # Now shows commission amount
             'stitchingRevenue': stitching_revenue
         }), 200
         
@@ -152,7 +161,7 @@ def get_top_customers():
             SELECT 
                 c.short_name,
                 (
-                    COALESCE(SUM(il.yards_sent * il.unit_price), 0) + 
+                    COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) + 
                     COALESCE(
                         (SELECT SUM(si.total_value) 
                          FROM stitching_invoices si 
@@ -175,7 +184,9 @@ def get_top_customers():
             LIMIT 10
         """)
         
-        results = db.session.execute(query).fetchall()
+        results = db.session.execute(query, {
+            'commission_rate': FABRIC_COMMISSION_RATE
+        }).fetchall()
         
         labels = [row.short_name for row in results]
         values = [float(row.total_revenue) for row in results]

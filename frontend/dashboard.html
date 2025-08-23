@@ -341,7 +341,7 @@
                 <div class="kpi-change neutral" id="revenueChange">Loading...</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Fabric Sales</div>
+                <div class="kpi-title">Fabric Commission (5.1%)</div>
                 <div class="kpi-value" id="fabricSales">$0</div>
                 <div class="kpi-change neutral" id="fabricChange">Loading...</div>
             </div>
@@ -371,7 +371,7 @@
         <div class="charts-grid">
             <!-- Revenue Trends -->
             <div class="chart-card">
-                <h3 class="chart-title">📈 Revenue Trends</h3>
+                <h3 class="chart-title">📈 Revenue Trends (Commission + Stitching)</h3>
                 <div class="chart-container" data-chart="revenueChart">
                     <canvas id="revenueChart"></canvas>
                 </div>
@@ -379,7 +379,7 @@
 
             <!-- Top Customers -->
             <div class="chart-card">
-                <h3 class="chart-title">👥 Top Customers</h3>
+                <h3 class="chart-title">👥 Top Customers (By Your Revenue)</h3>
                 <div class="chart-container" data-chart="customersChart">
                     <canvas id="customersChart"></canvas>
                 </div>
@@ -387,7 +387,7 @@
 
             <!-- Fabric Consumption -->
             <div class="chart-card">
-                <h3 class="chart-title">🧵 Fabric Consumption</h3>
+                <h3 class="chart-title">🧵 Fabric Consumption (By Commission Value)</h3>
                 <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
@@ -403,7 +403,7 @@
 
             <!-- Revenue Breakdown -->
             <div class="chart-card">
-                <h3 class="chart-title">💰 Revenue Breakdown</h3>
+                <h3 class="chart-title">💰 Your Revenue Breakdown</h3>
                 <div class="chart-container" data-chart="revenueBreakdownChart">
                     <canvas id="revenueBreakdownChart"></canvas>
                 </div>
@@ -671,13 +671,13 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Fabric Sales',
+                                                    label: 'Fabric Commission (5.1%)',
                         data: data.fabricSales || [],
                         borderColor: '#5c6bc0',
                         backgroundColor: 'rgba(92, 107, 192, 0.1)',
                         tension: 0.4
                     }, {
-                        label: 'Stitching Revenue',
+                                                    label: 'Stitching Revenue (100%)',
                         data: data.stitchingRevenue || [],
                         borderColor: '#4caf50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
@@ -863,7 +863,7 @@
             charts.revenueBreakdown = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Fabric Sales', 'Stitching Revenue'],
+                    labels: ['Fabric Commission (5.1%)', 'Stitching Revenue (100%)'],
                     datasets: [{
                         data: [data.fabricSales || 0, data.stitchingRevenue || 0],
                         backgroundColor: ['#5c6bc0', '#4caf50'],
