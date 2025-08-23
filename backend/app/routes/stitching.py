@@ -30,8 +30,8 @@ def get_stitching():
         delivered_only = request.args.get('delivered_only', 'false').lower() == 'true'
         undelivered_only = request.args.get('undelivered_only', 'false').lower() == 'true'
         
-        # Build query
-        query = StitchingInvoice.query
+        # Build query with image relationship loaded
+        query = StitchingInvoice.query.options(db.joinedload(StitchingInvoice.image))
         
         if pl_number:
             query = query.join(PackingListLine).join(PackingList).filter(
@@ -74,6 +74,9 @@ def get_stitching():
         # Convert to dictionary format with additional data for treeview
         result = []
         for record in stitching_records:
+            # Debug: Check image relationship
+            print(f"🔍 Debug: Stitching record {record.id} - image_id: {record.image_id}, has image: {hasattr(record, 'image')}, image object: {record.image}")
+            
             record_dict = record.to_dict()
             
             # Get packing list information
