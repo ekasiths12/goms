@@ -801,6 +801,63 @@
             min-width: 100px;
             max-width: 100px;
         }
+
+        /* Pagination Styles */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px 20px;
+            background: #2c3e50;
+            border-radius: 8px;
+            border: 1px solid #34495e;
+        }
+
+        .pagination-info {
+            color: #bdc3c7;
+            font-size: 14px;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            background: #34495e;
+            color: #ecf0f1;
+            border: 1px solid #2c3e50;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #3498db;
+            border-color: #2980b9;
+        }
+
+        .pagination-btn:disabled {
+            background: #2c3e50;
+            color: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: #3498db;
+            border-color: #2980b9;
+            font-weight: bold;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
@@ -903,6 +960,20 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination Controls -->
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                <span id="paginationInfo">Showing 0 of 0 records</span>
+            </div>
+            <div class="pagination-buttons">
+                <button class="pagination-btn" onclick="goToPage(1)" id="firstPage">First</button>
+                <button class="pagination-btn" onclick="goToPage(currentPage - 1)" id="prevPage">Previous</button>
+                <div id="pageNumbers" class="page-numbers"></div>
+                <button class="pagination-btn" onclick="goToPage(currentPage + 1)" id="nextPage">Next</button>
+                <button class="pagination-btn" onclick="goToPage(getTotalPages())" id="lastPage">Last</button>
+            </div>
+        </div>
     </div>
 
 
@@ -911,6 +982,8 @@
         // Group Bills Functions
         let groupBillsData = [];
         let selectedGroupBillIds = [];
+        let currentPage = 1;
+        const itemsPerPage = 30;
 
         // API Base URL - works for both local development and Railway
         const getApiBaseUrl = () => {
@@ -1050,6 +1123,7 @@
                 if (response.ok) {
                     groupBillsData = await response.json();
                     console.log('📊 Received group bills data:', groupBillsData.length, 'records');
+                    currentPage = 1; // Reset to first page when new data is loaded
                     populateGroupBillsTable();
                 } else {
                     console.error('❌ Failed to load group bills data, status:', response.status);
@@ -1067,12 +1141,24 @@
             
             if (groupBillsData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #b0bec5;">No group bills found.</td></tr>';
+                updatePaginationControls();
                 return;
             }
             
+            // Calculate pagination
+            const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+            const pageData = groupBillsData.slice(startIndex, endIndex);
+            
             tbody.innerHTML = '';
             
-            groupBillsData.forEach((groupBill, index) => {
+            pageData.forEach((groupBill, pageIndex) => {
+                const actualIndex = startIndex + pageIndex;
                 // Level 1: Group Bill Summary (Parent Row)
                 const parentRow = document.createElement('tr');
                 parentRow.className = 'parent-row group-bill-row';
@@ -1630,6 +1716,64 @@
             window.location.href = 'login.html';
         }
 
+        // Pagination Functions
+        function getTotalPages() {
+            return Math.ceil(groupBillsData.length / itemsPerPage);
+        }
+
+        function goToPage(page) {
+            const totalPages = getTotalPages();
+            if (page < 1 || page > totalPages) {
+                return;
+            }
+            currentPage = page;
+            populateGroupBillsTable();
+        }
+
+        function updatePaginationControls() {
+            const totalPages = getTotalPages();
+            const startRecord = (currentPage - 1) * itemsPerPage + 1;
+            const endRecord = Math.min(currentPage * itemsPerPage, groupBillsData.length);
+            
+            // Update pagination info
+            const paginationInfo = document.getElementById('paginationInfo');
+            if (paginationInfo) {
+                paginationInfo.textContent = `Showing ${startRecord} to ${endRecord} of ${groupBillsData.length} records`;
+            }
+            
+            // Update button states
+            const firstPageBtn = document.getElementById('firstPage');
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+            const lastPageBtn = document.getElementById('lastPage');
+            
+            if (firstPageBtn) firstPageBtn.disabled = currentPage === 1;
+            if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+            if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+            if (lastPageBtn) lastPageBtn.disabled = currentPage === totalPages;
+            
+            // Update page numbers
+            const pageNumbersContainer = document.getElementById('pageNumbers');
+            if (pageNumbersContainer) {
+                pageNumbersContainer.innerHTML = '';
+                
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    pageBtn.textContent = i;
+                    pageBtn.onclick = () => goToPage(i);
+                    pageNumbersContainer.appendChild(pageBtn);
+                }
+            }
+        }
     </script>
 </body>
 </html>
