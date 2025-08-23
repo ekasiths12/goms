@@ -217,7 +217,7 @@
             border-collapse: collapse;
             font-size: 12px;
             white-space: nowrap;
-            min-width: 2300px; /* Ensure minimum width for all columns */
+            min-width: 1950px; /* Increased to accommodate wider sew columns */
         }
 
         .data-table th {
@@ -708,16 +708,16 @@
 
         .data-table th:nth-child(9),
         .data-table td:nth-child(9) { /* Beta T# */
-            width: 100px;
-            min-width: 100px;
-            max-width: 100px;
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
         }
 
         .data-table th:nth-child(10),
         .data-table td:nth-child(10) { /* MSK T# */
-            width: 100px;
-            min-width: 100px;
-            max-width: 100px;
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
         }
 
         .data-table th:nth-child(11),
@@ -772,33 +772,33 @@
         .data-table td:nth-child(21),
         .data-table th:nth-child(22),
         .data-table td:nth-child(22) { /* Size columns */
-            width: 40px;
-            min-width: 40px;
-            max-width: 40px;
+            width: 55px;
+            min-width: 55px;
+            max-width: 55px;
             text-align: center;
         }
 
         .data-table th:nth-child(23),
         .data-table td:nth-child(23) { /* Total Qty */
-            width: 70px;
-            min-width: 70px;
-            max-width: 70px;
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
             text-align: center;
         }
 
         .data-table th:nth-child(24),
         .data-table td:nth-child(24) { /* Sew Cost */
-            width: 70px;
-            min-width: 70px;
-            max-width: 70px;
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
             text-align: right;
         }
 
         .data-table th:nth-child(25),
         .data-table td:nth-child(25) { /* Sew Value */
-            width: 80px;
-            min-width: 80px;
-            max-width: 80px;
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
             text-align: right;
         }
 
@@ -1219,10 +1219,10 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
                         <td>${formatNumber(groupBill.details.total_fabric_used || 0)}</td>
                         <td></td>
                         <td>${formatCurrency(groupBill.details.total_fabric_value || 0)}</td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -1247,9 +1247,9 @@
                             fabricDetailRow.style.display = 'none';
                             fabricDetailRow.innerHTML = `
                                 <td></td>
-                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
                                 <td></td>
+                                <td>${record.packing_list_serial || ''}</td>
                                 <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
@@ -1305,7 +1305,7 @@
                         <td>${formatInteger(groupBill.details.size_totals?.XL || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.XXL || 0)}</td>
                         <td>${formatInteger(groupBill.details.size_totals?.XXXL || 0)}</td>
-                        <td>${formatInteger(groupBill.details.total_stitching_qty || 0)}</td>
+                        <td>${formatInteger((groupBill.details.size_totals?.S || 0) + (groupBill.details.size_totals?.M || 0) + (groupBill.details.size_totals?.L || 0) + (groupBill.details.size_totals?.XL || 0) + (groupBill.details.size_totals?.XXL || 0) + (groupBill.details.size_totals?.XXXL || 0))}</td>
                         <td>${formatCurrency(groupBill.details.total_stitching_value || 0)}</td>
                         <td></td>
                         <td></td>
@@ -1336,9 +1336,9 @@
                             stitchingDetailRow.style.display = 'none';
                             stitchingDetailRow.innerHTML = `
                                 <td></td>
-                                <td>${formatDate(record.created_at)}</td>
                                 <td></td>
                                 <td></td>
+                                <td>${record.packing_list_serial || ''}</td>
                                 <td></td>
                                 <td>${record.item_name || ''}</td>
                                 <td>${record.color || ''}</td>
