@@ -235,6 +235,12 @@
             justify-content: center;
         }
 
+        .chart-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
         .loading-text {
             color: #b0bec5;
             font-size: 14px;
@@ -362,7 +368,7 @@
             <!-- Revenue Trends -->
             <div class="chart-card">
                 <h3 class="chart-title">📈 Revenue Trends</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="revenueChart">
                     <canvas id="revenueChart"></canvas>
                 </div>
             </div>
@@ -370,7 +376,7 @@
             <!-- Top Customers -->
             <div class="chart-card">
                 <h3 class="chart-title">👥 Top Customers</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="customersChart">
                     <canvas id="customersChart"></canvas>
                 </div>
             </div>
@@ -378,7 +384,7 @@
             <!-- Fabric Consumption -->
             <div class="chart-card">
                 <h3 class="chart-title">🧵 Fabric Consumption</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
             </div>
@@ -386,7 +392,7 @@
             <!-- Production Overview -->
             <div class="chart-card">
                 <h3 class="chart-title">👔 Most Stitched Items</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="productionChart">
                     <canvas id="productionChart"></canvas>
                 </div>
             </div>
@@ -394,7 +400,7 @@
             <!-- Revenue Breakdown -->
             <div class="chart-card">
                 <h3 class="chart-title">💰 Revenue Breakdown</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="revenueBreakdownChart">
                     <canvas id="revenueBreakdownChart"></canvas>
                 </div>
             </div>
@@ -402,7 +408,7 @@
             <!-- Stock Status -->
             <div class="chart-card">
                 <h3 class="chart-title">📦 Stock Status</h3>
-                <div class="chart-container">
+                <div class="chart-container" data-chart="stockChart">
                     <canvas id="stockChart"></canvas>
                 </div>
             </div>
@@ -420,10 +426,17 @@
 
         // Initialize dashboard on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Add a small delay to ensure all elements are rendered
+            // Add a longer delay to ensure all elements are rendered
             setTimeout(() => {
+                console.log('DOM loaded, checking canvas elements...');
+                console.log('revenueChart:', document.getElementById('revenueChart'));
+                console.log('customersChart:', document.getElementById('customersChart'));
+                console.log('fabricChart:', document.getElementById('fabricChart'));
+                console.log('productionChart:', document.getElementById('productionChart'));
+                console.log('revenueBreakdownChart:', document.getElementById('revenueBreakdownChart'));
+                console.log('stockChart:', document.getElementById('stockChart'));
                 initializeDashboard();
-            }, 100);
+            }, 500);
         });
 
         async function initializeDashboard() {
@@ -492,6 +505,30 @@
 
         async function updateDashboard() {
             try {
+                // Check if canvas elements exist and create them if missing
+                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'revenueBreakdownChart', 'stockChart'];
+                const missingCanvases = canvasIds.filter(id => !document.getElementById(id));
+                
+                if (missingCanvases.length > 0) {
+                    console.error('Missing canvas elements:', missingCanvases);
+                    console.log('Available elements:', canvasIds.map(id => ({id, element: document.getElementById(id)})));
+                    
+                    // Try to create missing canvas elements
+                    missingCanvases.forEach(id => {
+                        const container = document.querySelector(`[data-chart="${id}"]`);
+                        if (container) {
+                            const canvas = document.createElement('canvas');
+                            canvas.id = id;
+                            canvas.width = 400;
+                            canvas.height = 280;
+                            container.appendChild(canvas);
+                            console.log(`Created canvas element: ${id}`);
+                        } else {
+                            console.error(`Container not found for chart: ${id}`);
+                        }
+                    });
+                }
+                
                 showLoading();
                 
                 // Get filter values
