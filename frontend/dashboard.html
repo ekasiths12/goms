@@ -233,6 +233,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: visible;
         }
 
         .chart-container canvas {
@@ -240,6 +241,8 @@
             max-height: 100%;
             display: block !important;
             visibility: visible !important;
+            position: relative !important;
+            z-index: 1 !important;
         }
 
         .loading-text {
@@ -508,36 +511,32 @@
             try {
                 // Check if canvas elements exist and create them if missing
                 const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'revenueBreakdownChart', 'stockChart'];
-                const missingCanvases = canvasIds.filter(id => !document.getElementById(id));
                 
-                if (missingCanvases.length > 0) {
-                    console.error('Missing canvas elements:', missingCanvases);
-                    console.log('Available elements:', canvasIds.map(id => ({id, element: document.getElementById(id)})));
-                    
-                    // Try to create missing canvas elements
-                    missingCanvases.forEach(id => {
-                        const container = document.querySelector(`[data-chart="${id}"]`);
-                        if (container) {
-                            const canvas = document.createElement('canvas');
-                            canvas.id = id;
-                            canvas.width = 400;
-                            canvas.height = 280;
-                            container.appendChild(canvas);
-                            console.log(`Created canvas element: ${id}`);
-                        } else {
-                            console.error(`Container not found for chart: ${id}`);
-                        }
-                    });
-                }
-                
-                // Ensure all canvas elements are visible
+                // Ensure all canvas elements exist and are visible
                 canvasIds.forEach(id => {
-                    const canvas = document.getElementById(id);
+                    let canvas = document.getElementById(id);
+                    const container = document.querySelector(`[data-chart="${id}"]`);
+                    
+                    if (!canvas && container) {
+                        // Create canvas if it doesn't exist
+                        canvas = document.createElement('canvas');
+                        canvas.id = id;
+                        canvas.width = 400;
+                        canvas.height = 280;
+                        container.appendChild(canvas);
+                        console.log(`Created canvas element: ${id}`);
+                    }
+                    
                     if (canvas) {
+                        // Ensure canvas is visible
                         canvas.style.display = 'block';
                         canvas.style.visibility = 'visible';
                         canvas.style.opacity = '1';
+                        canvas.style.position = 'relative';
+                        canvas.style.zIndex = '1';
                         console.log(`Made canvas visible: ${id}`);
+                    } else {
+                        console.error(`Canvas not found and could not create: ${id}`);
                     }
                 });
                 
@@ -637,16 +636,29 @@
         }
 
         function updateRevenueChart(data) {
-            const canvas = document.getElementById('revenueChart');
+            let canvas = document.getElementById('revenueChart');
             if (!canvas) {
-                console.error('Revenue chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="revenueChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'revenueChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created revenue chart canvas');
+                } else {
+                    console.error('Revenue chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -677,16 +689,29 @@
         }
 
         function updateCustomersChart(data) {
-            const canvas = document.getElementById('customersChart');
+            let canvas = document.getElementById('customersChart');
             if (!canvas) {
-                console.error('Customers chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="customersChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'customersChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created customers chart canvas');
+                } else {
+                    console.error('Customers chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -711,16 +736,29 @@
         }
 
         function updateFabricChart(data) {
-            const canvas = document.getElementById('fabricChart');
+            let canvas = document.getElementById('fabricChart');
             if (!canvas) {
-                console.error('Fabric chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="fabricChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'fabricChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created fabric chart canvas');
+                } else {
+                    console.error('Fabric chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -745,16 +783,29 @@
         }
 
         function updateProductionChart(data) {
-            const canvas = document.getElementById('productionChart');
+            let canvas = document.getElementById('productionChart');
             if (!canvas) {
-                console.error('Production chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="productionChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'productionChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created production chart canvas');
+                } else {
+                    console.error('Production chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -779,16 +830,29 @@
         }
 
         function updateRevenueBreakdownChart(data) {
-            const canvas = document.getElementById('revenueBreakdownChart');
+            let canvas = document.getElementById('revenueBreakdownChart');
             if (!canvas) {
-                console.error('Revenue breakdown chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="revenueBreakdownChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'revenueBreakdownChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created revenue breakdown chart canvas');
+                } else {
+                    console.error('Revenue breakdown chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
@@ -823,16 +887,29 @@
         }
 
         function updateStockChart(data) {
-            const canvas = document.getElementById('stockChart');
+            let canvas = document.getElementById('stockChart');
             if (!canvas) {
-                console.error('Stock chart canvas not found');
-                return;
+                // Try to create the canvas if it doesn't exist
+                const container = document.querySelector('[data-chart="stockChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'stockChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created stock chart canvas');
+                } else {
+                    console.error('Stock chart canvas not found and container not available');
+                    return;
+                }
             }
             
             // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             if (charts.stock) {
