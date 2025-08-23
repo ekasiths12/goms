@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
+from app.models.delivery_location import DeliveryLocation
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
@@ -397,3 +398,50 @@ def assign_tax_invoice_number():
         return {'error': str(e)}, 500
 
 
+# ===== DELIVERY LOCATION MANAGEMENT ENDPOINTS =====
+
+@invoices_bp.route('/delivery-locations', methods=['GET'])
+def get_delivery_locations():
+    """Get all delivery locations"""
+    try:
+        locations = DeliveryLocation.get_all_locations()
+        return jsonify([location.to_dict() for location in locations]), 200
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@invoices_bp.route('/delivery-locations', methods=['POST'])
+def create_delivery_location():
+    """Create a new delivery location"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return {'error': 'Location name is required'}, 400
+        
+        # Check if location already exists
+        existing = DeliveryLocation.get_by_name(name)
+        if existing:
+            return {'error': f'Location "{name}" already exists'}, 400
+        
+        location = DeliveryLocation.create_location(name)
+        db.session.commit()
+        
+        return {'message': f'Location "{name}" created successfully', 'location': location.to_dict()}, 201
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
+@invoices_bp.route('/delivery-locations/<int:location_id>', methods=['DELETE'])
+def delete_delivery_location(location_id):
+    """Delete a delivery location"""
+    try:
+        success = DeliveryLocation.delete_location(location_id)
+        if not success:
+            return {'error': 'Location not found'}, 404
+        
+        db.session.commit()
+        return {'message': 'Location deleted successfully'}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500

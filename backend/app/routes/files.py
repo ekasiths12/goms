@@ -170,6 +170,13 @@ def import_dat_file_core(file, selected_customer_ids=None):
                 skipped_count += 1
                 continue
             
+            # Check if this customer ID exists in the customer ID mapping table (user-entered IDs only)
+            existing_mapping = CustomerIdMapping.get_by_customer_id(customer_id_normalized)
+            if not existing_mapping:
+                print(f"⏭️  Skipping customer ID {customer_id_normalized} - not in user's customer ID list")
+                skipped_count += 1
+                continue
+            
             # Parse date (YYYYMMDD to YYYY-MM-DD) - like old Qt app
             invoice_date = None
             if date_raw and len(date_raw) == 8:
@@ -218,8 +225,13 @@ def import_dat_file_core(file, selected_customer_ids=None):
             else:
                 print(f"📋 Found existing customer: ID={customer.id}, CustomerID={customer.customer_id}, Name={customer.short_name}")
             
-            # Create or update customer ID mapping with short name
-            CustomerIdMapping.create_or_update(customer_id_normalized, short_name)
+            # Update customer ID mapping with short name (only for user-entered IDs)
+            existing_mapping = CustomerIdMapping.get_by_customer_id(customer_id_normalized)
+            if existing_mapping and not existing_mapping.short_name:
+                # Only update if the short name is empty (first time seeing this customer)
+                existing_mapping.short_name = short_name
+                existing_mapping.updated_at = datetime.utcnow()
+                print(f"✅ Updated short name for customer ID {customer_id_normalized}: {short_name}")
             
             # Handle duplicate invoice numbers by adding line numbers (like old Qt app)
             if invoice_number in invoice_line_counts:

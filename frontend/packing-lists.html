@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Packing Lists - Garment Management System</title>
+    <link rel="stylesheet" href="css/table-sorting.css">
     <style>
         * {
             margin: 0;
@@ -844,30 +845,30 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th style="width: 80px;">Created At</th>
-                        <th style="width: 120px;">PL #</th>
-                        <th style="width: 120px;">Serial #</th>
-                        <th style="width: 80px;">Garment</th>
-                        <th style="width: 100px;">Fabric</th>
-                        <th style="width: 80px;">Color</th>
-                        <th style="width: 120px;">Customer</th>
-                        <th style="width: 100px;">Beta T#</th>
-                        <th style="width: 100px;">MSK T#</th>
-                        <th style="width: 140px;">Group Bill #</th>
-                        <th style="width: 100px;">Fabric Inv.</th>
-                        <th style="width: 100px;">Fabric DN.</th>
-                        <th style="width: 70px;">Fab Used</th>
-                        <th style="width: 70px;">Fab Cost</th>
-                        <th style="width: 80px;">Fab Value</th>
-                        <th style="width: 40px;">S</th>
-                        <th style="width: 40px;">M</th>
-                        <th style="width: 40px;">L</th>
-                        <th style="width: 40px;">XL</th>
-                        <th style="width: 40px;">XXL</th>
-                        <th style="width: 40px;">XXXL</th>
-                        <th style="width: 70px;">Total Qty</th>
-                        <th style="width: 70px;">Sew Cost</th>
-                        <th style="width: 80px;">Sew Value</th>
+                        <th class="sortable-header" data-sort="created_at" style="width: 90px;">Created At</th>
+                        <th class="sortable-header" data-sort="packing_list_number" style="width: 130px;">PL #</th>
+                        <th class="sortable-header" data-sort="serial_number" style="width: 130px;">Serial #</th>
+                        <th class="sortable-header" data-sort="garment" style="width: 90px;">Garment</th>
+                        <th class="sortable-header" data-sort="fabric" style="width: 110px;">Fabric</th>
+                        <th class="sortable-header" data-sort="color" style="width: 90px;">Color</th>
+                        <th class="sortable-header" data-sort="customer" style="width: 130px;">Customer</th>
+                        <th class="sortable-header" data-sort="tax_invoice_number" style="width: 110px;">Beta T#</th>
+                        <th class="sortable-header" data-sort="msk_invoice_number" style="width: 110px;">MSK T#</th>
+                        <th class="sortable-header" data-sort="group_bill_number" style="width: 150px;">Group Bill #</th>
+                        <th class="sortable-header" data-sort="fabric_invoice" style="width: 110px;">Fabric Inv.</th>
+                        <th class="sortable-header" data-sort="fabric_delivery_note" style="width: 110px;">Fabric DN.</th>
+                        <th class="sortable-header" data-sort="fabric_used" style="width: 80px;">Fab Used</th>
+                        <th class="sortable-header" data-sort="fabric_cost" style="width: 80px;">Fab Cost</th>
+                        <th class="sortable-header" data-sort="fabric_value" style="width: 90px;">Fab Value</th>
+                        <th class="sortable-header" data-sort="size_s" style="width: 45px;">S</th>
+                        <th class="sortable-header" data-sort="size_m" style="width: 45px;">M</th>
+                        <th class="sortable-header" data-sort="size_l" style="width: 45px;">L</th>
+                        <th class="sortable-header" data-sort="size_xl" style="width: 45px;">XL</th>
+                        <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
+                        <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
+                        <th class="sortable-header" data-sort="total_qty" style="width: 70px;">Total Qty</th>
+                        <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Cost</th>
+                        <th class="sortable-header" data-sort="sewing_value" style="width: 80px;">Sew Value</th>
                     </tr>
                 </thead>
                 <tbody id="packingListTableBody">
@@ -1833,6 +1834,115 @@
                 }
             }
         }
+
+        // ===== TABLE SORTING FUNCTIONALITY =====
+        
+        // Initialize table sorter
+        let tableSorter = null;
+
+        // Custom data getter for packing list data
+        function getPackingListValueForSorting(item, column) {
+            switch (column) {
+                case 'created_at':
+                    return item.created_at;
+                case 'packing_list_number':
+                    return item.packing_list_number;
+                case 'serial_number':
+                    return item.serial_number;
+                case 'garment':
+                    return item.garment;
+                case 'fabric':
+                    return item.fabric;
+                case 'color':
+                    return item.color;
+                case 'customer':
+                    return item.customer;
+                case 'tax_invoice_number':
+                    return item.tax_invoice_number;
+                case 'msk_invoice_number':
+                    return item.msk_invoice_number;
+                case 'group_bill_number':
+                    return item.group_bill_number;
+                case 'fabric_invoice':
+                    return item.fabric_invoice;
+                case 'fabric_delivery_note':
+                    return item.fabric_delivery_note;
+                case 'fabric_used':
+                    return item.fabric_used;
+                case 'fabric_cost':
+                    return item.fabric_cost;
+                case 'fabric_value':
+                    return item.fabric_value;
+                case 'size_s':
+                    return item.size_s;
+                case 'size_m':
+                    return item.size_m;
+                case 'size_l':
+                    return item.size_l;
+                case 'size_xl':
+                    return item.size_xl;
+                case 'size_xxl':
+                    return item.size_xxl;
+                case 'size_xxxl':
+                    return item.size_xxxl;
+                case 'total_qty':
+                    return item.total_qty;
+                case 'sewing_cost':
+                    return item.sewing_cost;
+                case 'sewing_value':
+                    return item.sewing_value;
+                default:
+                    return '';
+            }
+        }
+
+        // Initialize table sorter when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table sorter
+            tableSorter = createTableSorter('packingListTable', {
+                dataGetter: getPackingListValueForSorting
+            });
+            
+            // Listen for sort events
+            document.getElementById('packingListTable').addEventListener('tableSorted', function(event) {
+                const { data } = event.detail;
+                packingListData = data;
+                populatePackingListTable(packingListData);
+            });
+            
+            console.log('✅ Packing list table sorter initialized and ready');
+        });
+
+        // Override the refreshPackingListTable function to update table sorter
+        const originalRefreshPackingListTable = refreshPackingListTable;
+        refreshPackingListTable = async function() {
+            await originalRefreshPackingListTable();
+            
+            // Initialize table sorter if not already done
+            if (!tableSorter) {
+                tableSorter = createTableSorter('packingListTable', {
+                    dataGetter: getPackingListValueForSorting
+                });
+                
+                // Listen for sort events
+                document.getElementById('packingListTable').addEventListener('tableSorted', function(event) {
+                    const { data } = event.detail;
+                    packingListData = data;
+                    populatePackingListTable(packingListData);
+                });
+                
+                console.log('✅ Packing list table sorter initialized after data load');
+            }
+            
+            // Update table sorter with new data
+            if (tableSorter && packingListData && packingListData.length > 0) {
+                tableSorter.setData(packingListData, getPackingListValueForSorting);
+                console.log(`💾 Updated packing list table sorter with ${packingListData.length} records`);
+            } else {
+                console.log('⚠️ No packing list data available for table sorter');
+            }
+        }
     </script>
+    <script src="js/table-sorting.js"></script>
 </body>
 </html>

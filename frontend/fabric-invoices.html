@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Fabric Invoices - Garment Management System</title>
+    <link rel="stylesheet" href="css/table-sorting.css">
     <style>
         * {
             margin: 0;
@@ -267,14 +268,14 @@
         }
 
         .data-table th {
-            background: #3949ab;
+            background: #555;
             color: #eceff1;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            font-size: 13px;
+            border-bottom: 2px solid #424242;
+            white-space: nowrap;
         }
 
         .data-table td {
@@ -584,7 +585,10 @@
             background: #2c2c2c;
             padding-bottom: 10px;
         }
+
+
     </style>
+    <script src="js/table-sorting.js"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -715,19 +719,19 @@
                         <th style="width: 30px;">
                             <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </th>
-                        <th>Date</th>
-                        <th>Short Name</th>
-                        <th>Invoice Number</th>
-                        <th>Beta T#</th>
-                        <th>Item Code</th>
-                        <th>Color</th>
-                        <th>Delivery Note</th>
-                        <th>In Stock</th>
-                        <th>Used</th>
-                        <th>Pending</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                        <th>Delivered Location</th>
+                        <th class="sortable-header" data-sort="date">Date</th>
+                        <th class="sortable-header" data-sort="short_name">Short Name</th>
+                        <th class="sortable-header" data-sort="invoice_number">Invoice Number</th>
+                        <th class="sortable-header" data-sort="tax_invoice_number">Beta T#</th>
+                        <th class="sortable-header" data-sort="item_name">Item Code</th>
+                        <th class="sortable-header" data-sort="color">Color</th>
+                        <th class="sortable-header" data-sort="delivery_note">Delivery Note</th>
+                        <th class="sortable-header" data-sort="yards_sent">In Stock</th>
+                        <th class="sortable-header" data-sort="yards_consumed">Used</th>
+                        <th class="sortable-header" data-sort="pending">Pending</th>
+                        <th class="sortable-header" data-sort="unit_price">Price</th>
+                        <th class="sortable-header" data-sort="total">Total</th>
+                        <th class="sortable-header" data-sort="delivered_location">Delivered Location</th>
                         <th style="display: none;">Line ID</th>
                     </tr>
                 </thead>
@@ -1422,8 +1426,117 @@
                 return;
             }
             
-            const location = prompt('Enter delivered location for selected lines:');
-            if (!location) return;
+            // Load delivery locations and show dialog
+            loadDeliveryLocationsAndShowDialog();
+        }
+        
+        function loadDeliveryLocationsAndShowDialog() {
+            fetch(`${getApiBaseUrl()}/api/invoices/delivery-locations`)
+                .then(response => response.json())
+                .then(locations => {
+                    showLocationSelectionDialog(locations);
+                })
+                .catch(error => {
+                    console.error('Error loading delivery locations:', error);
+                    alert('Error loading delivery locations: ' + error.message);
+                });
+        }
+        
+        function showLocationSelectionDialog(locations) {
+            // Create dialog HTML
+            let dialogHtml = `
+                <div style="background: #2c2c2c; padding: 20px; border-radius: 8px; min-width: 400px; border: 1px solid #555;">
+                    <h3 style="margin-top: 0; color: #eceff1;">Select Delivery Location</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Location:</label>
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <select id="locationSelect" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
+                                <option value="">-- Select Location --</option>
+            `;
+            
+            locations.forEach(location => {
+                dialogHtml += `<option value="${location.name}" data-id="${location.id}">${location.name}</option>`;
+            });
+            
+            dialogHtml += `
+                            </select>
+                            <button onclick="deleteSelectedLocation()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Delete</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Or add new location:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newLocationInput" placeholder="Enter new location name" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
+                            <button onclick="addNewLocation()" style="padding: 8px 16px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button onclick="closeLocationDialog()" style="margin-right: 10px; padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        <button onclick="confirmLocationSelection()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Assign Location</button>
+                    </div>
+                </div>
+            `;
+            
+            // Create and show dialog
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.7); z-index: 10000; display: flex; 
+                align-items: center; justify-content: center;
+            `;
+            dialog.innerHTML = dialogHtml;
+            dialog.id = 'locationDialog';
+            document.body.appendChild(dialog);
+        }
+        
+        function addNewLocation() {
+            const newLocationInput = document.getElementById('newLocationInput');
+            const locationName = newLocationInput.value.trim();
+            
+            if (!locationName) {
+                alert('Please enter a location name.');
+                return;
+            }
+            
+            fetch(`${getApiBaseUrl()}/api/invoices/delivery-locations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: locationName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Add new location to dropdown
+                    const locationSelect = document.getElementById('locationSelect');
+                    const option = document.createElement('option');
+                    option.value = locationName;
+                    option.textContent = locationName;
+                    locationSelect.appendChild(option);
+                    locationSelect.value = locationName;
+                    
+                    // Clear input
+                    newLocationInput.value = '';
+                    
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error adding location: ' + error.message);
+            });
+        }
+        
+        function confirmLocationSelection() {
+            const locationSelect = document.getElementById('locationSelect');
+            const selectedLocation = locationSelect.value;
+            
+            if (!selectedLocation) {
+                alert('Please select a location.');
+                return;
+            }
             
             // Get the selected lines data (like old Qt app)
             const selectedLines = selectedRows.map(index => ({
@@ -1439,7 +1552,7 @@
                 },
                 body: JSON.stringify({
                     lines: selectedLines,
-                    location: location
+                    location: selectedLocation
                 })
             })
             .then(response => response.json())
@@ -1447,12 +1560,176 @@
                 if (data.message) {
                     alert(data.message);
                     loadInvoiceData(); // Refresh the table
+                    closeLocationDialog();
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
                 alert('Error assigning location: ' + error.message);
+            });
+        }
+        
+        function closeLocationDialog() {
+            const dialog = document.getElementById('locationDialog');
+            if (dialog) {
+                dialog.remove();
+            }
+        }
+        
+        function deleteSelectedLocation() {
+            const locationSelect = document.getElementById('locationSelect');
+            const selectedOption = locationSelect.options[locationSelect.selectedIndex];
+            
+            if (!selectedOption || !selectedOption.value) {
+                alert('Please select a location to delete.');
+                return;
+            }
+            
+            const locationId = selectedOption.getAttribute('data-id');
+            const locationName = selectedOption.value;
+            
+            if (!locationId) {
+                alert('Cannot delete this location (no ID found).');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete location "${locationName}"?`)) {
+                return;
+            }
+            
+            fetch(`${getApiBaseUrl()}/api/invoices/delivery-locations/${locationId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Remove from dropdown
+                    locationSelect.removeChild(selectedOption);
+                    locationSelect.value = '';
+                    
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error deleting location: ' + error.message);
+            });
+        }
+
+        // ===== STITCHED ITEMS MANAGEMENT FUNCTIONS =====
+
+        function loadStitchedItemsAndShowDialog(selectedLines) {
+            fetch(`${getApiBaseUrl()}/api/stitching/stitched-items`)
+                .then(response => response.json())
+                .then(items => {
+                    createStitchingRecordDialog(selectedLines, items);
+                })
+                .catch(error => {
+                    console.error('Error loading stitched items:', error);
+                    alert('Error loading stitched items: ' + error.message);
+                    // Show dialog without items as fallback
+                    createStitchingRecordDialog(selectedLines, []);
+                });
+        }
+
+        function populateStitchedItemsDropdown(items) {
+            const select = document.getElementById('stitchedItemSelect');
+            if (!select) return;
+            
+            // Clear existing options except the first one
+            select.innerHTML = '<option value="">-- Select Item --</option>';
+            
+            // Add items to dropdown
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.setAttribute('data-id', item.id);
+                select.appendChild(option);
+            });
+        }
+
+        function addNewStitchedItem() {
+            const newItemInput = document.getElementById('newStitchedItemInput');
+            const itemName = newItemInput.value.trim();
+            
+            if (!itemName) {
+                alert('Please enter an item name.');
+                return;
+            }
+            
+            fetch(`${getApiBaseUrl()}/api/stitching/stitched-items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: itemName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Add new item to dropdown
+                    const select = document.getElementById('stitchedItemSelect');
+                    const option = document.createElement('option');
+                    option.value = itemName;
+                    option.textContent = itemName;
+                    option.setAttribute('data-id', data.item.id);
+                    select.appendChild(option);
+                    select.value = itemName;
+                    
+                    // Clear input
+                    newItemInput.value = '';
+                    
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error adding item: ' + error.message);
+            });
+        }
+
+        function deleteSelectedStitchedItem() {
+            const select = document.getElementById('stitchedItemSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption || !selectedOption.value) {
+                alert('Please select an item to delete.');
+                return;
+            }
+            
+            const itemId = selectedOption.getAttribute('data-id');
+            const itemName = selectedOption.value;
+            
+            if (!itemId) {
+                alert('Cannot delete this item (no ID found).');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete item "${itemName}"?`)) {
+                return;
+            }
+            
+            fetch(`${getApiBaseUrl()}/api/stitching/stitched-items/${itemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Remove from dropdown
+                    select.removeChild(selectedOption);
+                    select.value = '';
+                    
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error deleting item: ' + error.message);
             });
         }
 
@@ -1566,7 +1843,7 @@
         }
         
         // Stitching Record Dialog Functions
-        function createStitchingRecordDialog(selectedLines) {
+        function createStitchingRecordDialog(selectedLines, stitchedItems = []) {
             // Remove any existing dialog
             const existingDialog = document.querySelector('.stitching-record-dialog');
             if (existingDialog) {
@@ -1606,7 +1883,19 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
                             <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Stitched Item:</label>
-                            <input type="text" id="stitchedItem" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;" placeholder="Enter stitched item name">
+                            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                <select id="stitchedItemSelect" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
+                                    <option value="">-- Select Item --</option>
+                                </select>
+                                <button onclick="deleteSelectedStitchedItem()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Delete</button>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Or add new item:</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="newStitchedItemInput" placeholder="Enter new item name" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
+                                    <button onclick="addNewStitchedItem()" style="padding: 8px 16px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Price (THB):</label>
@@ -1709,6 +1998,9 @@
             
             // Initialize the dialog
             initializeStitchingRecordDialog(selectedLines);
+            
+            // Populate stitched items dropdown
+            populateStitchedItemsDropdown(stitchedItems);
         }
 
         // Global variables for stitching record dialog
@@ -2139,11 +2431,11 @@
         
         async function submitStitchingRecord() {
             // Validate inputs
-            const stitchedItem = document.getElementById('stitchedItem').value.trim();
+            const stitchedItem = document.getElementById('stitchedItemSelect').value.trim();
             const price = parseFloat(document.getElementById('price').value) || 0;
             
             if (!stitchedItem) {
-                alert('Please enter a stitched item name.');
+                alert('Please select a stitched item.');
                 return;
             }
             
@@ -2301,8 +2593,8 @@
                 };
             });
             
-            // Create and show the stitching record dialog
-            createStitchingRecordDialog(selectedLines);
+            // Load stitched items and show dialog
+            loadStitchedItemsAndShowDialog(selectedLines);
         }
 
         function openCustomerIdDialog() {
@@ -2853,6 +3145,92 @@
                     modal.style.display = 'none';
                 }
             });
+        }
+
+        // ===== TABLE SORTING FUNCTIONALITY =====
+        
+        // Initialize table sorter
+        let tableSorter = null;
+
+        // Custom data getter for invoice data
+        function getInvoiceValueForSorting(item, column) {
+            switch (column) {
+                case 'date':
+                    return item.invoice?.invoice_date || item.invoice_date;
+                case 'short_name':
+                    return item.customer?.short_name || item.short_name;
+                case 'invoice_number':
+                    return item.invoice?.invoice_number || item.invoice_number;
+                case 'tax_invoice_number':
+                    return item.invoice?.tax_invoice_number || item.tax_invoice_number;
+                case 'item_name':
+                    return item.item_name;
+                case 'color':
+                    return item.color;
+                case 'delivery_note':
+                    return item.delivery_note;
+                case 'yards_sent':
+                    return item.yards_sent || item.quantity;
+                case 'yards_consumed':
+                    return item.yards_consumed;
+                case 'pending':
+                    return (item.yards_sent || item.quantity) - (item.yards_consumed || 0);
+                case 'unit_price':
+                    return item.unit_price;
+                case 'total':
+                    return (item.yards_sent || item.quantity) * (item.unit_price || 0);
+                case 'delivered_location':
+                    return item.delivered_location;
+                default:
+                    return '';
+            }
+        }
+
+        // Initialize table sorter when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table sorter
+            tableSorter = createTableSorter('invoiceTable', {
+                dataGetter: getInvoiceValueForSorting
+            });
+            
+            // Listen for sort events
+            document.getElementById('invoiceTable').addEventListener('tableSorted', function(event) {
+                const { data } = event.detail;
+                invoiceData = data;
+                populateInvoiceTable();
+            });
+            
+            console.log('✅ Table sorter initialized and ready');
+        });
+
+        // Override the loadInvoiceData function to update table sorter
+        const originalLoadInvoiceData = loadInvoiceData;
+        loadInvoiceData = async function() {
+            await originalLoadInvoiceData();
+            
+            // Initialize table sorter if not already done
+            if (!tableSorter) {
+                tableSorter = createTableSorter('invoiceTable', {
+                    dataGetter: getInvoiceValueForSorting
+                });
+                
+                // Listen for sort events
+                document.getElementById('invoiceTable').addEventListener('tableSorted', function(event) {
+                    const { data } = event.detail;
+                    invoiceData = data;
+                    populateInvoiceTable();
+                });
+                
+                console.log('✅ Table sorter initialized after data load');
+            }
+            
+            // Update table sorter with new data
+            if (tableSorter && invoiceData && invoiceData.length > 0) {
+                tableSorter.setData(invoiceData, getInvoiceValueForSorting);
+                console.log(`💾 Updated table sorter with ${invoiceData.length} records`);
+            } else {
+                console.log('⚠️ No data available for table sorter');
+            }
         }
     </script>
 </body>

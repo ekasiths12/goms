@@ -5,6 +5,7 @@ from app.models.customer import Customer
 from app.models.packing_list import PackingList, PackingListLine
 from app.models.image import Image
 from app.models.serial_counter import SerialCounter
+from app.models.stitched_item import StitchedItem
 from datetime import datetime
 import json
 import os
@@ -686,3 +687,51 @@ def get_available_fabrics():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ===== STITCHED ITEMS MANAGEMENT ENDPOINTS =====
+
+@stitching_bp.route('/stitched-items', methods=['GET'])
+def get_stitched_items():
+    """Get all stitched items"""
+    try:
+        items = StitchedItem.get_all_items()
+        return jsonify([item.to_dict() for item in items]), 200
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@stitching_bp.route('/stitched-items', methods=['POST'])
+def create_stitched_item():
+    """Create a new stitched item"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return {'error': 'Item name is required'}, 400
+        
+        # Check if item already exists
+        existing = StitchedItem.get_by_name(name)
+        if existing:
+            return {'error': f'Item "{name}" already exists'}, 400
+        
+        item = StitchedItem.create_item(name)
+        db.session.commit()
+        
+        return {'message': f'Item "{name}" created successfully', 'item': item.to_dict()}, 201
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
+@stitching_bp.route('/stitched-items/<int:item_id>', methods=['DELETE'])
+def delete_stitched_item(item_id):
+    """Delete a stitched item"""
+    try:
+        success = StitchedItem.delete_item(item_id)
+        if not success:
+            return {'error': 'Item not found'}, 404
+        
+        db.session.commit()
+        return {'message': 'Item deleted successfully'}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500

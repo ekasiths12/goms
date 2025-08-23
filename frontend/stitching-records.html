@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stitching Records - Garment Management System</title>
+    <link rel="stylesheet" href="css/table-sorting.css">
     <style>
         * {
             margin: 0;
@@ -648,24 +649,25 @@
 
         /* Column widths matching Qt app */
         .treeview-table th:nth-child(1), .treeview-table td:nth-child(1) { width: 30px; } /* Checkbox */
-        .treeview-table th:nth-child(2), .treeview-table td:nth-child(2) { width: 70px; } /* PL # */
-        .treeview-table th:nth-child(3), .treeview-table td:nth-child(3) { width: 90px; } /* Serial # */
-        .treeview-table th:nth-child(4), .treeview-table td:nth-child(4) { width: 110px; } /* Garment */
-        .treeview-table th:nth-child(5), .treeview-table td:nth-child(5) { width: 90px; } /* Fabric */
-        .treeview-table th:nth-child(6), .treeview-table td:nth-child(6) { width: 60px; } /* Color */
-        .treeview-table th:nth-child(7), .treeview-table td:nth-child(7) { width: 100px; } /* Customer */
-        .treeview-table th:nth-child(8), .treeview-table td:nth-child(8) { width: 90px; } /* Tax Inv # */
-        .treeview-table th:nth-child(9), .treeview-table td:nth-child(9) { width: 90px; } /* Fabric Inv */
-        .treeview-table th:nth-child(10), .treeview-table td:nth-child(10) { width: 90px; } /* Fabric DN */
-        .treeview-table th:nth-child(11), .treeview-table td:nth-child(11) { width: 80px; } /* Fab Used */
-        .treeview-table th:nth-child(12), .treeview-table td:nth-child(12) { width: 80px; } /* Fab Cost */
-        .treeview-table th:nth-child(13), .treeview-table td:nth-child(13) { width: 120px; } /* Fab Value */
-        .treeview-table th:nth-child(14), .treeview-table td:nth-child(14) { width: 32px; } /* S */
-        .treeview-table th:nth-child(15), .treeview-table td:nth-child(15) { width: 32px; } /* M */
-        .treeview-table th:nth-child(16), .treeview-table td:nth-child(16) { width: 32px; } /* L */
-        .treeview-table th:nth-child(17), .treeview-table td:nth-child(17) { width: 36px; } /* XL */
-        .treeview-table th:nth-child(18), .treeview-table td:nth-child(18) { width: 38px; } /* XXL */
-        .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 40px; } /* XXXL */
+        .treeview-table th:nth-child(2), .treeview-table td:nth-child(2) { width: 80px; } /* Created At */
+        .treeview-table th:nth-child(3), .treeview-table td:nth-child(3) { width: 100px; } /* PL # */
+        .treeview-table th:nth-child(4), .treeview-table td:nth-child(4) { width: 120px; } /* Serial # */
+        .treeview-table th:nth-child(5), .treeview-table td:nth-child(5) { width: 100px; } /* Garment */
+        .treeview-table th:nth-child(6), .treeview-table td:nth-child(6) { width: 70px; } /* Fabric */
+        .treeview-table th:nth-child(7), .treeview-table td:nth-child(7) { width: 110px; } /* Color */
+        .treeview-table th:nth-child(8), .treeview-table td:nth-child(8) { width: 100px; } /* Customer */
+        .treeview-table th:nth-child(9), .treeview-table td:nth-child(9) { width: 100px; } /* Tax Inv # */
+        .treeview-table th:nth-child(10), .treeview-table td:nth-child(10) { width: 100px; } /* Fabric Inv */
+        .treeview-table th:nth-child(11), .treeview-table td:nth-child(11) { width: 100px; } /* Fabric DN */
+        .treeview-table th:nth-child(12), .treeview-table td:nth-child(12) { width: 90px; } /* Fab Used */
+        .treeview-table th:nth-child(13), .treeview-table td:nth-child(13) { width: 90px; } /* Fab Cost */
+        .treeview-table th:nth-child(14), .treeview-table td:nth-child(14) { width: 130px; } /* Fab Value */
+        .treeview-table th:nth-child(15), .treeview-table td:nth-child(15) { width: 35px; } /* S */
+        .treeview-table th:nth-child(16), .treeview-table td:nth-child(16) { width: 35px; } /* M */
+        .treeview-table th:nth-child(17), .treeview-table td:nth-child(17) { width: 35px; } /* L */
+        .treeview-table th:nth-child(18), .treeview-table td:nth-child(18) { width: 40px; } /* XL */
+        .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 45px; } /* 2XL */
+        .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 45px; } /* 3XL */
         .treeview-table th:nth-child(20), .treeview-table td:nth-child(20) { width: 60px; } /* Total Qty */
         .treeview-table th:nth-child(21), .treeview-table td:nth-child(21) { width: 80px; } /* Sew Cost */
         .treeview-table th:nth-child(22), .treeview-table td:nth-child(22) { width: 110px; } /* Sew Value */
@@ -779,30 +781,30 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="selectAllTree" onchange="toggleSelectAllTree()"></th>
-                            <th>Created At</th>
-                            <th>PL #</th>
-                            <th>Serial #</th>
-                            <th>Garment</th>
-                            <th>Fabric</th>
-                            <th>Color</th>
-                            <th>Customer</th>
-                            <th>Beta T#</th>
-                            <th>Fabric Inv.</th>
-                            <th>Fabric DN.</th>
-                            <th>Fab Used</th>
-                            <th>Fab Cost</th>
-                            <th>Fab Value</th>
-                            <th>S</th>
-                            <th>M</th>
-                            <th>L</th>
-                            <th>XL</th>
-                            <th>XXL</th>
-                            <th>XXXL</th>
-                            <th>Total Qty</th>
-                            <th>Sew Cost</th>
-                            <th>Sew Value</th>
-                            <th>Yd/Pcs</th>
-                            <th>Grmt Cost</th>
+                            <th class="sortable-header" data-sort="created_at">Created At</th>
+                            <th class="sortable-header" data-sort="packing_list_number">PL #</th>
+                            <th class="sortable-header" data-sort="serial_number">Serial #</th>
+                            <th class="sortable-header" data-sort="garment">Garment</th>
+                            <th class="sortable-header" data-sort="fabric">Fabric</th>
+                            <th class="sortable-header" data-sort="color">Color</th>
+                            <th class="sortable-header" data-sort="customer">Customer</th>
+                            <th class="sortable-header" data-sort="tax_invoice_number">Beta T#</th>
+                            <th class="sortable-header" data-sort="fabric_invoice">Fabric Inv.</th>
+                            <th class="sortable-header" data-sort="fabric_delivery_note">Fabric DN.</th>
+                            <th class="sortable-header" data-sort="fabric_used">Fab Used</th>
+                            <th class="sortable-header" data-sort="fabric_cost">Fab Cost</th>
+                            <th class="sortable-header" data-sort="fabric_value">Fab Value</th>
+                            <th class="sortable-header" data-sort="size_s">S</th>
+                            <th class="sortable-header" data-sort="size_m">M</th>
+                            <th class="sortable-header" data-sort="size_l">L</th>
+                            <th class="sortable-header" data-sort="size_xl">XL</th>
+                            <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
+                            <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
+                            <th class="sortable-header" data-sort="total_qty">Total Qty</th>
+                            <th class="sortable-header" data-sort="sewing_cost">Sew Cost</th>
+                            <th class="sortable-header" data-sort="sewing_value">Sew Value</th>
+                            <th class="sortable-header" data-sort="yards_per_piece">Yd/Pcs</th>
+                            <th class="sortable-header" data-sort="garment_cost">Grmt Cost</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -2170,6 +2172,115 @@
             localStorage.removeItem('gms_username');
             window.location.href = 'login.html';
         }
+
+        // ===== TABLE SORTING FUNCTIONALITY =====
+        
+        // Initialize table sorter
+        let tableSorter = null;
+
+        // Custom data getter for stitching data
+        function getStitchingValueForSorting(item, column) {
+            switch (column) {
+                case 'created_at':
+                    return item.created_at;
+                case 'packing_list_number':
+                    return item.packing_list_number;
+                case 'serial_number':
+                    return item.serial_number;
+                case 'garment':
+                    return item.garment;
+                case 'fabric':
+                    return item.fabric;
+                case 'color':
+                    return item.color;
+                case 'customer':
+                    return item.customer;
+                case 'tax_invoice_number':
+                    return item.tax_invoice_number;
+                case 'fabric_invoice':
+                    return item.fabric_invoice;
+                case 'fabric_delivery_note':
+                    return item.fabric_delivery_note;
+                case 'fabric_used':
+                    return item.fabric_used;
+                case 'fabric_cost':
+                    return item.fabric_cost;
+                case 'fabric_value':
+                    return item.fabric_value;
+                case 'size_s':
+                    return item.size_s;
+                case 'size_m':
+                    return item.size_m;
+                case 'size_l':
+                    return item.size_l;
+                case 'size_xl':
+                    return item.size_xl;
+                case 'size_xxl':
+                    return item.size_xxl;
+                case 'size_xxxl':
+                    return item.size_xxxl;
+                case 'total_qty':
+                    return item.total_qty;
+                case 'sewing_cost':
+                    return item.sewing_cost;
+                case 'sewing_value':
+                    return item.sewing_value;
+                case 'yards_per_piece':
+                    return item.yards_per_piece;
+                case 'garment_cost':
+                    return item.garment_cost;
+                default:
+                    return '';
+            }
+        }
+
+        // Initialize table sorter when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table sorter
+            tableSorter = createTableSorter('stitchingTreeview', {
+                dataGetter: getStitchingValueForSorting
+            });
+            
+            // Listen for sort events
+            document.getElementById('stitchingTreeview').addEventListener('tableSorted', function(event) {
+                const { data } = event.detail;
+                stitchingData = data;
+                populateStitchingTreeview();
+            });
+            
+            console.log('✅ Stitching table sorter initialized and ready');
+        });
+
+        // Override the loadStitchingData function to update table sorter
+        const originalLoadStitchingData = loadStitchingData;
+        loadStitchingData = async function() {
+            await originalLoadStitchingData();
+            
+            // Initialize table sorter if not already done
+            if (!tableSorter) {
+                tableSorter = createTableSorter('stitchingTreeview', {
+                    dataGetter: getStitchingValueForSorting
+                });
+                
+                // Listen for sort events
+                document.getElementById('stitchingTreeview').addEventListener('tableSorted', function(event) {
+                    const { data } = event.detail;
+                    stitchingData = data;
+                    populateStitchingTreeview();
+                });
+                
+                console.log('✅ Stitching table sorter initialized after data load');
+            }
+            
+            // Update table sorter with new data
+            if (tableSorter && stitchingData && stitchingData.length > 0) {
+                tableSorter.setData(stitchingData, getStitchingValueForSorting);
+                console.log(`💾 Updated stitching table sorter with ${stitchingData.length} records`);
+            } else {
+                console.log('⚠️ No stitching data available for table sorter');
+            }
+        }
     </script>
+    <script src="js/table-sorting.js"></script>
 </body>
 </html>
