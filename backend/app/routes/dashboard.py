@@ -201,9 +201,14 @@ def get_revenue_trends():
         data_dict = {}
         for row in results:
             date_str = str(row.date)
+            fabric_comm = float(row.fabric_commission or 0)
+            stitch_rev = float(row.stitching_revenue or 0)
+            total = fabric_comm + stitch_rev
+            
             data_dict[date_str] = {
-                'fabric_commission': float(row.fabric_commission or 0),
-                'stitching_revenue': float(row.stitching_revenue or 0)
+                'fabric_commission': fabric_comm,
+                'stitching_revenue': stitch_rev,
+                'total': total
             }
         
         while current_date <= end_date:
@@ -584,6 +589,141 @@ def get_production_rate():
         return jsonify({
             'labels': dates,
             'values': values
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/earnings-breakdown', methods=['GET'])
+def get_earnings_breakdown():
+    """Get earnings breakdown pie chart (fabric commission vs stitching revenue)"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {'commission_rate': FABRIC_COMMISSION_RATE}
+        
+        if date_from:
+            where_conditions.append("pl.delivery_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("pl.delivery_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+        """)
+        
+        result = db.session.execute(query, params).fetchone()
+        fabric_commission = float(result.fabric_commission or 0)
+        stitching_revenue = float(result.stitching_revenue or 0)
+        total = fabric_commission + stitching_revenue
+        
+        # Calculate percentages
+        fabric_percentage = (fabric_commission / total * 100) if total > 0 else 0
+        stitching_percentage = (stitching_revenue / total * 100) if total > 0 else 0
+        
+        return jsonify({
+            'labels': ['Fabric Commission', 'Stitching Revenue'],
+            'values': [fabric_commission, stitching_revenue],
+            'percentages': [round(fabric_percentage, 1), round(stitching_percentage, 1)]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/earnings-by-customer', methods=['GET'])
+def get_earnings_by_customer():
+    """Get earnings breakdown by customer pie chart"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {'commission_rate': FABRIC_COMMISSION_RATE}
+        
+        if date_from:
+            where_conditions.append("pl.delivery_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("pl.delivery_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                c.short_name,
+                COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY c.id, c.short_name
+            HAVING (COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) + COALESCE(SUM(si.total_value), 0)) > 0
+            ORDER BY (COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) + COALESCE(SUM(si.total_value), 0)) DESC
+            LIMIT 10
+        """)
+        
+        results = db.session.execute(query, params).fetchall()
+        
+        labels = [row.short_name for row in results]
+        values = []
+        for row in results:
+            fabric_comm = float(row.fabric_commission or 0)
+            stitch_rev = float(row.stitching_revenue or 0)
+            values.append(fabric_comm + stitch_rev)
+        
+        # Calculate percentages
+        total = sum(values)
+        percentages = [(value / total * 100) if total > 0 else 0 for value in values]
+        
+        return jsonify({
+            'labels': labels,
+            'values': values,
+            'percentages': [round(p, 1) for p in percentages]
         }), 200
         
     except Exception as e:

@@ -335,7 +335,7 @@
 
             <!-- Top Customers -->
             <div class="chart-card">
-                <h3 class="chart-title">👥 Top Customers</h3>
+                <h3 class="chart-title">👥 Top Customers (Stacked Revenue)</h3>
                 <div class="chart-container" data-chart="customersChart">
                     <canvas id="customersChart"></canvas>
                 </div>
@@ -354,6 +354,22 @@
                 <h3 class="chart-title">👔 Most Stitched Items (By Quantity)</h3>
                 <div class="chart-container" data-chart="productionChart">
                     <canvas id="productionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Earnings Breakdown -->
+            <div class="chart-card">
+                <h3 class="chart-title">💰 Earnings Breakdown</h3>
+                <div class="chart-container" data-chart="earningsBreakdownChart">
+                    <canvas id="earningsBreakdownChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Earnings by Customer -->
+            <div class="chart-card">
+                <h3 class="chart-title">👥 Earnings by Customer</h3>
+                <div class="chart-container" data-chart="earningsByCustomerChart">
+                    <canvas id="earningsByCustomerChart"></canvas>
                 </div>
             </div>
 
@@ -396,6 +412,8 @@
                 console.log('customersChart:', document.getElementById('customersChart'));
                 console.log('fabricChart:', document.getElementById('fabricChart'));
                 console.log('productionChart:', document.getElementById('productionChart'));
+                console.log('earningsBreakdownChart:', document.getElementById('earningsBreakdownChart'));
+                console.log('earningsByCustomerChart:', document.getElementById('earningsByCustomerChart'));
                 console.log('stockChart:', document.getElementById('stockChart'));
                 console.log('productionRateChart:', document.getElementById('productionRateChart'));
                 initializeDashboard();
@@ -405,7 +423,7 @@
         async function initializeDashboard() {
             try {
                 // Check if canvas elements exist and create them if missing
-                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'stockChart', 'productionRateChart'];
+                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'earningsBreakdownChart', 'earningsByCustomerChart', 'stockChart', 'productionRateChart'];
                 
                 // Ensure all canvas elements exist and are visible
                 canvasIds.forEach(canvasId => {
@@ -496,6 +514,8 @@
                     customersData,
                     fabricData,
                     productionData,
+                    earningsBreakdownData,
+                    earningsByCustomerData,
                     stockData,
                     productionRateData
                 ] = await Promise.all([
@@ -504,6 +524,8 @@
                     fetchDashboardData('top-customers', filters),
                     fetchDashboardData('fabric-consumption', filters),
                     fetchDashboardData('production-overview', filters),
+                    fetchDashboardData('earnings-breakdown', filters),
+                    fetchDashboardData('earnings-by-customer', filters),
                     fetchDashboardData('stock-status', filters),
                     fetchDashboardData('production-rate', filters)
                 ]);
@@ -516,6 +538,8 @@
                 updateCustomersChart(customersData);
                 updateFabricChart(fabricData);
                 updateProductionChart(productionData);
+                updateEarningsBreakdownChart(earningsBreakdownData);
+                updateEarningsByCustomerChart(earningsByCustomerData);
                 updateStockChart(stockData);
                 updateProductionRateChart(productionRateData);
                 
@@ -615,26 +639,37 @@
                             labels: {
                                 color: '#eceff1'
                             }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const total = data.fabricSales[context.dataIndex] + data.stitchingRevenue[context.dataIndex];
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
                         }
                     },
                     scales: {
                         x: {
                             ticks: {
-                                color: '#b0bec5'
+                                color: '#eceff1'
                             },
                             grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                                color: '#37474f'
                             }
                         },
                         y: {
                             ticks: {
-                                color: '#b0bec5',
+                                color: '#eceff1',
                                 callback: function(value) {
-                                    return '$' + value.toLocaleString();
+                                    return formatCurrency(value);
                                 }
                             },
                             grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                                color: '#37474f'
                             }
                         }
                     }
@@ -688,31 +723,49 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#eceff1'
-                            }
-                        }
-                    },
                     scales: {
                         x: {
+                            stacked: true,
                             ticks: {
-                                color: '#b0bec5'
+                                color: '#eceff1'
                             },
                             grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                                color: '#37474f'
                             }
                         },
                         y: {
+                            stacked: true,
                             ticks: {
-                                color: '#b0bec5',
+                                color: '#eceff1',
                                 callback: function(value) {
-                                    return '$' + value.toLocaleString();
+                                    return formatCurrency(value);
                                 }
                             },
                             grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                                color: '#37474f'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const total = context.dataset.data[context.dataIndex] + 
+                                                 (context.datasetIndex === 0 ? 
+                                                  data.stitchingRevenue[context.dataIndex] : 
+                                                  data.fabricCommission[context.dataIndex]);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
                             }
                         }
                     }
@@ -1023,6 +1076,136 @@
 
         function hideLoading() {
             document.getElementById('loading').classList.remove('show');
+        }
+
+        function updateEarningsBreakdownChart(data) {
+            let canvas = document.getElementById('earningsBreakdownChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="earningsBreakdownChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'earningsBreakdownChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.earningsBreakdown) {
+                charts.earningsBreakdown.destroy();
+            }
+            
+            charts.earningsBreakdown = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: ['#5c6bc0', '#4caf50'],
+                        borderColor: ['#5c6bc0', '#4caf50'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const percentage = data.percentages[context.dataIndex] || 0;
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateEarningsByCustomerChart(data) {
+            let canvas = document.getElementById('earningsByCustomerChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="earningsByCustomerChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'earningsByCustomerChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.earningsByCustomer) {
+                charts.earningsByCustomer.destroy();
+            }
+            
+            // Generate colors for multiple customers
+            const colors = [
+                '#5c6bc0', '#4caf50', '#ff9800', '#e91e63', '#9c27b0',
+                '#00bcd4', '#8bc34a', '#ff5722', '#795548', '#607d8b'
+            ];
+            
+            charts.earningsByCustomer = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: colors.slice(0, data.labels?.length || 0),
+                        borderColor: colors.slice(0, data.labels?.length || 0),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const percentage = data.percentages[context.dataIndex] || 0;
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
