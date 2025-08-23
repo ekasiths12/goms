@@ -4,92 +4,103 @@ Railway startup script for Garment Management System
 """
 
 import os
-import time
+import sys
 from main import create_app, db
-from app.models import *
+from app.models.serial_counter import SerialCounter
+from sqlalchemy import text
 
-def wait_for_database():
-    """Wait for database to be ready"""
-    max_attempts = 30
-    attempt = 0
-    
-    while attempt < max_attempts:
-        try:
-            app = create_app()
-            with app.app_context():
-                # Test the connection with a simple query using new SQLAlchemy syntax
-                with db.engine.connect() as connection:
-                    result = connection.execute(db.text('SELECT 1'))
-                    result.close()
-                print("✅ Database connection successful!")
-                return True
-        except Exception as e:
-            attempt += 1
-            print(f"⏳ Waiting for database... (attempt {attempt}/{max_attempts})")
-            print(f"   Error: {str(e)[:100]}...")
-            time.sleep(3)  # Increased wait time
-    
-    print("❌ Database connection failed after maximum attempts")
-    print("💡 Please check:")
-    print("   1. MySQL service is running")
-    print("   2. Database credentials are correct")
-    print("   3. Network connectivity between services")
-    return False
-
-def initialize_database():
-    """Initialize database tables and data"""
+def fix_serial_counters():
+    """Fix serial_counters table structure if needed"""
     try:
-        app = create_app()
-        
-        with app.app_context():
-            # Create all tables
-            db.create_all()
-            print("✅ Database tables created successfully!")
+        # Check if the table exists and has the wrong structure
+        result = db.session.execute(text("SHOW TABLES LIKE 'serial_counters'"))
+        if result.fetchone():
+            print("🔍 Found existing serial_counters table")
             
-            # Check if serial_counters table exists and create initial counters
-            try:
-                # Test if serial_counters table exists
-                with db.engine.connect() as connection:
-                    result = connection.execute(db.text("SHOW TABLES LIKE 'serial_counters'"))
-                    table_exists = result.fetchone() is not None
-                    result.close()
+            # Check current table structure
+            result = db.session.execute(text("DESCRIBE serial_counters"))
+            columns = [row[0] for row in result.fetchall()]
+            print(f"📋 Current columns: {columns}")
+            
+            # If the table doesn't have an 'id' column, we need to recreate it
+            if 'id' not in columns:
+                print("⚠️  Table missing 'id' column, recreating...")
                 
-                if table_exists:
-                    # Create initial serial counters
-                    serial_types = ['ST', 'GB', 'PL', 'GBN']
-                    for serial_type in serial_types:
-                        counter = SerialCounter.get_or_create(serial_type)
-                        print(f"✅ Serial counter for {serial_type} initialized")
-                else:
-                    print("⚠️  serial_counters table not found, skipping counter initialization")
-                    
-            except Exception as e:
-                print(f"⚠️  Error initializing serial counters: {e}")
-                print("   Continuing without serial counter initialization...")
+                # Drop the existing table
+                db.session.execute(text("DROP TABLE serial_counters"))
+                db.session.commit()
+                print("✅ Dropped old serial_counters table")
+                
+                # Create the table with correct structure
+                db.create_all()
+                print("✅ Created new serial_counters table with correct structure")
+                
+                # Initialize with default values
+                serial_types = ['ST', 'GB', 'PL', 'GBN']
+                for serial_type in serial_types:
+                    counter = SerialCounter(serial_type=serial_type, last_value=0)
+                    db.session.add(counter)
+                
+                db.session.commit()
+                print("✅ Initialized serial counters with default values")
+                
+            else:
+                print("✅ Table structure is correct")
+                
+        else:
+            print("📝 Creating new serial_counters table")
+            db.create_all()
             
-            print("✅ Database initialization completed!")
-            return True
+            # Initialize with default values
+            serial_types = ['ST', 'GB', 'PL', 'GBN']
+            for serial_type in serial_types:
+                counter = SerialCounter(serial_type=serial_type, last_value=0)
+                db.session.add(counter)
+            
+            db.session.commit()
+            print("✅ Created and initialized serial counters")
+            
+        # Verify the fix
+        counters = SerialCounter.query.all()
+        print(f"✅ Verification: Found {len(counters)} serial counters")
+        for counter in counters:
+            print(f"   - {counter.serial_type}: {counter.last_value}")
             
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-        return False
+        print(f"❌ Error fixing serial counters: {e}")
+        print("   Continuing without serial counter fix...")
 
 def main():
     """Main startup function"""
     print("🚀 Starting Garment Management System on Railway...")
     
-    # Wait for database to be ready
-    if not wait_for_database():
-        return False
+    # Set up environment
+    os.environ.setdefault('FLASK_ENV', 'production')
+    os.environ.setdefault('FLASK_DEBUG', 'False')
     
-    # Initialize database
-    if not initialize_database():
-        return False
+    # Create app
+    app = create_app()
     
-    print("✅ Railway startup completed successfully!")
-    return True
+    with app.app_context():
+        # Check database connection
+        try:
+            db.session.execute(text("SELECT 1"))
+            print("✅ Database connection successful!")
+        except Exception as e:
+            print(f"❌ Database connection failed: {e}")
+            sys.exit(1)
+        
+        # Create tables if they don't exist
+        try:
+            db.create_all()
+            print("✅ Database tables created successfully!")
+        except Exception as e:
+            print(f"⚠️  Error creating tables: {e}")
+        
+        # Fix serial counters
+        fix_serial_counters()
+        
+        print("✅ Railway startup completed successfully!")
 
 if __name__ == '__main__':
-    success = main()
-    if not success:
-        exit(1)
+    main()
