@@ -27,16 +27,15 @@ class StitchingInvoice(db.Model):
     lining_fabrics = db.relationship('LiningFabric', backref='stitching_invoice', lazy=True, cascade='all, delete-orphan')
     packing_list_lines = db.relationship('PackingListLine', backref='stitching_invoice', lazy=True)
     group_lines = db.relationship('StitchingInvoiceGroupLine', backref='stitching_invoice', lazy=True)
-    image = db.relationship('Image', backref='stitching_invoices', lazy=True)
     
     def __repr__(self):
         return f'<StitchingInvoice {self.stitching_invoice_number}>'
     
     def to_dict(self):
         """Convert stitching invoice to dictionary"""
-        # Get image information if available
+        # Get image information if available (using existing relationship)
         image_data = None
-        if self.image_id and self.image:
+        if self.image_id and hasattr(self, 'image') and self.image:
             image_data = {
                 'id': self.image.id,
                 'file_path': self.image.file_path,
