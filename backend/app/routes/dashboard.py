@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy import func, text
 from datetime import datetime, timedelta
 from extensions import db
+import traceback
 
 def add_filter_condition(where_conditions, params, field_name, filter_value, param_prefix, operator="="):
     """Helper function to add filter conditions for single or multiple values"""
@@ -21,6 +22,7 @@ def add_filter_condition(where_conditions, params, field_name, filter_value, par
             # Handle single value
             where_conditions.append(f"{field_name} = :{param_prefix}")
             params[param_prefix] = filter_value
+
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.stitching import StitchingInvoice
 from app.models.customer import Customer
@@ -36,12 +38,16 @@ FABRIC_COMMISSION_RATE = 0.051
 def get_dashboard_summary():
     """Get dashboard summary data including KPIs"""
     try:
+        print("DEBUG: get_dashboard_summary called")
+        
         # Get filter parameters
         date_from = request.args.get('dateFrom')
         date_to = request.args.get('dateTo')
         customer = request.args.get('customer')
         garment = request.args.get('garment')
         location = request.args.get('location')
+        
+        print(f"DEBUG: Filters - date_from: {date_from}, date_to: {date_to}, customer: {customer}, garment: {garment}, location: {location}")
         
         # Build filter conditions
         where_conditions = []
@@ -65,6 +71,9 @@ def get_dashboard_summary():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
+        print(f"DEBUG: Where clause: {where_clause}")
+        print(f"DEBUG: Params: {params}")
+        
         # Calculate fabric commission (based on packing list delivery dates)
         fabric_query = text(f"""
             SELECT 
@@ -79,9 +88,11 @@ def get_dashboard_summary():
             WHERE {where_clause}
         """)
         
+        print("DEBUG: Executing fabric query...")
         fabric_result = db.session.execute(fabric_query, params).fetchone()
         fabric_sales_total = float(fabric_result.fabric_sales_total or 0)
         fabric_commission = float(fabric_result.fabric_commission or 0)
+        print(f"DEBUG: Fabric commission: {fabric_commission}")
         
         # Calculate direct commission sales (commission sales not from stitching)
         commission_conditions = ["1=1"]
@@ -106,9 +117,12 @@ def get_dashboard_summary():
             FROM commission_sales cs
             WHERE {commission_where}
         """)
+        
+        print("DEBUG: Executing commission sales query...")
         commission_result = db.session.execute(commission_sales_query, commission_params).fetchone()
         direct_sales_total = float(commission_result.direct_sales_total or 0)
         direct_commission = float(commission_result.direct_commission or 0)
+        print(f"DEBUG: Direct commission: {direct_commission}")
         
         # Calculate stitching revenue (based on packing list delivery dates)
         stitching_query = text(f"""
@@ -121,8 +135,10 @@ def get_dashboard_summary():
             WHERE {where_clause}
         """)
         
+        print("DEBUG: Executing stitching query...")
         stitching_result = db.session.execute(stitching_query, params).fetchone()
         stitching_revenue = float(stitching_result.stitching_revenue or 0)
+        print(f"DEBUG: Stitching revenue: {stitching_revenue}")
         
         # Total revenue (including direct commission sales)
         total_revenue = fabric_commission + stitching_revenue + direct_commission
@@ -159,8 +175,11 @@ def get_dashboard_summary():
             LEFT JOIN packing_lists pl ON pll.packing_list_id = pl.id
             WHERE {active_orders_where}
         """)
+        
+        print("DEBUG: Executing active orders query...")
         active_orders_result = db.session.execute(active_orders_query, active_orders_params).fetchone()
         active_orders = int(active_orders_result.count or 0)
+        print(f"DEBUG: Active orders: {active_orders}")
         
         # Fabric stock (pending yards) - apply location filter if provided
         fabric_stock_conditions = ["(il.yards_sent - COALESCE(il.yards_consumed, 0)) > 0"]
@@ -177,8 +196,11 @@ def get_dashboard_summary():
             FROM invoice_lines il
             WHERE {fabric_stock_where}
         """)
+        
+        print("DEBUG: Executing fabric stock query...")
         fabric_stock_result = db.session.execute(fabric_stock_query, fabric_stock_params).fetchone()
         fabric_stock = float(fabric_stock_result.pending_yards or 0)
+        print(f"DEBUG: Fabric stock: {fabric_stock}")
         
         # Production rate (average items per day based on filtered date range)
         production_conditions = []
@@ -237,8 +259,11 @@ def get_dashboard_summary():
             LEFT JOIN packing_lists pl ON pll.packing_list_id = pl.id
             WHERE {production_where}
         """)
+        
+        print("DEBUG: Executing production query...")
         production_result = db.session.execute(production_query, production_params).fetchone()
         total_production_count = int(production_result.total_items or 0)
+        print(f"DEBUG: Total production count: {total_production_count}")
         
         # Calculate the number of days in the filtered date range
         if date_from and date_to:
@@ -256,7 +281,7 @@ def get_dashboard_summary():
         fabric_change = 8.3    # Mock positive growth
         stitching_change = 15.7  # Mock positive growth
         
-        return jsonify({
+        result = {
             'totalRevenue': float(total_revenue),
             'directCommission': float(direct_commission),  # Direct commission sales
             'fabricCommission': float(fabric_commission),  # Fabric commission from stitching
@@ -268,9 +293,14 @@ def get_dashboard_summary():
             'revenueChange': revenue_change,
             'fabricChange': fabric_change,
             'stitchingChange': stitching_change
-        }), 200
+        }
+        
+        print(f"DEBUG: Returning result: {result}")
+        return jsonify(result), 200
         
     except Exception as e:
+        print(f"ERROR in get_dashboard_summary: {str(e)}")
+        print(f"ERROR traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @dashboard_bp.route('/revenue-trends', methods=['GET'])
@@ -1119,7 +1149,50 @@ def get_earnings_by_customer():
 @dashboard_bp.route('/test', methods=['GET'])
 def test_dashboard():
     """Test endpoint for dashboard"""
-    return jsonify({'message': 'Dashboard API is working!'}), 200
+    try:
+        print("DEBUG: test_dashboard called")
+        
+        # Test basic database connectivity
+        result = db.session.execute(text("SELECT 1 as test"))
+        test_value = result.fetchone().test
+        print(f"DEBUG: Database test result: {test_value}")
+        
+        # Check if key tables exist
+        tables_to_check = [
+            'customers', 'invoices', 'invoice_lines', 'commission_sales', 
+            'stitching_invoices', 'packing_lists', 'packing_list_lines'
+        ]
+        
+        table_status = {}
+        for table in tables_to_check:
+            try:
+                result = db.session.execute(text(f"SELECT COUNT(*) as count FROM {table}"))
+                count = result.fetchone().count
+                table_status[table] = {'exists': True, 'count': count}
+                print(f"DEBUG: Table {table} exists with {count} records")
+            except Exception as e:
+                table_status[table] = {'exists': False, 'error': str(e)}
+                print(f"DEBUG: Table {table} error: {e}")
+        
+        # Test a simple query
+        try:
+            customer_count = db.session.execute(text("SELECT COUNT(*) as count FROM customers")).fetchone().count
+            print(f"DEBUG: Customer count: {customer_count}")
+        except Exception as e:
+            print(f"DEBUG: Customer count error: {e}")
+            customer_count = 0
+        
+        return jsonify({
+            'message': 'Dashboard API is working!',
+            'database_test': test_value,
+            'table_status': table_status,
+            'customer_count': customer_count
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR in test_dashboard: {str(e)}")
+        print(f"ERROR traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
 
 @dashboard_bp.route('/filter-options', methods=['GET'])
 def get_filter_options():
