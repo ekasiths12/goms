@@ -1336,26 +1336,23 @@
                 charts.earningsByCustomer.destroy();
             }
             
+            // Color palette for pie chart
+            const colors = [
+                '#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0',
+                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63',
+                '#3f51b5', '#009688', '#ffc107', '#8bc34a', '#ff4081'
+            ];
+            
             charts.earningsByCustomer = new Chart(ctx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
                     labels: data.labels || [],
-                    datasets: [
-                        {
-                            label: 'Fabric Commission',
-                            data: data.fabricCommission || [],
-                            backgroundColor: '#5c6bc0',
-                            borderColor: '#5c6bc0',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Stitching Revenue',
-                            data: data.stitchingRevenue || [],
-                            backgroundColor: '#4caf50',
-                            borderColor: '#4caf50',
-                            borderWidth: 1
-                        }
-                    ]
+                    datasets: [{
+                        data: data.values || [],
+                        backgroundColor: colors.slice(0, data.labels?.length || 0),
+                        borderColor: '#37474f',
+                        borderWidth: 2
+                    }]
                 },
                 options: {
                     responsive: true,
@@ -1372,33 +1369,12 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    return `${label}: ${formatCurrency(value)}`;
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
                                 }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: true,
-                            ticks: {
-                                color: '#eceff1'
-                            },
-                            grid: {
-                                color: '#37474f'
-                            }
-                        },
-                        y: {
-                            stacked: true,
-                            ticks: {
-                                color: '#eceff1',
-                                callback: function(value) {
-                                    return formatCurrency(value);
-                                }
-                            },
-                            grid: {
-                                color: '#37474f'
                             }
                         }
                     }

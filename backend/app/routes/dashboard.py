@@ -889,10 +889,12 @@ def get_earnings_by_customer():
         fabric_commission = [float(row.fabric_commission or 0) for row in results]
         stitching_revenue = [float(row.stitching_revenue or 0) for row in results]
         
+        # Calculate total earnings for each customer for pie chart
+        total_earnings = [fc + sr for fc, sr in zip(fabric_commission, stitching_revenue)]
+        
         return jsonify({
             'labels': labels,
-            'fabricCommission': fabric_commission,
-            'stitchingRevenue': stitching_revenue
+            'values': total_earnings
         }), 200
         
     except Exception as e:
