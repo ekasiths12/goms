@@ -347,6 +347,7 @@
         .data-table td {
             padding: 10px 8px;
             border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
         }
 
         .data-table tr:hover {
@@ -409,6 +410,13 @@
             width: 16px;
             height: 16px;
             accent-color: var(--focus-color);
+        }
+        
+        /* Ensure checkbox cell alignment */
+        .data-table td.checkbox-wrapper {
+            text-align: center;
+            vertical-align: middle;
+            padding: 10px 8px;
         }
 
         /* Make it clear that rows are not clickable */
@@ -923,7 +931,6 @@
             <button class="btn btn-primary" onclick="assignDeliveredLocation()">Assign Delivered Location</button>
             <button class="btn btn-primary" onclick="assignTaxInvoiceNumber()">Assign Tax Invoice Number</button>
             <button class="btn btn-secondary" onclick="refreshInvoiceTable()">Refresh</button>
-            <button class="btn btn-success" onclick="openStitchingRecordDialog()">Create Stitching Record</button>
             <button class="btn btn-info" onclick="openCustomerIdDialog()">Customer IDs</button>
             <button class="btn btn-warning" onclick="openAddInvoiceLineDialog()">Add Invoice Line</button>
             <button class="btn btn-primary" onclick="editSelectedInvoice()">Edit Selected Invoice</button>
@@ -1269,17 +1276,17 @@
                         populateInvoiceTable();
                     } catch (parseError) {
                         console.error('❌ JSON parse error:', parseError);
-                        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
                     }
                 } else {
                     console.error('❌ Failed to load invoice data, status:', response.status);
                     const errorText = await response.text();
                     console.error('❌ Error response:', errorText);
-                    tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading invoice data:', error);
-                tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
             }
         }
 
@@ -1319,11 +1326,11 @@
                     actionButtons = `
                         <button onclick="openCommissionSaleDialog(${invoice.id}, ${pending}, '${invoice.item_name}', '${invoice.color || ''}')" 
                                 class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">
-                            Mark as Commission Sale
+                            Commission
                         </button>
-                        <button onclick="openStitchingRecordDialog([${invoice.id}])" 
+                        <button onclick="createStitchingRecordFromTable(${invoice.id})" 
                                 class="btn btn-success" style="padding: 4px 8px; font-size: 11px;">
-                            Create Stitching Record
+                            Stitching
                         </button>
                     `;
                 } else if (invoice.is_commission_sale) {
@@ -3607,6 +3614,28 @@
                 console.error('Error marking commission sale:', error);
                 alert('Error marking commission sale. Please try again.');
             }
+        }
+        
+        function createStitchingRecordFromTable(lineId) {
+            // Find the invoice line data
+            const invoiceLine = invoiceData.find(inv => inv.id === lineId);
+            if (!invoiceLine) {
+                alert('Invoice line not found');
+                return;
+            }
+            
+            // Check if line has pending yards
+            const yardsSent = invoiceLine.yards_sent || invoiceLine.quantity || 0;
+            const yardsConsumed = invoiceLine.yards_consumed || 0;
+            const pending = yardsSent - yardsConsumed;
+            
+            if (pending <= 0) {
+                alert('No pending yards available for this line');
+                return;
+            }
+            
+            // Open stitching record dialog with the selected line
+            openStitchingRecordDialog([lineId]);
         }
         
         // Add event listener for commission amount calculation
