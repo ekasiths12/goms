@@ -115,6 +115,22 @@ def main():
         for table in all_tables:
             print(f"   - {table[0]}")
         
+        # Convert all existing tables to InnoDB to ensure FK support
+        try:
+            all_tables = db.session.execute(text("SHOW TABLES")).fetchall()
+            converted = 0
+            for table in all_tables:
+                table_name = table[0]
+                # Skip if already InnoDB
+                status = db.session.execute(text(f"SHOW TABLE STATUS WHERE Name = '{table_name}'")).fetchone()
+                if status and status[1].lower() != 'innodb':
+                    db.session.execute(text(f"ALTER TABLE {table_name} ENGINE=InnoDB;"))
+                    converted += 1
+            db.session.commit()
+            print(f"✅ Converted {converted} tables to InnoDB")
+        except Exception as e:
+            print(f"⚠️ Error converting tables to InnoDB: {e}")
+
         # Create tables in dependency order to avoid foreign key issues
         from sqlalchemy.exc import OperationalError
 
