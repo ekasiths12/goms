@@ -445,3 +445,100 @@ def delete_delivery_location(location_id):
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
+
+
+# ===== COMMISSION SALES ENDPOINTS =====
+
+@invoices_bp.route('/mark-commission-sale', methods=['POST'])
+def mark_commission_sale():
+    """Mark an invoice line as a commission sale"""
+    try:
+        data = request.get_json()
+        line_id = data.get('line_id')
+        yards_sold = data.get('yards_sold')
+        sale_date = data.get('sale_date')
+        
+        if not line_id:
+            return {'error': 'Line ID is required'}, 400
+        if not yards_sold or yards_sold <= 0:
+            return {'error': 'Yards sold must be greater than 0'}, 400
+        if not sale_date:
+            return {'error': 'Sale date is required'}, 400
+        
+        # Get the invoice line
+        invoice_line = InvoiceLine.query.get(line_id)
+        if not invoice_line:
+            return {'error': 'Invoice line not found'}, 404
+        
+        # Check if already marked as commission sale
+        if invoice_line.is_commission_sale:
+            return {'error': 'This line is already marked as a commission sale'}, 400
+        
+        # Parse sale date
+        try:
+            sale_date_obj = datetime.strptime(sale_date, '%Y-%m-%d').date()
+        except ValueError:
+            return {'error': 'Invalid sale date format. Use YYYY-MM-DD'}, 400
+        
+        # Mark as commission sale
+        invoice_line.mark_as_commission_sale(yards_sold, sale_date_obj)
+        db.session.commit()
+        
+        return {
+            'message': f'Successfully marked {yards_sold} yards as commission sale',
+            'commission_amount': float(invoice_line.commission_amount),
+            'remaining_pending': float(invoice_line.pending_yards)
+        }, 200
+        
+    except ValueError as e:
+        db.session.rollback()
+        return {'error': str(e)}, 400
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
+@invoices_bp.route('/commission-sales', methods=['GET'])
+def get_commission_sales():
+    """Get all commission sales"""
+    try:
+        # Get query parameters for filtering
+        customer_filter = request.args.get('customer')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Build query
+        query = InvoiceLine.query.filter_by(is_commission_sale=True)
+        
+        # Apply filters
+        if customer_filter:
+            query = query.join(Invoice).join(Customer).filter(
+                Customer.short_name.ilike(f'%{customer_filter}%')
+            )
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(InvoiceLine.commission_date >= date_from_obj)
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(InvoiceLine.commission_date <= date_to_obj)
+            except ValueError:
+                pass
+        
+        # Execute query
+        commission_sales = query.order_by(InvoiceLine.commission_date.desc()).all()
+        
+        # Convert to dictionary
+        result = []
+        for sale in commission_sales:
+            sale_dict = sale.to_dict()
+            sale_dict['customer_name'] = sale.invoice.customer.short_name if sale.invoice and sale.invoice.customer else None
+            sale_dict['invoice_number'] = sale.invoice.invoice_number if sale.invoice else None
+            result.append(sale_dict)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return {'error': str(e)}, 500

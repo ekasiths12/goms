@@ -65,6 +65,12 @@ class InvoiceLine(db.Model):
     yards_sent = db.Column(db.Numeric(10, 2), default=0)
     yards_consumed = db.Column(db.Numeric(10, 2), default=0)
     
+    # Commission sale fields
+    is_commission_sale = db.Column(db.Boolean, default=False)
+    commission_yards = db.Column(db.Numeric(10, 2), default=0)
+    commission_amount = db.Column(db.Numeric(10, 2), default=0)
+    commission_date = db.Column(db.Date)
+    
     # Relationships
     stitching_invoices = db.relationship('StitchingInvoice', backref='invoice_line', lazy=True)
     garment_fabrics = db.relationship('GarmentFabric', backref='invoice_line', lazy=True)
@@ -89,13 +95,18 @@ class InvoiceLine(db.Model):
             'yards_sent': float(self.yards_sent) if self.yards_sent else 0,
             'yards_consumed': float(self.yards_consumed) if self.yards_consumed else 0,
             'pending_yards': float(self.yards_sent - self.yards_consumed) if self.yards_sent and self.yards_consumed else float(self.yards_sent or 0),
-            'total_value': float(self.unit_price * self.yards_sent) if self.unit_price and self.yards_sent else 0
+            'total_value': float(self.unit_price * self.yards_sent) if self.unit_price and self.yards_sent else 0,
+            'is_commission_sale': self.is_commission_sale,
+            'commission_yards': float(self.commission_yards) if self.commission_yards else 0,
+            'commission_amount': float(self.commission_amount) if self.commission_amount else 0,
+            'commission_date': self.commission_date.isoformat() if self.commission_date else None
         }
     
     @property
     def pending_yards(self):
-        """Calculate pending yards"""
-        return (self.yards_sent or 0) - (self.yards_consumed or 0)
+        """Calculate pending yards (excluding commission sales)"""
+        consumed = (self.yards_consumed or 0) + (self.commission_yards or 0)
+        return (self.yards_sent or 0) - consumed
     
     @property
     def total_value(self):
@@ -113,6 +124,21 @@ class InvoiceLine(db.Model):
     def get_by_item_name(cls, item_name):
         """Get invoice lines by item name"""
         return cls.query.filter_by(item_name=item_name).all()
+    
+    @classmethod
+    def get_commission_sales(cls):
+        """Get all invoice lines that are commission sales"""
+        return cls.query.filter_by(is_commission_sale=True).order_by(cls.commission_date.desc()).all()
+    
+    def mark_as_commission_sale(self, yards_sold, sale_date):
+        """Mark this invoice line as a commission sale"""
+        if yards_sold > self.pending_yards:
+            raise ValueError(f"Cannot sell {yards_sold} yards, only {self.pending_yards} yards available")
+        
+        self.is_commission_sale = True
+        self.commission_yards = yards_sold
+        self.commission_amount = yards_sold * self.unit_price * 0.051  # 5.1% commission
+        self.commission_date = sale_date
 
 
 class FabricInventory(db.Model):

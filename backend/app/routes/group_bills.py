@@ -1217,3 +1217,64 @@ def get_group_bill_details(group_id):
             'packing_lists': {},
             'individual_records': []
         }
+
+
+@group_bills_bp.route('/commission-sales', methods=['GET'])
+def get_commission_sales():
+    """Get all commission sales for the group bills page"""
+    try:
+        from app.models.invoice import InvoiceLine
+        
+        # Get query parameters for filtering
+        customer = request.args.get('customer')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Build query
+        query = InvoiceLine.query.filter_by(is_commission_sale=True)
+        
+        if customer:
+            query = query.join(Invoice).join(Customer).filter(
+                Customer.short_name.ilike(f'%{customer}%')
+            )
+        
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(InvoiceLine.commission_date >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(InvoiceLine.commission_date <= date_to_obj)
+            except ValueError:
+                pass
+        
+        # Execute query
+        commission_sales = query.order_by(InvoiceLine.commission_date.desc()).all()
+        
+        # Convert to dictionary format
+        result = []
+        for sale in commission_sales:
+            sale_dict = {
+                'id': sale.id,
+                'commission_date': sale.commission_date.isoformat() if sale.commission_date else None,
+                'invoice_number': sale.invoice.invoice_number if sale.invoice else None,
+                'customer_name': sale.invoice.customer.short_name if sale.invoice and sale.invoice.customer else None,
+                'item_name': sale.item_name,
+                'color': sale.color,
+                'commission_yards': float(sale.commission_yards) if sale.commission_yards else 0,
+                'unit_price': float(sale.unit_price) if sale.unit_price else 0,
+                'commission_amount': float(sale.commission_amount) if sale.commission_amount else 0,
+                'total_sale_value': float(sale.commission_yards * sale.unit_price) if sale.commission_yards and sale.unit_price else 0,
+                'delivery_note': sale.delivery_note,
+                'delivered_location': sale.delivered_location
+            }
+            result.append(sale_dict)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

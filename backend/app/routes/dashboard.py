@@ -83,6 +83,24 @@ def get_dashboard_summary():
         fabric_sales_total = float(fabric_result.fabric_sales_total or 0)
         fabric_commission = float(fabric_result.fabric_commission or 0)
         
+        # Calculate direct commission sales (commission sales not from stitching)
+        commission_sales_query = text(f"""
+            SELECT 
+                COALESCE(SUM(il.commission_yards * il.unit_price), 0) as direct_sales_total,
+                COALESCE(SUM(il.commission_amount), 0) as direct_commission
+            FROM invoice_lines il
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE il.is_commission_sale = TRUE
+            AND il.commission_date >= :date_from
+            AND il.commission_date <= :date_to
+        """)
+        
+        commission_params = {'date_from': date_from, 'date_to': date_to}
+        commission_result = db.session.execute(commission_sales_query, commission_params).fetchone()
+        direct_sales_total = float(commission_result.direct_sales_total or 0)
+        direct_commission = float(commission_result.direct_commission or 0)
+        
         # Calculate stitching revenue (based on packing list delivery dates)
         stitching_query = text(f"""
             SELECT COALESCE(SUM(si.total_value), 0) as stitching_revenue
@@ -97,8 +115,8 @@ def get_dashboard_summary():
         stitching_result = db.session.execute(stitching_query, params).fetchone()
         stitching_revenue = float(stitching_result.stitching_revenue or 0)
         
-        # Total revenue
-        total_revenue = fabric_commission + stitching_revenue
+        # Total revenue (including direct commission sales)
+        total_revenue = fabric_commission + stitching_revenue + direct_commission
         
         # Active orders (count of all stitching records based on packing list delivery date)
         active_orders_conditions = ["1=1"]  # Always true, so we count all records
@@ -234,6 +252,7 @@ def get_dashboard_summary():
             'fabricSales': float(fabric_commission),  # Show commission amount
             'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
             'stitchingRevenue': float(stitching_revenue),
+            'directCommission': float(direct_commission),  # Direct commission sales
             'activeOrders': active_orders,
             'fabricStock': float(fabric_stock),
             'productionRate': round(production_rate, 1),

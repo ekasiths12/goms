@@ -952,6 +952,7 @@
                         <th class="sortable-header" data-sort="unit_price">Price</th>
                         <th class="sortable-header" data-sort="total">Total</th>
                         <th class="sortable-header" data-sort="delivered_location">Delivered Location</th>
+                        <th>Actions</th>
                         <th style="display: none;">Line ID</th>
                     </tr>
                 </thead>
@@ -1025,6 +1026,50 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="closeEditInvoiceDialog()">Cancel</button>
                     <button class="btn btn-primary" onclick="saveEditInvoice()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Commission Sale Dialog -->
+        <div id="commissionSaleDialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Mark as Commission Sale</h2>
+                    <span class="close" onclick="closeCommissionSaleDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 10px;">Fabric Details:</h3>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <p style="margin: 5px 0; color: var(--text-primary);"><strong>Item:</strong> <span id="commissionItemName"></span></p>
+                            <p style="margin: 5px 0; color: var(--text-primary);"><strong>Color:</strong> <span id="commissionItemColor"></span></p>
+                            <p style="margin: 5px 0; color: var(--text-primary);"><strong>Available Yards:</strong> <span id="commissionAvailableYards"></span></p>
+                            <p style="margin: 5px 0; color: var(--text-primary);"><strong>Unit Price:</strong> ฿<span id="commissionUnitPrice"></span></p>
+                        </div>
+                    </div>
+                    
+                    <form id="commissionSaleForm">
+                        <div class="form-group">
+                            <label for="commissionYardsSold">Yards to Sell:</label>
+                            <input type="number" id="commissionYardsSold" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="commissionSaleDate">Sale Date:</label>
+                            <input type="date" id="commissionSaleDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Commission Rate:</label>
+                            <input type="text" value="5.1%" readonly style="background: var(--bg-secondary);">
+                        </div>
+                        <div class="form-group">
+                            <label>Commission Amount:</label>
+                            <input type="text" id="commissionAmount" readonly style="background: var(--bg-secondary);">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeCommissionSaleDialog()">Cancel</button>
+                    <button class="btn btn-success" onclick="confirmCommissionSale()">Confirm Sale</button>
                 </div>
             </div>
         </div>
@@ -1268,6 +1313,33 @@
                 const yardsConsumed = invoice.yards_consumed || 0;
                 const pending = yardsSent - yardsConsumed;
                 
+                // Create action buttons based on line status
+                let actionButtons = '';
+                if (pending > 0 && !invoice.is_commission_sale) {
+                    actionButtons = `
+                        <button onclick="openCommissionSaleDialog(${invoice.id}, ${pending}, '${invoice.item_name}', '${invoice.color || ''}')" 
+                                class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">
+                            Mark as Commission Sale
+                        </button>
+                        <button onclick="openStitchingRecordDialog([${invoice.id}])" 
+                                class="btn btn-success" style="padding: 4px 8px; font-size: 11px;">
+                            Create Stitching Record
+                        </button>
+                    `;
+                } else if (invoice.is_commission_sale) {
+                    actionButtons = `
+                        <span style="color: #f57c00; font-size: 11px; font-weight: bold;">
+                            ✓ Commission Sale (${formatNumber(invoice.commission_yards || 0)} yards)
+                        </span>
+                    `;
+                } else {
+                    actionButtons = `
+                        <span style="color: var(--text-secondary); font-size: 11px;">
+                            No pending yards
+                        </span>
+                    `;
+                }
+                
                 row.innerHTML = `
                     <td class="checkbox-wrapper">
                         <input type="checkbox" class="invoice-checkbox" data-invoice-id="${invoice.id}" onclick="toggleInvoiceSelection(event, ${invoice.id})">
@@ -1285,6 +1357,7 @@
                     <td>${formatNumber(invoice.unit_price || 0)}</td>
                     <td>${formatNumber(yardsSent * (invoice.unit_price || 0))}</td>
                     <td>${invoice.delivered_location || ''}</td>
+                    <td>${actionButtons}</td>
                     <td style="display: none;">${invoice.id || ''}</td>
                 `;
                 tbody.appendChild(row);
@@ -3429,6 +3502,120 @@
                 }
             });
         }
+
+        // ===== COMMISSION SALE FUNCTIONALITY =====
+        
+        let currentCommissionSaleData = null;
+        
+        function openCommissionSaleDialog(lineId, availableYards, itemName, itemColor) {
+            // Find the invoice line data
+            const invoiceLine = invoiceData.find(inv => inv.id === lineId);
+            if (!invoiceLine) {
+                alert('Invoice line not found');
+                return;
+            }
+            
+            currentCommissionSaleData = {
+                lineId: lineId,
+                availableYards: availableYards,
+                itemName: itemName,
+                itemColor: itemColor,
+                unitPrice: invoiceLine.unit_price || 0
+            };
+            
+            // Populate dialog
+            document.getElementById('commissionItemName').textContent = itemName;
+            document.getElementById('commissionItemColor').textContent = itemColor;
+            document.getElementById('commissionAvailableYards').textContent = formatNumber(availableYards);
+            document.getElementById('commissionUnitPrice').textContent = formatNumber(invoiceLine.unit_price || 0);
+            
+            // Set default values
+            document.getElementById('commissionYardsSold').value = availableYards;
+            document.getElementById('commissionYardsSold').max = availableYards;
+            document.getElementById('commissionSaleDate').value = new Date().toISOString().split('T')[0];
+            
+            // Calculate initial commission amount
+            updateCommissionAmount();
+            
+            // Show dialog
+            document.getElementById('commissionSaleDialog').style.display = 'block';
+        }
+        
+        function closeCommissionSaleDialog() {
+            document.getElementById('commissionSaleDialog').style.display = 'none';
+            currentCommissionSaleData = null;
+        }
+        
+        function updateCommissionAmount() {
+            if (!currentCommissionSaleData) return;
+            
+            const yardsSold = parseFloat(document.getElementById('commissionYardsSold').value) || 0;
+            const commissionAmount = yardsSold * currentCommissionSaleData.unitPrice * 0.051;
+            
+            document.getElementById('commissionAmount').value = `฿${formatNumber(commissionAmount)}`;
+        }
+        
+        async function confirmCommissionSale() {
+            if (!currentCommissionSaleData) return;
+            
+            const yardsSold = parseFloat(document.getElementById('commissionYardsSold').value) || 0;
+            const saleDate = document.getElementById('commissionSaleDate').value;
+            
+            if (yardsSold <= 0) {
+                alert('Please enter a valid number of yards to sell');
+                return;
+            }
+            
+            if (yardsSold > currentCommissionSaleData.availableYards) {
+                alert(`Cannot sell ${yardsSold} yards, only ${currentCommissionSaleData.availableYards} yards available`);
+                return;
+            }
+            
+            if (!saleDate) {
+                alert('Please select a sale date');
+                return;
+            }
+            
+            try {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/api/invoices/mark-commission-sale`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        line_id: currentCommissionSaleData.lineId,
+                        yards_sold: yardsSold,
+                        sale_date: saleDate
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Successfully marked ${yardsSold} yards as commission sale. Commission: ฿${formatNumber(result.commission_amount)}`);
+                    
+                    // Refresh the invoice data
+                    await loadInvoiceData();
+                    
+                    // Close dialog
+                    closeCommissionSaleDialog();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Error marking commission sale:', error);
+                alert('Error marking commission sale. Please try again.');
+            }
+        }
+        
+        // Add event listener for commission amount calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            const yardsInput = document.getElementById('commissionYardsSold');
+            if (yardsInput) {
+                yardsInput.addEventListener('input', updateCommissionAmount);
+            }
+        });
 
         // ===== TABLE SORTING FUNCTIONALITY =====
         
