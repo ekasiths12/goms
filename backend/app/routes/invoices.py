@@ -542,3 +542,45 @@ def get_commission_sales():
         
     except Exception as e:
         return {'error': str(e)}, 500
+
+@invoices_bp.route('/delete-commission-sale', methods=['POST'])
+def delete_commission_sale():
+    """Delete a commission sale and revert fabric usage"""
+    try:
+        data = request.get_json()
+        sale_id = data.get('sale_id')
+        
+        if not sale_id:
+            return {'error': 'Sale ID is required'}, 400
+        
+        # Get the invoice line
+        invoice_line = InvoiceLine.query.get(sale_id)
+        if not invoice_line:
+            return {'error': 'Commission sale not found'}, 404
+        
+        # Check if it's actually a commission sale
+        if not invoice_line.is_commission_sale:
+            return {'error': 'This line is not marked as a commission sale'}, 400
+        
+        # Store the commission yards for reverting
+        commission_yards = invoice_line.commission_yards or 0
+        
+        # Revert the commission sale
+        invoice_line.is_commission_sale = False
+        invoice_line.commission_yards = 0
+        invoice_line.commission_amount = 0
+        invoice_line.commission_date = None
+        
+        # The pending_yards property will automatically recalculate
+        # since it subtracts commission_yards from yards_sent - yards_consumed
+        
+        db.session.commit()
+        
+        return {
+            'message': f'Commission sale deleted successfully. Reverted {commission_yards} yards.',
+            'remaining_pending': float(invoice_line.pending_yards)
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500

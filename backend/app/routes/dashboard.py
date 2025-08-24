@@ -84,6 +84,21 @@ def get_dashboard_summary():
         fabric_commission = float(fabric_result.fabric_commission or 0)
         
         # Calculate direct commission sales (commission sales not from stitching)
+        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_params = {}
+        
+        if date_from:
+            commission_conditions.append("il.commission_date >= :date_from")
+            commission_params['date_from'] = date_from
+        if date_to:
+            commission_conditions.append("il.commission_date <= :date_to")
+            commission_params['date_to'] = date_to
+        if customer:
+            commission_conditions.append("c.short_name = :customer")
+            commission_params['customer'] = customer
+            
+        commission_where = " AND ".join(commission_conditions)
+        
         commission_sales_query = text(f"""
             SELECT 
                 COALESCE(SUM(il.commission_yards * il.unit_price), 0) as direct_sales_total,
@@ -91,12 +106,8 @@ def get_dashboard_summary():
             FROM invoice_lines il
             JOIN invoices i ON il.invoice_id = i.id
             JOIN customers c ON i.customer_id = c.id
-            WHERE il.is_commission_sale = TRUE
-            AND il.commission_date >= :date_from
-            AND il.commission_date <= :date_to
+            WHERE {commission_where}
         """)
-        
-        commission_params = {'date_from': date_from, 'date_to': date_to}
         commission_result = db.session.execute(commission_sales_query, commission_params).fetchone()
         direct_sales_total = float(commission_result.direct_sales_total or 0)
         direct_commission = float(commission_result.direct_commission or 0)
@@ -249,10 +260,10 @@ def get_dashboard_summary():
         
         return jsonify({
             'totalRevenue': float(total_revenue),
-            'fabricSales': float(fabric_commission),  # Show commission amount
+            'directCommission': float(direct_commission),  # Direct commission sales
+            'fabricCommission': float(fabric_commission),  # Fabric commission from stitching
             'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
             'stitchingRevenue': float(stitching_revenue),
-            'directCommission': float(direct_commission),  # Direct commission sales
             'activeOrders': active_orders,
             'fabricStock': float(fabric_stock),
             'productionRate': round(production_rate, 1),
@@ -301,8 +312,8 @@ def get_revenue_trends():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Query for revenue by packing list delivery date
-        query = text(f"""
+        # Query for revenue by packing list delivery date (stitching commission)
+        stitching_query = text(f"""
             SELECT 
                 DATE(pl.delivery_date) as date,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
@@ -319,27 +330,78 @@ def get_revenue_trends():
             ORDER BY DATE(pl.delivery_date)
         """)
         
-        results = db.session.execute(query, params).fetchall()
+        stitching_results = db.session.execute(stitching_query, params).fetchall()
+        
+        # Query for direct commission sales
+        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_params = {
+            'date_from': date_from,
+            'date_to': date_to
+        }
+        
+        if customer:
+            commission_conditions.append("c.short_name = :customer")
+            commission_params['customer'] = customer
+        if location:
+            commission_conditions.append("il.delivered_location = :location")
+            commission_params['location'] = location
+            
+        commission_where = " AND ".join(commission_conditions)
+        
+        commission_query = text(f"""
+            SELECT 
+                DATE(il.commission_date) as date,
+                COALESCE(SUM(il.commission_amount), 0) as direct_commission
+            FROM invoice_lines il
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE il.commission_date BETWEEN :date_from AND :date_to
+            AND {commission_where}
+            GROUP BY DATE(il.commission_date)
+            ORDER BY DATE(il.commission_date)
+        """)
+        
+        commission_results = db.session.execute(commission_query, commission_params).fetchall()
+        
+        # Combine both datasets
+        revenue_data = {}
+        
+        # Add stitching revenue
+        for row in stitching_results:
+            date_str = row.date.strftime('%m/%d')
+            if date_str not in revenue_data:
+                revenue_data[date_str] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            revenue_data[date_str]['fabric_commission'] = float(row.fabric_commission or 0)
+            revenue_data[date_str]['stitching_revenue'] = float(row.stitching_revenue or 0)
+        
+        # Add direct commission sales
+        for row in commission_results:
+            date_str = row.date.strftime('%m/%d')
+            if date_str not in revenue_data:
+                revenue_data[date_str] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            revenue_data[date_str]['direct_commission'] = float(row.direct_commission or 0)
         
         # Only include dates with actual data (non-zero values)
         dates = []
         fabric_commission = []
         stitching_revenue = []
         
-        for row in results:
-            fabric_comm = float(row.fabric_commission or 0)
-            stitch_rev = float(row.stitching_revenue or 0)
-            total = fabric_comm + stitch_rev
+        for date_str, data in sorted(revenue_data.items()):
+            fabric_comm = data['fabric_commission']
+            stitch_rev = data['stitching_revenue']
+            direct_comm = data['direct_commission']
+            total = fabric_comm + stitch_rev + direct_comm
             
             # Only include dates with actual revenue
             if total > 0:
-                dates.append(row.date.strftime('%m/%d'))
-                fabric_commission.append(fabric_comm)
+                dates.append(date_str)
+                fabric_commission.append(fabric_comm + direct_comm)  # Combine both commission types
                 stitching_revenue.append(stitch_rev)
         
         return jsonify({
             'labels': dates,
-            'fabricSales': fabric_commission,
+            'directCommission': [data['direct_commission'] for date_str, data in sorted(revenue_data.items())],
+            'fabricCommission': [data['fabric_commission'] for date_str, data in sorted(revenue_data.items())],
             'stitchingRevenue': stitching_revenue
         }), 200
         
@@ -373,7 +435,8 @@ def get_top_customers():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        query = text(f"""
+        # Query for stitching revenue and commission
+        stitching_query = text(f"""
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
@@ -386,19 +449,75 @@ def get_top_customers():
             JOIN packing_lists pl ON pll.packing_list_id = pl.id
             WHERE {where_clause}
             GROUP BY c.id, c.short_name
-            HAVING (fabric_commission + stitching_revenue) > 0
-            ORDER BY (fabric_commission + stitching_revenue) DESC
-            LIMIT 10
         """)
         
-        results = db.session.execute(query, params).fetchall()
+        stitching_results = db.session.execute(stitching_query, params).fetchall()
         
-        labels = [row.short_name for row in results]
-        fabric_commission = [float(row.fabric_commission) for row in results]
-        stitching_revenue = [float(row.stitching_revenue) for row in results]
+        # Query for direct commission sales
+        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_params = {}
+        
+        if date_from:
+            commission_conditions.append("il.commission_date >= :date_from")
+            commission_params['date_from'] = date_from
+        if date_to:
+            commission_conditions.append("il.commission_date <= :date_to")
+            commission_params['date_to'] = date_to
+        if customer:
+            commission_conditions.append("c.short_name = :customer")
+            commission_params['customer'] = customer
+        if location:
+            commission_conditions.append("il.delivered_location = :location")
+            commission_params['location'] = location
+            
+        commission_where = " AND ".join(commission_conditions)
+        
+        commission_query = text(f"""
+            SELECT 
+                c.short_name,
+                COALESCE(SUM(il.commission_amount), 0) as direct_commission
+            FROM invoice_lines il
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE {commission_where}
+            GROUP BY c.id, c.short_name
+        """)
+        
+        commission_results = db.session.execute(commission_query, commission_params).fetchall()
+        
+        # Combine both datasets
+        customer_data = {}
+        
+        # Add stitching data
+        for row in stitching_results:
+            customer_name = row.short_name
+            if customer_name not in customer_data:
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            customer_data[customer_name]['fabric_commission'] = float(row.fabric_commission or 0)
+            customer_data[customer_name]['stitching_revenue'] = float(row.stitching_revenue or 0)
+        
+        # Add direct commission data
+        for row in commission_results:
+            customer_name = row.short_name
+            if customer_name not in customer_data:
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)
+        
+        # Sort by total revenue and get top 10
+        sorted_customers = sorted(
+            customer_data.items(),
+            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_revenue'] + x[1]['direct_commission'],
+            reverse=True
+        )[:10]
+        
+        labels = [customer[0] for customer in sorted_customers]
+        direct_commission = [customer[1]['direct_commission'] for customer in sorted_customers]
+        fabric_commission = [customer[1]['fabric_commission'] for customer in sorted_customers]
+        stitching_revenue = [customer[1]['stitching_revenue'] for customer in sorted_customers]
         
         return jsonify({
             'labels': labels,
+            'directCommission': direct_commission,
             'fabricCommission': fabric_commission,
             'stitchingRevenue': stitching_revenue
         }), 200
@@ -820,7 +939,8 @@ def get_earnings_breakdown():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        query = text(f"""
+        # Query for stitching revenue and commission
+        stitching_query = text(f"""
             SELECT 
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
                 COALESCE(SUM(si.total_value), 0) as stitching_revenue
@@ -833,19 +953,54 @@ def get_earnings_breakdown():
             WHERE {where_clause}
         """)
         
-        result = db.session.execute(query, params).fetchone()
-        fabric_commission = float(result.fabric_commission or 0)
-        stitching_revenue = float(result.stitching_revenue or 0)
-        total = fabric_commission + stitching_revenue
+        stitching_result = db.session.execute(stitching_query, params).fetchone()
+        fabric_commission = float(stitching_result.fabric_commission or 0)
+        stitching_revenue = float(stitching_result.stitching_revenue or 0)
+        
+        # Query for direct commission sales
+        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_params = {}
+        
+        if date_from:
+            commission_conditions.append("il.commission_date >= :date_from")
+            commission_params['date_from'] = date_from
+        if date_to:
+            commission_conditions.append("il.commission_date <= :date_to")
+            commission_params['date_to'] = date_to
+        if customer:
+            commission_conditions.append("c.short_name = :customer")
+            commission_params['customer'] = customer
+        if location:
+            commission_conditions.append("il.delivered_location = :location")
+            commission_params['location'] = location
+            
+        commission_where = " AND ".join(commission_conditions)
+        
+        commission_query = text(f"""
+            SELECT COALESCE(SUM(il.commission_amount), 0) as direct_commission
+            FROM invoice_lines il
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE {commission_where}
+        """)
+        
+        commission_result = db.session.execute(commission_query, commission_params).fetchone()
+        direct_commission = float(commission_result.direct_commission or 0)
+        
+        total = fabric_commission + stitching_revenue + direct_commission
         
         # Calculate percentages
-        fabric_percentage = (fabric_commission / total * 100) if total > 0 else 0
+        fabric_percentage = ((fabric_commission + direct_commission) / total * 100) if total > 0 else 0
         stitching_percentage = (stitching_revenue / total * 100) if total > 0 else 0
         
         return jsonify({
-            'labels': ['Fabric Commission', 'Stitching Revenue'],
-            'values': [fabric_commission, stitching_revenue],
-            'percentages': [round(fabric_percentage, 1), round(stitching_percentage, 1)]
+            'labels': ['Direct Commission', 'Fabric Commission', 'Stitching Revenue'],
+            'values': [direct_commission, fabric_commission, stitching_revenue],
+            'percentages': [
+                round((direct_commission / total * 100) if total > 0 else 0, 1),
+                round((fabric_commission / total * 100) if total > 0 else 0, 1),
+                round(stitching_percentage, 1)
+            ]
         }), 200
         
     except Exception as e:
@@ -884,7 +1039,8 @@ def get_earnings_by_customer():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        query = text(f"""
+        # Query for stitching revenue and commission
+        stitching_query = text(f"""
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
@@ -897,19 +1053,69 @@ def get_earnings_by_customer():
             JOIN packing_lists pl ON pll.packing_list_id = pl.id
             WHERE {where_clause}
             GROUP BY c.id, c.short_name
-            HAVING (COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) + COALESCE(SUM(si.total_value), 0)) > 0
-            ORDER BY (COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) + COALESCE(SUM(si.total_value), 0)) DESC
-            LIMIT 10
         """)
         
-        results = db.session.execute(query, params).fetchall()
+        stitching_results = db.session.execute(stitching_query, params).fetchall()
         
-        labels = [row.short_name for row in results]
-        fabric_commission = [float(row.fabric_commission or 0) for row in results]
-        stitching_revenue = [float(row.stitching_revenue or 0) for row in results]
+        # Query for direct commission sales
+        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_params = {}
         
-        # Calculate total earnings for each customer for pie chart
-        total_earnings = [fc + sr for fc, sr in zip(fabric_commission, stitching_revenue)]
+        if date_from:
+            commission_conditions.append("il.commission_date >= :date_from")
+            commission_params['date_from'] = date_from
+        if date_to:
+            commission_conditions.append("il.commission_date <= :date_to")
+            commission_params['date_to'] = date_to
+        if customer:
+            commission_conditions.append("c.short_name = :customer")
+            commission_params['customer'] = customer
+        if location:
+            commission_conditions.append("il.delivered_location = :location")
+            commission_params['location'] = location
+            
+        commission_where = " AND ".join(commission_conditions)
+        
+        commission_query = text(f"""
+            SELECT 
+                c.short_name,
+                COALESCE(SUM(il.commission_amount), 0) as direct_commission
+            FROM invoice_lines il
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            WHERE {commission_where}
+            GROUP BY c.id, c.short_name
+        """)
+        
+        commission_results = db.session.execute(commission_query, commission_params).fetchall()
+        
+        # Combine both datasets
+        customer_data = {}
+        
+        # Add stitching data
+        for row in stitching_results:
+            customer_name = row.short_name
+            if customer_name not in customer_data:
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            customer_data[customer_name]['fabric_commission'] = float(row.fabric_commission or 0)
+            customer_data[customer_name]['stitching_revenue'] = float(row.stitching_revenue or 0)
+        
+        # Add direct commission data
+        for row in commission_results:
+            customer_name = row.short_name
+            if customer_name not in customer_data:
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+            customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)
+        
+        # Sort by total revenue and get top 10
+        sorted_customers = sorted(
+            customer_data.items(),
+            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_revenue'] + x[1]['direct_commission'],
+            reverse=True
+        )[:10]
+        
+        labels = [customer[0] for customer in sorted_customers]
+        total_earnings = [customer[1]['fabric_commission'] + customer[1]['stitching_revenue'] + customer[1]['direct_commission'] for customer in sorted_customers]
         
         return jsonify({
             'labels': labels,

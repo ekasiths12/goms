@@ -252,6 +252,11 @@
             white-space: nowrap;
             min-width: 1950px; /* Increased to accommodate wider sew columns */
         }
+        
+        /* Commission sales table - more compact */
+        .commission-sales-table {
+            min-width: 700px !important; /* Much more compact for commission sales */
+        }
 
         .data-table th {
             background: var(--nav-active);
@@ -985,8 +990,11 @@
             <button id="downloadFabricBtn" class="btn btn-warning" onclick="downloadSelectedFabricPDF()">
                 Download Fabric PDF
             </button>
-            <button id="deleteBtn" class="btn btn-danger" onclick="deleteSelectedGroupBill()">
-                Delete Group Bill
+            <button id="deleteBtn" class="btn btn-danger" onclick="deleteSelectedItem()">
+                Delete
+            </button>
+            <button id="toggleCommissionBtn" class="btn btn-success" onclick="toggleCommissionSales()">
+                Show Commission Sales
             </button>
         </div>
         
@@ -1058,6 +1066,7 @@
         let selectedGroupBillIds = [];
         let currentPage = 1;
         const itemsPerPage = 50;
+        let showingCommissionSales = false;
 
         // API Base URL - works for both local development and Railway
         const getApiBaseUrl = () => {
@@ -1180,8 +1189,17 @@
                 
                 const queryString = params.toString();
                 const baseUrl = getApiBaseUrl();
-                let url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
-                url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+                let url;
+                
+                if (showingCommissionSales) {
+                    // Load commission sales data
+                    url = queryString ? `${baseUrl}/api/group-bills/commission-sales?${queryString}` : `${baseUrl}/api/group-bills/commission-sales`;
+                    url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+                } else {
+                    // Load regular group bills data
+                    url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
+                    url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+                }
                 
                 console.log('🔍 API URL debug:', { baseUrl, url, windowLocation: window.location.href });
                 console.log('🌐 Fetching', url);
@@ -1209,13 +1227,161 @@
             }
         }
 
+        function toggleCommissionSales() {
+            console.log('🔄 Toggle Commission Sales called');
+            showingCommissionSales = !showingCommissionSales;
+            const toggleBtn = document.getElementById('toggleCommissionBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const downloadStitchingBtn = document.getElementById('downloadStitchingBtn');
+            const downloadFabricBtn = document.getElementById('downloadFabricBtn');
+            
+            console.log('📊 Current state:', showingCommissionSales ? 'Commission Sales' : 'Group Bills');
+            
+            if (showingCommissionSales) {
+                console.log('🎯 Switching to Commission Sales view');
+                toggleBtn.textContent = 'Show Group Bills';
+                toggleBtn.className = 'btn btn-primary';
+                updateTableHeadersForCommissionSales();
+                // Add compact table class
+                document.getElementById('groupBillsTable').classList.add('commission-sales-table');
+                // Keep buttons visible but disable them for commission sales
+                downloadStitchingBtn.style.display = 'inline-block';
+                downloadFabricBtn.style.display = 'inline-block';
+                downloadStitchingBtn.disabled = true;
+                downloadFabricBtn.disabled = true;
+            } else {
+                console.log('🎯 Switching to Group Bills view');
+                toggleBtn.textContent = 'Show Commission Sales';
+                toggleBtn.className = 'btn btn-success';
+                updateTableHeadersForGroupBills();
+                // Remove compact table class
+                document.getElementById('groupBillsTable').classList.remove('commission-sales-table');
+                // Enable buttons for group bills
+                downloadStitchingBtn.style.display = 'inline-block';
+                downloadFabricBtn.style.display = 'inline-block';
+                downloadStitchingBtn.disabled = false;
+                downloadFabricBtn.disabled = false;
+            }
+            
+            // Clear selections when switching views
+            selectedGroupBillIds = [];
+            selectedCommissionSaleIds = [];
+            updateActionButtons();
+            
+            // Reload data with new view
+            loadGroupBillsData();
+        }
+        
+        function updateTableHeadersForCommissionSales() {
+            const thead = document.querySelector('#groupBillsTable thead tr');
+            if (!thead) return;
+            
+            thead.innerHTML = `
+                <th style="width: 30px;">
+                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                </th>
+                <th class="sortable-header" data-sort="commission_date" style="width: 80px;">Date</th>
+                <th class="sortable-header" data-sort="item_name" style="width: 100px;">Fabric</th>
+                <th class="sortable-header" data-sort="color" style="width: 70px;">Color</th>
+                <th class="sortable-header" data-sort="customer" style="width: 100px;">Customer</th>
+                <th class="sortable-header" data-sort="commission_yards" style="width: 70px;">Yards</th>
+                <th class="sortable-header" data-sort="unit_price" style="width: 70px;">Price</th>
+                <th class="sortable-header" data-sort="total_sale_value" style="width: 80px;">Sale Value</th>
+                <th class="sortable-header" data-sort="commission_amount" style="width: 80px;">Com Value</th>
+            `;
+        }
+        
+        function updateTableHeadersForGroupBills() {
+            const thead = document.querySelector('#groupBillsTable thead tr');
+            if (!thead) return;
+            
+            thead.innerHTML = `
+                <th style="width: 30px;">
+                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                </th>
+                <th class="sortable-header" data-sort="created_at" style="width: 90px;">Created At</th>
+                <th class="sortable-header" data-sort="group_bill_number" style="width: 150px;">Bill #</th>
+                <th class="sortable-header" data-sort="packing_list_number" style="width: 150px;">PL #</th>
+                <th class="sortable-header" data-sort="garment" style="width: 90px;">Garment</th>
+                <th class="sortable-header" data-sort="fabric" style="width: 110px;">Fabric</th>
+                <th class="sortable-header" data-sort="color" style="width: 90px;">Color</th>
+                <th class="sortable-header" data-sort="customer" style="width: 130px;">Customer</th>
+                <th class="sortable-header" data-sort="tax_invoice_number" style="width: 110px;">Beta T#</th>
+                <th class="sortable-header" data-sort="msk_invoice_number" style="width: 110px;">MSK T#</th>
+                <th class="sortable-header" data-sort="fabric_invoice" style="width: 110px;">Fabric Inv.</th>
+                <th class="sortable-header" data-sort="fabric_delivery_note" style="width: 110px;">Fabric DN.</th>
+                <th class="sortable-header" data-sort="fabric_used" style="width: 80px;">Fab Used</th>
+                <th class="sortable-header" data-sort="fabric_cost" style="width: 80px;">Fab Cost</th>
+                <th class="sortable-header" data-sort="fabric_value" style="width: 90px;">Fab Value</th>
+                <th class="sortable-header" data-sort="size_s" style="width: 45px;">S</th>
+                <th class="sortable-header" data-sort="size_m" style="width: 45px;">M</th>
+                <th class="sortable-header" data-sort="size_l" style="width: 45px;">L</th>
+                <th class="sortable-header" data-sort="size_xl" style="width: 45px;">XL</th>
+                <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
+                <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
+                <th class="sortable-header" data-sort="total_qty" style="width: 70px;">Total Qty</th>
+                <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Cost</th>
+                <th class="sortable-header" data-sort="sewing_value" style="width: 80px;">Sew Value</th>
+            `;
+        }
+        
+        function populateCommissionSalesTable() {
+            const tbody = document.getElementById('groupBillsTableBody');
+            if (!tbody) return;
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+            const pageData = groupBillsData.slice(startIndex, endIndex);
+            
+            tbody.innerHTML = '';
+            
+            pageData.forEach((sale, pageIndex) => {
+                const actualIndex = startIndex + pageIndex;
+                const row = document.createElement('tr');
+                row.className = 'commission-sale-row';
+                row.setAttribute('data-sale-id', sale.id);
+                
+                row.innerHTML = `
+                    <td class="checkbox-wrapper">
+                        <input type="checkbox" class="commission-sale-checkbox" data-sale-id="${sale.id}" onclick="toggleCommissionSaleSelection(event, ${sale.id})">
+                    </td>
+                    <td>${formatDate(sale.commission_date)}</td>
+                    <td>${sale.item_name || ''}</td>
+                    <td>${sale.color || ''}</td>
+                    <td>${sale.customer_name || ''}</td>
+                    <td>${formatNumber(sale.commission_yards || 0)}</td>
+                    <td>${formatNumber(sale.unit_price || 0)}</td>
+                    <td>${formatNumber(sale.total_sale_value || 0)}</td>
+                    <td>${formatNumber(sale.commission_amount || 0)}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            updatePaginationControls();
+        }
+
         function populateGroupBillsTable() {
             const tbody = document.getElementById('groupBillsTableBody');
             if (!tbody) return;
             
             if (groupBillsData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: var(--text-secondary);">No group bills found.</td></tr>';
+                const message = showingCommissionSales ? 'No commission sales found.' : 'No group bills found.';
+                const colspan = showingCommissionSales ? '9' : '25';
+                tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align: center; padding: 20px; color: var(--text-secondary);">${message}</td></tr>`;
                 updatePaginationControls();
+                return;
+            }
+            
+            // Handle commission sales differently - simple line items
+            if (showingCommissionSales) {
+                populateCommissionSalesTable();
                 return;
             }
             
@@ -1569,13 +1735,74 @@
             updatePaginationControls();
             updateActionButtons();
         }
+        
+        function toggleCommissionSaleSelection(event, saleId) {
+            event.stopPropagation();
+            
+            // Single selection: uncheck all other checkboxes
+            const checkboxes = document.querySelectorAll('.commission-sale-checkbox');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.getAttribute('data-sale-id') != saleId) {
+                    checkbox.checked = false;
+                }
+            });
+            
+            // Uncheck select all checkbox
+            document.getElementById('selectAllCheckbox').checked = false;
+            
+            updateSelectedCommissionSaleIds();
+        }
+        
+        function updateSelectedCommissionSaleIds() {
+            selectedCommissionSaleIds = Array.from(document.querySelectorAll('.commission-sale-checkbox:checked'))
+                .map(checkbox => parseInt(checkbox.getAttribute('data-sale-id')));
+            
+            updatePaginationControls();
+            updateActionButtons();
+        }
+        
+        async function deleteCommissionSale(saleId) {
+            if (!confirm('Are you sure you want to delete this commission sale? This will revert all fabric usage, consumption, and pending amounts.')) {
+                return;
+            }
+            
+            try {
+                const baseUrl = getApiBaseUrl();
+                const response = await fetch(`${baseUrl}/api/invoices/delete-commission-sale`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sale_id: saleId })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Commission sale deleted successfully!');
+                    // Clear selections and reload the data to reflect changes
+                    selectedCommissionSaleIds = [];
+                    updateActionButtons();
+                    loadGroupBillsData();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error deleting commission sale: ${errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting commission sale:', error);
+                alert('Error deleting commission sale. Please try again.');
+            }
+        }
 
         function updateActionButtons() {
-            const hasSelection = selectedGroupBillIds.length === 1;
-            
-            document.getElementById('downloadStitchingBtn').disabled = !hasSelection;
-            document.getElementById('downloadFabricBtn').disabled = !hasSelection;
-            document.getElementById('deleteBtn').disabled = !hasSelection;
+            if (showingCommissionSales) {
+                const hasSelection = selectedCommissionSaleIds.length === 1;
+                document.getElementById('deleteBtn').disabled = !hasSelection;
+            } else {
+                const hasSelection = selectedGroupBillIds.length === 1;
+                document.getElementById('downloadStitchingBtn').disabled = !hasSelection;
+                document.getElementById('downloadFabricBtn').disabled = !hasSelection;
+                document.getElementById('deleteBtn').disabled = !hasSelection;
+            }
         }
 
         function downloadSelectedStitchingPDF() {
@@ -1590,9 +1817,15 @@
             }
         }
 
-        function deleteSelectedGroupBill() {
-            if (selectedGroupBillIds.length === 1) {
-                deleteGroupBill(selectedGroupBillIds[0]);
+        function deleteSelectedItem() {
+            if (showingCommissionSales) {
+                if (selectedCommissionSaleIds.length === 1) {
+                    deleteCommissionSale(selectedCommissionSaleIds[0]);
+                }
+            } else {
+                if (selectedGroupBillIds.length === 1) {
+                    deleteGroupBill(selectedGroupBillIds[0]);
+                }
             }
         }
 
@@ -2071,6 +2304,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Load saved theme
             loadTheme();
+            
+            // Initialize table headers for group bills view
+            updateTableHeadersForGroupBills();
             
             // Initialize table sorter
             tableSorter = createTableSorter('groupBillsTable', {

@@ -137,7 +137,10 @@ class InvoiceLine(db.Model):
         
         self.is_commission_sale = True
         self.commission_yards = yards_sold
-        self.commission_amount = yards_sold * self.unit_price * 0.051  # 5.1% commission
+        # Convert commission rate to Decimal to avoid type mismatch
+        from decimal import Decimal
+        commission_rate = Decimal('0.051')  # 5.1% commission
+        self.commission_amount = yards_sold * self.unit_price * commission_rate
         self.commission_date = sale_date
 
 

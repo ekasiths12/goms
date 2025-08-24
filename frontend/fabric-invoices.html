@@ -337,7 +337,7 @@
             background: var(--bg-tertiary);
             color: var(--text-primary);
             padding: 12px 8px;
-            text-align: left;
+            text-align: center;
             font-weight: 600;
             font-size: 13px;
             border-bottom: 2px solid var(--border-color);
@@ -348,6 +348,7 @@
             padding: 10px 8px;
             border-bottom: 1px solid var(--border-color);
             vertical-align: middle;
+            text-align: center;
         }
 
         .data-table tr:hover {
@@ -399,9 +400,7 @@
 
         /* Checkbox styling */
         .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            text-align: center;
         }
 
         .checkbox-wrapper input[type="checkbox"] {
@@ -417,6 +416,7 @@
             text-align: center;
             vertical-align: middle;
             padding: 10px 8px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         /* Make it clear that rows are not clickable */
@@ -958,7 +958,7 @@
                         <th class="sortable-header" data-sort="pending">Pending</th>
                         <th class="sortable-header" data-sort="unit_price">Price</th>
                         <th class="sortable-header" data-sort="total">Total</th>
-                        <th class="sortable-header" data-sort="delivered_location">Delivered Location</th>
+                        <th class="sortable-header" data-sort="delivered_location">Location</th>
                         <th>Actions</th>
                         <th style="display: none;">Line ID</th>
                     </tr>
@@ -1318,7 +1318,8 @@
                 // Use yards_sent and yards_consumed like the old Qt app
                 const yardsSent = invoice.yards_sent || invoice.quantity || 0;
                 const yardsConsumed = invoice.yards_consumed || 0;
-                const pending = yardsSent - yardsConsumed;
+                const commissionYards = invoice.commission_yards || 0;
+                const pending = yardsSent - yardsConsumed - commissionYards;
                 
                 // Create action buttons based on line status
                 let actionButtons = '';
@@ -2880,32 +2881,65 @@
             loadInvoiceData();
         }
 
-        function openStitchingRecordDialog() {
+        function openStitchingRecordDialog(selectedLineIds = null) {
             console.log('🔍 Opening stitching record dialog...');
-            console.log('📋 Current selectedRows:', selectedRows);
-            console.log('📋 selectedRows.length:', selectedRows.length);
             
-            if (selectedRows.length === 0) {
-                alert('Please select one or more fabric invoice lines to create a stitching record.');
-                return;
+            let selectedLines = [];
+            
+            if (selectedLineIds && selectedLineIds.length > 0) {
+                // Use directly provided line IDs
+                console.log('📋 Using provided line IDs:', selectedLineIds);
+                selectedLines = selectedLineIds.map(lineId => {
+                    const line = invoiceData.find(inv => inv.id === lineId);
+                    if (!line) {
+                        console.error('❌ Line not found for ID:', lineId);
+                        return null;
+                    }
+                    
+                    const yardsSent = line.yards_sent || line.quantity || 0;
+                    const yardsConsumed = line.yards_consumed || 0;
+                    const pending = yardsSent - yardsConsumed;
+                    
+                    return {
+                        id: line.id,
+                        invoice_number: line.invoice_number,
+                        item_name: line.item_name,
+                        color: line.color,
+                        pending: pending,
+                        consumed: 0 // Will be set by user
+                    };
+                }).filter(line => line !== null);
+            } else {
+                // Use checkbox selection (for backward compatibility)
+                console.log('📋 Current selectedRows:', selectedRows);
+                console.log('📋 selectedRows.length:', selectedRows.length);
+                
+                if (selectedRows.length === 0) {
+                    alert('Please select one or more fabric invoice lines to create a stitching record.');
+                    return;
+                }
+                
+                selectedLines = selectedRows.map(index => {
+                    const line = invoiceData[index];
+                    const yardsSent = line.yards_sent || line.quantity || 0;
+                    const yardsConsumed = line.yards_consumed || 0;
+                    const pending = yardsSent - yardsConsumed;
+                    
+                    return {
+                        id: line.id,
+                        invoice_number: line.invoice_number,
+                        item_name: line.item_name,
+                        color: line.color,
+                        pending: pending,
+                        consumed: 0 // Will be set by user
+                    };
+                });
             }
             
-            // Get selected lines data
-            const selectedLines = selectedRows.map(index => {
-                const line = invoiceData[index];
-                const yardsSent = line.yards_sent || line.quantity || 0;
-                const yardsConsumed = line.yards_consumed || 0;
-                const pending = yardsSent - yardsConsumed;
-                
-                return {
-                    id: line.id,
-                    invoice_number: line.invoice_number,
-                    item_name: line.item_name,
-                    color: line.color,
-                    pending: pending,
-                    consumed: 0 // Will be set by user
-                };
-            });
+            if (selectedLines.length === 0) {
+                alert('No valid lines selected for stitching record.');
+                return;
+            }
             
             // Load stitched items and show dialog
             loadStitchedItemsAndShowDialog(selectedLines);

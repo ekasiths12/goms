@@ -438,6 +438,17 @@
             background: #757575;
             color: var(--text-primary);
         }
+        
+        .kpi-breakdown {
+            margin-top: 8px;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .breakdown-item {
+            display: block;
+            margin-bottom: 2px;
+        }
 
         /* Charts Grid */
         .charts-grid {
@@ -589,8 +600,12 @@
                 <div class="kpi-value" id="totalRevenue">฿0</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Fabric Sales</div>
+                <div class="kpi-title">Commission Revenue</div>
                 <div class="kpi-value" id="fabricSales">฿0</div>
+                <div class="kpi-breakdown">
+                    <span class="breakdown-item">Direct: <span id="directCommission">฿0</span></span>
+                    <span class="breakdown-item">Fabric: <span id="fabricCommission">฿0</span></span>
+                </div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Stitching Revenue</div>
@@ -875,7 +890,13 @@
 
         function updateKPIs(data) {
             document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
-            document.getElementById('fabricSales').textContent = formatCurrency(data.fabricSales || 0);
+            
+            // Update commission revenue with breakdown
+            const totalCommission = (data.directCommission || 0) + (data.fabricCommission || 0);
+            document.getElementById('fabricSales').textContent = formatCurrency(totalCommission);
+            document.getElementById('directCommission').textContent = formatCurrency(data.directCommission || 0);
+            document.getElementById('fabricCommission').textContent = formatCurrency(data.fabricCommission || 0);
+            
             document.getElementById('stitchingRevenue').textContent = formatCurrency(data.stitchingRevenue || 0);
             document.getElementById('activeOrders').textContent = data.activeOrders || 0;
             document.getElementById('fabricStock').textContent = formatNumber(data.fabricStock || 0);
@@ -916,18 +937,26 @@
                     labels: data.labels || [],
                     datasets: [
                         {
-                            label: 'Fabric Sales',
-                            data: data.fabricSales || [],
-                            borderColor: '#37474f',
-                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                            label: 'Direct Commission',
+                            data: data.directCommission || [],
+                            borderColor: '#2E7D32',
+                            backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'Fabric Commission',
+                            data: data.fabricCommission || [],
+                            borderColor: '#81C784',
+                            backgroundColor: 'rgba(129, 199, 132, 0.1)',
                             borderWidth: 2,
                             fill: false
                         },
                         {
                             label: 'Stitching Revenue',
                             data: data.stitchingRevenue || [],
-                            borderColor: '#37474f',
-                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderColor: '#F44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
                             borderWidth: 2,
                             fill: false
                         }
@@ -1012,16 +1041,23 @@
                     labels: data.labels || [],
                     datasets: [
                         {
+                            label: 'Direct Commission',
+                            data: data.directCommission || [],
+                            backgroundColor: '#2E7D32',
+                            borderColor: '#37474f',
+                            borderWidth: 2
+                        },
+                        {
                             label: 'Fabric Commission',
                             data: data.fabricCommission || [],
-                            backgroundColor: '#5c6bc0',
+                            backgroundColor: '#81C784',
                             borderColor: '#37474f',
                             borderWidth: 2
                         },
                         {
                             label: 'Stitching Revenue',
                             data: data.stitchingRevenue || [],
-                            backgroundColor: '#4caf50',
+                            backgroundColor: '#F44336',
                             borderColor: '#37474f',
                             borderWidth: 2
                         }
@@ -1421,7 +1457,7 @@
                     labels: data.labels || [],
                     datasets: [{
                         data: data.values || [],
-                        backgroundColor: ['#5c6bc0', '#4caf50'],
+                        backgroundColor: ['#2E7D32', '#81C784', '#F44336'],
                         borderColor: '#37474f',
                         borderWidth: 2
                     }]
