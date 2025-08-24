@@ -15,101 +15,246 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background-color: #212121;
             color: #eceff1;
-            min-height: 100vh;
+            font-size: 13px;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+        /* Navigation Bar */
+        .nav-bar {
+            background: #23272f;
+            border-bottom: 1px solid #3949ab;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            gap: 0;
         }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: #eceff1;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-tab:hover {
+            background-color: #3949ab;
             color: #ffffff;
         }
 
-        .header p {
-            font-size: 1.1rem;
-            color: #b0bec5;
+        .nav-tab.active {
+            background-color: #3949ab;
+            color: #ffffff;
+            border-bottom-color: #5c6bc0;
         }
 
-        /* Navigation */
-        .nav-bar {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 15px 25px;
-            margin-bottom: 30px;
+        .nav-user {
+            margin-left: auto;
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .nav-link {
-            color: #eceff1;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .nav-link.active {
-            background: #4caf50;
-            color: white;
-        }
-
-        /* Filters */
-        .filters {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            align-items: center;
             gap: 15px;
+        }
+
+        .nav-user span {
+            color: #b0bec5;
+            font-size: 12px;
+        }
+
+        .logout-btn {
+            background: #d32f2f;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #f44336;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Filter Controls */
+        .filter-controls {
+            background: #2c2c2c;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
+            gap: 5px;
         }
 
         .filter-group label {
-            margin-bottom: 5px;
-            font-weight: 500;
+            font-size: 12px;
             color: #b0bec5;
+            font-weight: 500;
         }
 
-        .filter-group select,
-        .filter-group input {
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+        .filter-input {
+            background: #424242;
+            border: 1px solid #555;
             color: #eceff1;
+            padding: 8px 12px;
+            border-radius: 4px;
             font-size: 14px;
+            min-width: 120px;
         }
 
-        .filter-group select option {
-            background: #2a5298;
+        .filter-input:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        .filter-select {
+            background: #424242;
+            border: 1px solid #555;
             color: #eceff1;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        /* Searchable Dropdown Styling */
+        .searchable-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #424242;
+            border: 1px solid #555;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .dropdown-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #eceff1;
+            border-bottom: 1px solid #555;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-option:hover {
+            background-color: #5c6bc0;
+        }
+
+        .dropdown-option.selected {
+            background-color: #5c6bc0;
+            color: #ffffff;
+        }
+
+        .selected-items {
+            margin-top: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .selected-item {
+            background: #5c6bc0;
+            color: #ffffff;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .selected-item .remove-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .selected-item .remove-btn:hover {
+            color: #ffcdd2;
+        }
+
+        /* Date Range Buttons */
+        .date-range-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .date-btn {
+            background: #424242;
+            border: 1px solid #555;
+            color: #eceff1;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .date-btn:hover {
+            background: #5c6bc0;
+            border-color: #5c6bc0;
+        }
+
+        .date-btn.active {
+            background: #5c6bc0;
+            border-color: #5c6bc0;
+            color: #ffffff;
         }
 
         /* KPI Cards */
@@ -121,78 +266,67 @@
         }
 
         .kpi-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-5px);
+            background: #2c2c2c;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #424242;
         }
 
         .kpi-title {
-            font-size: 0.9rem;
+            font-size: 14px;
             color: #b0bec5;
             margin-bottom: 10px;
             font-weight: 500;
         }
 
         .kpi-value {
-            font-size: 2rem;
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 10px;
             color: #ffffff;
+            margin-bottom: 5px;
         }
 
         .kpi-change {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 15px;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
             display: inline-block;
         }
 
         .kpi-change.positive {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
+            background: #4caf50;
+            color: #ffffff;
         }
 
         .kpi-change.negative {
-            background: rgba(244, 67, 54, 0.2);
-            color: #f44336;
+            background: #f44336;
+            color: #ffffff;
         }
 
         .kpi-change.neutral {
-            background: rgba(158, 158, 158, 0.2);
-            color: #9e9e9e;
+            background: #757575;
+            color: #ffffff;
         }
 
         /* Charts Grid */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 25px;
+            gap: 20px;
         }
 
         .chart-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            transition: transform 0.3s ease;
-        }
-
-        .chart-card:hover {
-            transform: translateY(-3px);
+            background: #2c2c2c;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #424242;
         }
 
         .chart-title {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
+            font-size: 16px;
             color: #ffffff;
-            font-weight: 600;
+            margin-bottom: 15px;
+            font-weight: 500;
         }
 
         .chart-container {
@@ -231,56 +365,76 @@
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             }
             
-            .filters {
+            .filter-row {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 Dashboard</h1>
-            <p>Real-time analytics and insights for your garment business</p>
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <ul class="nav-tabs">
+            <li><a href="fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
+            <li><a href="stitching-records.html" class="nav-tab">Stitching Records</a></li>
+            <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
+            <li><a href="group-bills.html" class="nav-tab">Group Bills</a></li>
+            <li><a href="dashboard.html" class="nav-tab active">Dashboard</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
         </div>
+    </nav>
 
-        <!-- Navigation -->
-        <div class="nav-bar">
-            <a href="fabric-invoices.html" class="nav-link">Fabric Invoices</a>
-            <a href="stitching-records.html" class="nav-link">Stitching Records</a>
-            <a href="packing-lists.html" class="nav-link">Packing Lists</a>
-            <a href="group-bills.html" class="nav-link">Group Bills</a>
-            <a href="dashboard.html" class="nav-link active">Dashboard</a>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters">
-            <div class="filter-group">
-                <label for="dateFrom">Date From</label>
-                <input type="date" id="dateFrom" onchange="updateDashboard()">
-            </div>
-            <div class="filter-group">
-                <label for="dateTo">Date To</label>
-                <input type="date" id="dateTo" onchange="updateDashboard()">
-            </div>
-            <div class="filter-group">
-                <label for="customerFilter">Customer</label>
-                <select id="customerFilter" onchange="updateDashboard()">
-                    <option value="">All Customers</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="garmentFilter">Garment Type</label>
-                <select id="garmentFilter" onchange="updateDashboard()">
-                    <option value="">All Garments</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="locationFilter">Location</label>
-                <select id="locationFilter" onchange="updateDashboard()">
-                    <option value="">All Locations</option>
-                </select>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Date Range:</label>
+                    <div class="date-range-buttons">
+                        <button class="date-btn" onclick="setDateRange('30D')">30D</button>
+                        <button class="date-btn" onclick="setDateRange('60D')">60D</button>
+                        <button class="date-btn" onclick="setDateRange('90D')">90D</button>
+                        <button class="date-btn" onclick="setDateRange('180D')">180D</button>
+                        <button class="date-btn" onclick="setDateRange('YTD')">YTD</button>
+                        <button class="date-btn" onclick="setDateRange('LFY')">Last Financial Year</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Date From:</label>
+                    <input type="date" id="dateFrom" class="filter-input" onchange="updateDashboard()">
+                </div>
+                <div class="filter-group">
+                    <label>Date To:</label>
+                    <input type="date" id="dateTo" class="filter-input" onchange="updateDashboard()">
+                </div>
+                <div class="filter-group">
+                    <label>Customer:</label>
+                    <div class="searchable-dropdown">
+                        <input type="text" id="customerFilter" class="filter-input" placeholder="Type to search customers..." oninput="filterDropdown('customerFilter', 'customerDropdown')" onfocus="showDropdown('customerDropdown')">
+                        <div id="customerDropdown" class="dropdown-options" style="display: none;"></div>
+                        <div id="customerSelected" class="selected-items"></div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Garment Type:</label>
+                    <div class="searchable-dropdown">
+                        <input type="text" id="garmentFilter" class="filter-input" placeholder="Type to search garments..." oninput="filterDropdown('garmentFilter', 'garmentDropdown')" onfocus="showDropdown('garmentDropdown')">
+                        <div id="garmentDropdown" class="dropdown-options" style="display: none;"></div>
+                        <div id="garmentSelected" class="selected-items"></div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Location:</label>
+                    <div class="searchable-dropdown">
+                        <input type="text" id="locationFilter" class="filter-input" placeholder="Type to search locations..." oninput="filterDropdown('locationFilter', 'locationDropdown')" onfocus="showDropdown('locationDropdown')">
+                        <div id="locationDropdown" class="dropdown-options" style="display: none;"></div>
+                        <div id="locationSelected" class="selected-items"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -293,33 +447,33 @@
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-title">Total Revenue</div>
-                <div class="kpi-value" id="totalRevenue">$0</div>
+                <div class="kpi-value" id="totalRevenue">฿0</div>
                 <div class="kpi-change neutral" id="revenueChange">Loading...</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Fabric Commission (5.1%)</div>
-                <div class="kpi-value" id="fabricSales">$0</div>
+                <div class="kpi-title">Fabric Sales</div>
+                <div class="kpi-value" id="fabricSales">฿0</div>
                 <div class="kpi-change neutral" id="fabricChange">Loading...</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Stitching Revenue</div>
-                <div class="kpi-value" id="stitchingRevenue">$0</div>
+                <div class="kpi-value" id="stitchingRevenue">฿0</div>
                 <div class="kpi-change neutral" id="stitchingChange">Loading...</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Orders</div>
+                <div class="kpi-title">Active Orders</div>
                 <div class="kpi-value" id="activeOrders">0</div>
-                <div class="kpi-change neutral" id="ordersChange">orders</div>
+                <div class="kpi-change neutral">Total Records</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Fabric Stock</div>
                 <div class="kpi-value" id="fabricStock">0</div>
-                <div class="kpi-change neutral" id="stockChange">yards</div>
+                <div class="kpi-change neutral">Pending Yards</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Production Rate</div>
                 <div class="kpi-value" id="productionRate">0</div>
-                <div class="kpi-change neutral" id="productionChange">items/day</div>
+                <div class="kpi-change neutral">Items/Day</div>
             </div>
         </div>
 
@@ -335,7 +489,7 @@
 
             <!-- Top Customers -->
             <div class="chart-card">
-                <h3 class="chart-title">👥 Top Customers (Stacked Revenue)</h3>
+                <h3 class="chart-title">👥 Top Customers</h3>
                 <div class="chart-container" data-chart="customersChart">
                     <canvas id="customersChart"></canvas>
                 </div>
@@ -343,7 +497,7 @@
 
             <!-- Fabric Consumption -->
             <div class="chart-card">
-                <h3 class="chart-title">🧵 Fabric Consumption (Yards per Item)</h3>
+                <h3 class="chart-title">🧵 Fabric Consumption</h3>
                 <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
@@ -381,6 +535,14 @@
                 </div>
             </div>
 
+            <!-- Fabric Aging -->
+            <div class="chart-card">
+                <h3 class="chart-title">📅 Fabric Aging by Location</h3>
+                <div class="chart-container" data-chart="fabricAgingChart">
+                    <canvas id="fabricAgingChart"></canvas>
+                </div>
+            </div>
+
             <!-- Production Rate -->
             <div class="chart-card">
                 <h3 class="chart-title">📊 Production Rate (Items per Day)</h3>
@@ -389,7 +551,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
         // Global variables
@@ -399,12 +561,24 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, checking canvas elements...');
             
+            // Check authentication first
+            if (!checkAuth()) {
+                return;
+            }
+            
+            // Display current user
+            const username = localStorage.getItem('gms_username');
+            document.getElementById('currentUser').textContent = `Welcome, ${username}`;
+            
             // Set default date range (last 30 days)
             const today = new Date();
             const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
             
             document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
             document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            
+            // Set active date button
+            document.querySelector('.date-btn').classList.add('active');
             
             // Initialize dashboard after a short delay to ensure canvas elements are ready
             setTimeout(() => {
@@ -415,6 +589,7 @@
                 console.log('earningsBreakdownChart:', document.getElementById('earningsBreakdownChart'));
                 console.log('earningsByCustomerChart:', document.getElementById('earningsByCustomerChart'));
                 console.log('stockChart:', document.getElementById('stockChart'));
+                console.log('fabricAgingChart:', document.getElementById('fabricAgingChart'));
                 console.log('productionRateChart:', document.getElementById('productionRateChart'));
                 initializeDashboard();
             }, 500);
@@ -423,7 +598,7 @@
         async function initializeDashboard() {
             try {
                 // Check if canvas elements exist and create them if missing
-                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'earningsBreakdownChart', 'earningsByCustomerChart', 'stockChart', 'productionRateChart'];
+                const canvasIds = ['revenueChart', 'customersChart', 'fabricChart', 'productionChart', 'earningsBreakdownChart', 'earningsByCustomerChart', 'stockChart', 'fabricAgingChart', 'productionRateChart'];
                 
                 // Ensure all canvas elements exist and are visible
                 canvasIds.forEach(canvasId => {
@@ -449,55 +624,15 @@
                         console.log(`Made canvas visible: ${canvasId}`);
                     }
                 });
-
+                
                 // Load filter options
                 await loadFilterOptions();
                 
-                // Load initial dashboard data
+                // Update dashboard
                 await updateDashboard();
                 
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
-            }
-        }
-
-        async function loadFilterOptions() {
-            try {
-                // Load customers
-                const customersResponse = await fetch('/api/customers/');
-                const customers = await customersResponse.json();
-                const customerSelect = document.getElementById('customerFilter');
-                customers.forEach(customer => {
-                    const option = document.createElement('option');
-                    option.value = customer.short_name;
-                    option.textContent = customer.short_name;
-                    customerSelect.appendChild(option);
-                });
-
-                // Load delivery locations
-                const locationsResponse = await fetch('/api/invoices/delivery-locations');
-                const locations = await locationsResponse.json();
-                const locationSelect = document.getElementById('locationFilter');
-                locations.forEach(location => {
-                    const option = document.createElement('option');
-                    option.value = location.name;
-                    option.textContent = location.name;
-                    locationSelect.appendChild(option);
-                });
-
-                // Load stitched items
-                const itemsResponse = await fetch('/api/stitching/stitched-items');
-                const items = await itemsResponse.json();
-                const garmentSelect = document.getElementById('garmentFilter');
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.name;
-                    option.textContent = item.name;
-                    garmentSelect.appendChild(option);
-                });
-
-            } catch (error) {
-                console.error('Error loading filter options:', error);
             }
         }
 
@@ -506,6 +641,9 @@
             
             try {
                 const filters = getFilters();
+                
+                // Reload filter options when date range changes
+                await loadFilterOptions();
                 
                 // Fetch all dashboard data in parallel
                 const [
@@ -517,6 +655,7 @@
                     earningsBreakdownData,
                     earningsByCustomerData,
                     stockData,
+                    fabricAgingData,
                     productionRateData
                 ] = await Promise.all([
                     fetchDashboardData('summary', filters),
@@ -527,6 +666,7 @@
                     fetchDashboardData('earnings-breakdown', filters),
                     fetchDashboardData('earnings-by-customer', filters),
                     fetchDashboardData('stock-status', filters),
+                    fetchDashboardData('fabric-aging', filters),
                     fetchDashboardData('production-rate', filters)
                 ]);
 
@@ -541,6 +681,7 @@
                 updateEarningsBreakdownChart(earningsBreakdownData);
                 updateEarningsByCustomerChart(earningsByCustomerData);
                 updateStockChart(stockData);
+                updateFabricAgingChart(fabricAgingData);
                 updateProductionRateChart(productionRateData);
                 
                 hideLoading();
@@ -552,12 +693,21 @@
         }
 
         function getFilters() {
+            // Get selected values from searchable dropdowns
+            const getSelectedValues = (selectedElementId) => {
+                const selectedElement = document.getElementById(selectedElementId);
+                if (!selectedElement) return '';
+                const selectedItems = selectedElement.querySelectorAll('.selected-item');
+                const values = Array.from(selectedItems).map(item => item.dataset.value);
+                return values.filter(value => value !== '').join(',');
+            };
+            
             return {
                 dateFrom: document.getElementById('dateFrom').value,
                 dateTo: document.getElementById('dateTo').value,
-                customer: document.getElementById('customerFilter').value,
-                garment: document.getElementById('garmentFilter').value,
-                location: document.getElementById('locationFilter').value
+                customer: getSelectedValues('customerSelected'),
+                garment: getSelectedValues('garmentSelected'),
+                location: getSelectedValues('locationSelected')
             };
         }
 
@@ -609,49 +759,36 @@
             
             const ctx = canvas.getContext('2d');
             
-            if (charts.revenueChart) {
-                charts.revenueChart.destroy();
+            if (charts.revenue) {
+                charts.revenue.destroy();
             }
             
-            charts.revenueChart = new Chart(ctx, {
+            charts.revenue = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.labels || [],
-                    datasets: [{
-                        label: 'Fabric Commission',
-                        data: data.fabricSales || [],
-                        borderColor: '#5c6bc0',
-                        backgroundColor: 'rgba(92, 107, 192, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Stitching Revenue',
-                        data: data.stitchingRevenue || [],
-                        borderColor: '#4caf50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        tension: 0.4
-                    }]
+                    datasets: [
+                        {
+                            label: 'Fabric Sales',
+                            data: data.fabricSales || [],
+                            borderColor: '#5c6bc0',
+                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'Stitching Revenue',
+                            data: data.stitchingRevenue || [],
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#eceff1'
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    const total = data.fabricSales[context.dataIndex] + data.stitchingRevenue[context.dataIndex];
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
                     scales: {
                         x: {
                             ticks: {
@@ -670,6 +807,20 @@
                             },
                             grid: {
                                 color: '#37474f'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#eceff1'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.parsed.y);
+                                }
                             }
                         }
                     }
@@ -698,31 +849,59 @@
             
             const ctx = canvas.getContext('2d');
             
-            if (charts.customersChart) {
-                charts.customersChart.destroy();
+            if (charts.customers) {
+                charts.customers.destroy();
             }
             
-            charts.customersChart = new Chart(ctx, {
+            // Generate colors for multiple customers
+            const colors = [
+                '#5c6bc0', '#4caf50', '#ff9800', '#e91e63', '#9c27b0',
+                '#00bcd4', '#8bc34a', '#ff5722', '#795548', '#607d8b'
+            ];
+            
+            charts.customers = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels || [],
-                    datasets: [{
-                        label: 'Fabric Commission',
-                        data: data.fabricCommission || [],
-                        backgroundColor: '#5c6bc0',
-                        borderColor: '#5c6bc0',
-                        borderWidth: 1
-                    }, {
-                        label: 'Stitching Revenue',
-                        data: data.stitchingRevenue || [],
-                        backgroundColor: '#4caf50',
-                        borderColor: '#4caf50',
-                        borderWidth: 1
-                    }]
+                    datasets: [
+                        {
+                            label: 'Fabric Commission',
+                            data: data.fabricCommission || [],
+                            backgroundColor: '#5c6bc0',
+                            borderColor: '#5c6bc0',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Stitching Revenue',
+                            data: data.stitchingRevenue || [],
+                            backgroundColor: '#4caf50',
+                            borderColor: '#4caf50',
+                            borderWidth: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return `${label}: ${formatCurrency(value)}`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: {
                             stacked: true,
@@ -730,7 +909,7 @@
                                 color: '#eceff1'
                             },
                             grid: {
-                                color: '#37474f'
+                                color: 'rgba(236, 239, 241, 0.1)'
                             }
                         },
                         y: {
@@ -742,30 +921,7 @@
                                 }
                             },
                             grid: {
-                                color: '#37474f'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#eceff1',
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    const total = context.dataset.data[context.dataIndex] + 
-                                                 (context.datasetIndex === 0 ? 
-                                                  data.stitchingRevenue[context.dataIndex] : 
-                                                  data.fabricCommission[context.dataIndex]);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
-                                }
+                                color: 'rgba(236, 239, 241, 0.1)'
                             }
                         }
                     }
@@ -794,47 +950,70 @@
             
             const ctx = canvas.getContext('2d');
             
-            if (charts.fabricChart) {
-                charts.fabricChart.destroy();
+            if (charts.fabric) {
+                charts.fabric.destroy();
             }
             
-            charts.fabricChart = new Chart(ctx, {
+            // Color palette for different bars
+            const colors = [
+                '#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0',
+                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63',
+                '#3f51b5', '#009688', '#ffc107', '#8bc34a', '#ff4081'
+            ];
+            
+            charts.fabric = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Yards per Garment',
+                        label: 'Fabric Consumption (Yards)',
                         data: data.values || [],
-                        backgroundColor: '#ff9800',
-                        borderColor: '#ff9800',
+                        backgroundColor: (context) => {
+                            const index = context.dataIndex;
+                            return colors[index % colors.length];
+                        },
+                        borderColor: (context) => {
+                            const index = context.dataIndex;
+                            return colors[index % colors.length];
+                        },
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#eceff1',
+                                callback: function(value) {
+                                    return value.toFixed(1) + ' yards';
+                                }
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        }
+                    },
                     plugins: {
                         legend: {
                             labels: {
                                 color: '#eceff1'
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
-                            }
                         },
-                        y: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatNumber(context.parsed.y) + ' yards';
+                                }
                             }
                         }
                     }
@@ -863,47 +1042,67 @@
             
             const ctx = canvas.getContext('2d');
             
-            if (charts.productionChart) {
-                charts.productionChart.destroy();
+            if (charts.production) {
+                charts.production.destroy();
             }
             
-            charts.productionChart = new Chart(ctx, {
+            // Color palette for different bars
+            const colors = [
+                '#ff9800', '#4caf50', '#2196f3', '#f44336', '#9c27b0',
+                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63',
+                '#3f51b5', '#009688', '#ffc107', '#8bc34a', '#ff4081'
+            ];
+            
+            charts.production = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Items Produced',
+                        label: 'Quantity Stitched',
                         data: data.values || [],
-                        backgroundColor: '#9c27b0',
-                        borderColor: '#9c27b0',
+                        backgroundColor: (context) => {
+                            const index = context.dataIndex;
+                            return colors[index % colors.length];
+                        },
+                        borderColor: (context) => {
+                            const index = context.dataIndex;
+                            return colors[index % colors.length];
+                        },
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        }
+                    },
                     plugins: {
                         legend: {
                             labels: {
                                 color: '#eceff1'
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
-                            }
                         },
-                        y: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' items';
+                                }
                             }
                         }
                     }
@@ -937,15 +1136,14 @@
             }
             
             charts.stock = new Chart(ctx, {
-                type: 'bar',
+                type: 'doughnut',
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Pending Yards',
                         data: data.values || [],
-                        backgroundColor: '#4caf50',
-                        borderColor: '#4caf50',
-                        borderWidth: 1
+                        backgroundColor: ['#5c6bc0', '#4caf50', '#ff9800', '#e91e63'],
+                        borderColor: ['#5c6bc0', '#4caf50', '#ff9800', '#e91e63'],
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -953,26 +1151,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
+                            position: 'bottom',
                             labels: {
-                                color: '#eceff1'
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                                color: '#eceff1',
+                                usePointStyle: true
                             }
                         },
-                        y: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const percentage = data.percentages[context.dataIndex] || 0;
+                                    return `${label}: ${formatNumber(value)} yards (${percentage}%)`;
+                                }
                             }
                         }
                     }
@@ -1010,72 +1202,51 @@
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: 'Items Produced',
+                        label: 'Production Rate (Items/Day)',
                         data: data.values || [],
-                        borderColor: '#9c27b0',
-                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                        tension: 0.4
+                        borderColor: '#e91e63',
+                        backgroundColor: 'rgba(233, 30, 99, 0.1)',
+                        borderWidth: 2,
+                        fill: true
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        }
+                    },
                     plugins: {
                         legend: {
                             labels: {
                                 color: '#eceff1'
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
-                            }
                         },
-                        y: {
-                            ticks: {
-                                color: '#b0bec5'
-                            },
-                            grid: {
-                                color: 'rgba(176, 190, 197, 0.1)'
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(1) + ' items/day';
+                                }
                             }
                         }
                     }
                 }
             });
-        }
-
-        function updateChangeIndicator(elementId, change) {
-            const element = document.getElementById(elementId);
-            if (!element) return;
-            
-            element.textContent = `${change > 0 ? '+' : ''}${change}%`;
-            element.className = `kpi-change ${change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'}`;
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
-
-        function formatNumber(number) {
-            return new Intl.NumberFormat('en-US').format(number);
-        }
-
-        function showLoading() {
-            document.getElementById('loading').classList.add('show');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').classList.remove('show');
         }
 
         function updateEarningsBreakdownChart(data) {
@@ -1165,26 +1336,154 @@
                 charts.earningsByCustomer.destroy();
             }
             
-            // Generate colors for multiple customers
-            const colors = [
-                '#5c6bc0', '#4caf50', '#ff9800', '#e91e63', '#9c27b0',
-                '#00bcd4', '#8bc34a', '#ff5722', '#795548', '#607d8b'
-            ];
-            
             charts.earningsByCustomer = new Chart(ctx, {
-                type: 'pie',
+                type: 'bar',
                 data: {
                     labels: data.labels || [],
-                    datasets: [{
-                        data: data.values || [],
-                        backgroundColor: colors.slice(0, data.labels?.length || 0),
-                        borderColor: colors.slice(0, data.labels?.length || 0),
-                        borderWidth: 2
-                    }]
+                    datasets: [
+                        {
+                            label: 'Fabric Commission',
+                            data: data.fabricCommission || [],
+                            backgroundColor: '#5c6bc0',
+                            borderColor: '#5c6bc0',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Stitching Revenue',
+                            data: data.stitchingRevenue || [],
+                            backgroundColor: '#4caf50',
+                            borderColor: '#4caf50',
+                            borderWidth: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#eceff1',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return `${label}: ${formatCurrency(value)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                color: '#eceff1',
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateFabricAgingChart(data) {
+            let canvas = document.getElementById('fabricAgingChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="fabricAgingChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'fabricAgingChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.fabricAging) {
+                charts.fabricAging.destroy();
+            }
+            
+            // Process data for stacked bar chart
+            const locations = data.aging_data?.map(item => item.location) || [];
+            const ageBuckets = data.summary?.age_buckets || ['0-30 days', '30-60 days', '60-180 days', '180+ days'];
+            const colors = ['#4caf50', '#ff9800', '#ff5722', '#f44336']; // Green, Orange, Red, Dark Red
+            
+            // Create datasets for each age bucket
+            const datasets = ageBuckets.map((bucket, index) => {
+                const bucketData = locations.map(location => {
+                    const locationData = data.aging_data?.find(item => item.location === location);
+                    return locationData?.buckets[bucket]?.yards || 0;
+                });
+                
+                return {
+                    label: bucket,
+                    data: bucketData,
+                    backgroundColor: colors[index],
+                    borderColor: colors[index],
+                    borderWidth: 1
+                };
+            });
+            
+            charts.fabricAging = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: locations,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            ticks: {
+                                color: '#eceff1'
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: {
+                                color: '#eceff1',
+                                callback: function(value) {
+                                    return value.toFixed(1) + ' yards';
+                                }
+                            },
+                            grid: {
+                                color: '#37474f'
+                            }
+                        }
+                    },
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -1196,10 +1495,15 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const percentage = data.percentages[context.dataIndex] || 0;
-                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const location = context.label;
+                                    const locationData = data.aging_data?.find(item => item.location === location);
+                                    const bucketData = locationData?.buckets[label];
+                                    const value_formatted = value.toFixed(1) + ' yards';
+                                    const value_baht = formatCurrency(bucketData?.value || 0);
+                                    const count = bucketData?.count || 0;
+                                    return `${label}: ${value_formatted} (${value_baht}, ${count} fabrics)`;
                                 }
                             }
                         }
@@ -1207,6 +1511,214 @@
                 }
             });
         }
+
+        // Date range functions
+        function setDateRange(range) {
+            const today = new Date();
+            let startDate = new Date();
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            switch(range) {
+                case '30D':
+                    startDate = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    break;
+                case '60D':
+                    startDate = new Date(today.getTime() - (60 * 24 * 60 * 60 * 1000));
+                    break;
+                case '90D':
+                    startDate = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000));
+                    break;
+                case '180D':
+                    startDate = new Date(today.getTime() - (180 * 24 * 60 * 60 * 1000));
+                    break;
+                case 'YTD':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    break;
+                case 'LFY':
+                    startDate = new Date(today.getFullYear() - 1, 0, 1);
+                    const endDate = new Date(today.getFullYear() - 1, 11, 31);
+                    document.getElementById('dateFrom').value = startDate.toISOString().split('T')[0];
+                    document.getElementById('dateTo').value = endDate.toISOString().split('T')[0];
+                    updateDashboard();
+                    return;
+            }
+            
+            document.getElementById('dateFrom').value = startDate.toISOString().split('T')[0];
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            updateDashboard();
+        }
+
+        async function loadFilterOptions() {
+            try {
+                const filters = getFilters();
+                const params = new URLSearchParams();
+                if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+                if (filters.dateTo) params.append('dateTo', filters.dateTo);
+                
+                // Load filter options that have data in the current date range
+                const response = await fetch(`/api/dashboard/filter-options?${params}`);
+                const data = await response.json();
+                
+                // Store options globally for searchable dropdowns
+                window.filterOptions = {
+                    customers: data.customers || [],
+                    garments: data.garments || [],
+                    locations: data.locations || []
+                };
+
+            } catch (error) {
+                console.error('Error loading filter options:', error);
+            }
+        }
+
+        // Searchable Dropdown Functions
+        function showDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) return;
+            
+            const filterType = dropdownId.replace('Dropdown', '');
+            const options = window.filterOptions?.[filterType + 's'] || [];
+            
+            dropdown.innerHTML = '';
+            options.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'dropdown-option';
+                optionElement.textContent = option;
+                optionElement.dataset.value = option;
+                optionElement.onclick = () => selectOption(filterType, option);
+                dropdown.appendChild(optionElement);
+            });
+            
+            dropdown.style.display = 'block';
+        }
+
+        function filterDropdown(inputId, dropdownId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if (!input || !dropdown) return;
+            
+            const searchTerm = input.value.toLowerCase();
+            const filterType = dropdownId.replace('Dropdown', '');
+            const options = window.filterOptions?.[filterType + 's'] || [];
+            
+            dropdown.innerHTML = '';
+            const filteredOptions = options.filter(option => 
+                option.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'dropdown-option';
+                optionElement.textContent = option;
+                optionElement.dataset.value = option;
+                optionElement.onclick = () => selectOption(filterType, option);
+                dropdown.appendChild(optionElement);
+            });
+            
+            dropdown.style.display = filteredOptions.length > 0 ? 'block' : 'none';
+        }
+
+        function selectOption(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            const input = document.getElementById(filterType + 'Filter');
+            const dropdown = document.getElementById(filterType + 'Dropdown');
+            
+            if (!selectedElement || !input) return;
+            
+            // Check if already selected
+            const existingItems = selectedElement.querySelectorAll('.selected-item');
+            const alreadySelected = Array.from(existingItems).some(item => item.dataset.value === value);
+            
+            if (!alreadySelected) {
+                // Add selected item
+                const selectedItem = document.createElement('div');
+                selectedItem.className = 'selected-item';
+                selectedItem.dataset.value = value;
+                selectedItem.innerHTML = `
+                    ${value}
+                    <button class="remove-btn" onclick="removeSelectedItem('${filterType}', '${value}')">&times;</button>
+                `;
+                selectedElement.appendChild(selectedItem);
+            }
+            
+            // Clear input and hide dropdown
+            input.value = '';
+            dropdown.style.display = 'none';
+            
+            // Update dashboard
+            updateDashboard();
+        }
+
+        function removeSelectedItem(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            if (!selectedElement) return;
+            
+            const itemToRemove = selectedElement.querySelector(`[data-value="${value}"]`);
+            if (itemToRemove) {
+                itemToRemove.remove();
+                updateDashboard();
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.dropdown-options');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target) && !event.target.closest('.searchable-dropdown')) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+
+        function updateChangeIndicator(elementId, change) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            element.textContent = `${change > 0 ? '+' : ''}${change}%`;
+            element.className = `kpi-change ${change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'}`;
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'THB',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatNumber(number) {
+            return new Intl.NumberFormat('en-US').format(number);
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function checkAuth() {
+            const isLoggedIn = localStorage.getItem('gms_logged_in');
+            if (!isLoggedIn) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('gms_logged_in');
+            localStorage.removeItem('gms_username');
+            window.location.href = 'login.html';
+        }
     </script>
 </body>
 </html>
+
