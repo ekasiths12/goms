@@ -1223,7 +1223,7 @@ def get_group_bill_details(group_id):
 def get_commission_sales():
     """Get all commission sales for the group bills page"""
     try:
-        from app.models.invoice import InvoiceLine
+        from app.models.commission_sale import CommissionSale
         
         # Get query parameters for filtering
         customer = request.args.get('customer')
@@ -1231,45 +1231,44 @@ def get_commission_sales():
         date_to = request.args.get('date_to')
         
         # Build query
-        query = InvoiceLine.query.filter_by(is_commission_sale=True)
+        query = CommissionSale.query
         
         if customer:
-            query = query.join(Invoice).join(Customer).filter(
-                Customer.short_name.ilike(f'%{customer}%')
-            )
+            query = query.filter(CommissionSale.customer_name.ilike(f'%{customer}%'))
         
         if date_from:
             try:
                 date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-                query = query.filter(InvoiceLine.commission_date >= date_from_obj)
+                query = query.filter(CommissionSale.sale_date >= date_from_obj)
             except ValueError:
                 pass
         
         if date_to:
             try:
                 date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-                query = query.filter(InvoiceLine.commission_date <= date_to_obj)
+                query = query.filter(CommissionSale.sale_date <= date_to_obj)
             except ValueError:
                 pass
         
         # Execute query
-        commission_sales = query.order_by(InvoiceLine.commission_date.desc()).all()
+        commission_sales = query.order_by(CommissionSale.sale_date.desc()).all()
         
         # Convert to dictionary format
         result = []
         for sale in commission_sales:
             sale_dict = {
                 'id': sale.id,
-                'commission_date': sale.commission_date.isoformat() if sale.commission_date else None,
-                'invoice_number': sale.invoice.invoice_number if sale.invoice else None,
-                'customer_name': sale.invoice.customer.short_name if sale.invoice and sale.invoice.customer else None,
+                'serial_number': sale.serial_number,
+                'commission_date': sale.sale_date.isoformat() if sale.sale_date else None,
+                'invoice_number': sale.invoice_line.invoice.invoice_number if sale.invoice_line and sale.invoice_line.invoice else None,
+                'customer_name': sale.customer_name,
                 'item_name': sale.item_name,
                 'color': sale.color,
-                'commission_yards': float(sale.commission_yards) if sale.commission_yards else 0,
+                'commission_yards': float(sale.yards_sold) if sale.yards_sold else 0,
                 'unit_price': float(sale.unit_price) if sale.unit_price else 0,
                 'commission_amount': float(sale.commission_amount) if sale.commission_amount else 0,
-                'total_sale_value': float(sale.commission_yards * sale.unit_price) if sale.commission_yards and sale.unit_price else 0,
-                'delivery_note': sale.delivery_note,
+                'total_sale_value': float(sale.yards_sold * sale.unit_price) if sale.yards_sold and sale.unit_price else 0,
+                'delivery_note': sale.invoice_line.delivery_note if sale.invoice_line else None,
                 'delivered_location': sale.delivered_location
             }
             result.append(sale_dict)

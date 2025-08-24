@@ -84,28 +84,26 @@ def get_dashboard_summary():
         fabric_commission = float(fabric_result.fabric_commission or 0)
         
         # Calculate direct commission sales (commission sales not from stitching)
-        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_conditions = ["1=1"]
         commission_params = {}
         
         if date_from:
-            commission_conditions.append("il.commission_date >= :date_from")
+            commission_conditions.append("cs.sale_date >= :date_from")
             commission_params['date_from'] = date_from
         if date_to:
-            commission_conditions.append("il.commission_date <= :date_to")
+            commission_conditions.append("cs.sale_date <= :date_to")
             commission_params['date_to'] = date_to
         if customer:
-            commission_conditions.append("c.short_name = :customer")
+            commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
             
         commission_where = " AND ".join(commission_conditions)
         
         commission_sales_query = text(f"""
             SELECT 
-                COALESCE(SUM(il.commission_yards * il.unit_price), 0) as direct_sales_total,
-                COALESCE(SUM(il.commission_amount), 0) as direct_commission
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON i.customer_id = c.id
+                COALESCE(SUM(cs.yards_sold * cs.unit_price), 0) as direct_sales_total,
+                COALESCE(SUM(cs.commission_amount), 0) as direct_commission
+            FROM commission_sales cs
             WHERE {commission_where}
         """)
         commission_result = db.session.execute(commission_sales_query, commission_params).fetchone()
@@ -333,32 +331,30 @@ def get_revenue_trends():
         stitching_results = db.session.execute(stitching_query, params).fetchall()
         
         # Query for direct commission sales
-        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_conditions = ["1=1"]
         commission_params = {
             'date_from': date_from,
             'date_to': date_to
         }
         
         if customer:
-            commission_conditions.append("c.short_name = :customer")
+            commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
         if location:
-            commission_conditions.append("il.delivered_location = :location")
+            commission_conditions.append("cs.delivered_location = :location")
             commission_params['location'] = location
             
         commission_where = " AND ".join(commission_conditions)
         
         commission_query = text(f"""
             SELECT 
-                DATE(il.commission_date) as date,
-                COALESCE(SUM(il.commission_amount), 0) as direct_commission
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON i.customer_id = c.id
-            WHERE il.commission_date BETWEEN :date_from AND :date_to
+                DATE(cs.sale_date) as date,
+                COALESCE(SUM(cs.commission_amount), 0) as direct_commission
+            FROM commission_sales cs
+            WHERE cs.sale_date BETWEEN :date_from AND :date_to
             AND {commission_where}
-            GROUP BY DATE(il.commission_date)
-            ORDER BY DATE(il.commission_date)
+            GROUP BY DATE(cs.sale_date)
+            ORDER BY DATE(cs.sale_date)
         """)
         
         commission_results = db.session.execute(commission_query, commission_params).fetchall()
@@ -454,33 +450,31 @@ def get_top_customers():
         stitching_results = db.session.execute(stitching_query, params).fetchall()
         
         # Query for direct commission sales
-        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_conditions = ["1=1"]
         commission_params = {}
         
         if date_from:
-            commission_conditions.append("il.commission_date >= :date_from")
+            commission_conditions.append("cs.sale_date >= :date_from")
             commission_params['date_from'] = date_from
         if date_to:
-            commission_conditions.append("il.commission_date <= :date_to")
+            commission_conditions.append("cs.sale_date <= :date_to")
             commission_params['date_to'] = date_to
         if customer:
-            commission_conditions.append("c.short_name = :customer")
+            commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
         if location:
-            commission_conditions.append("il.delivered_location = :location")
+            commission_conditions.append("cs.delivered_location = :location")
             commission_params['location'] = location
             
         commission_where = " AND ".join(commission_conditions)
         
         commission_query = text(f"""
             SELECT 
-                c.short_name,
-                COALESCE(SUM(il.commission_amount), 0) as direct_commission
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON i.customer_id = c.id
+                cs.customer_name,
+                COALESCE(SUM(cs.commission_amount), 0) as direct_commission
+            FROM commission_sales cs
             WHERE {commission_where}
-            GROUP BY c.id, c.short_name
+            GROUP BY cs.customer_name
         """)
         
         commission_results = db.session.execute(commission_query, commission_params).fetchall()
@@ -498,7 +492,7 @@ def get_top_customers():
         
         # Add direct commission data
         for row in commission_results:
-            customer_name = row.short_name
+            customer_name = row.customer_name
             if customer_name not in customer_data:
                 customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
             customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)
@@ -958,29 +952,27 @@ def get_earnings_breakdown():
         stitching_revenue = float(stitching_result.stitching_revenue or 0)
         
         # Query for direct commission sales
-        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_conditions = ["1=1"]
         commission_params = {}
         
         if date_from:
-            commission_conditions.append("il.commission_date >= :date_from")
+            commission_conditions.append("cs.sale_date >= :date_from")
             commission_params['date_from'] = date_from
         if date_to:
-            commission_conditions.append("il.commission_date <= :date_to")
+            commission_conditions.append("cs.sale_date <= :date_to")
             commission_params['date_to'] = date_to
         if customer:
-            commission_conditions.append("c.short_name = :customer")
+            commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
         if location:
-            commission_conditions.append("il.delivered_location = :location")
+            commission_conditions.append("cs.delivered_location = :location")
             commission_params['location'] = location
             
         commission_where = " AND ".join(commission_conditions)
         
         commission_query = text(f"""
-            SELECT COALESCE(SUM(il.commission_amount), 0) as direct_commission
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON i.customer_id = c.id
+            SELECT COALESCE(SUM(cs.commission_amount), 0) as direct_commission
+            FROM commission_sales cs
             WHERE {commission_where}
         """)
         
@@ -1009,6 +1001,7 @@ def get_earnings_breakdown():
 @dashboard_bp.route('/earnings-by-customer', methods=['GET'])
 def get_earnings_by_customer():
     """Get earnings breakdown by customer pie chart"""
+    print("DEBUG: get_earnings_by_customer function called")
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -1058,33 +1051,31 @@ def get_earnings_by_customer():
         stitching_results = db.session.execute(stitching_query, params).fetchall()
         
         # Query for direct commission sales
-        commission_conditions = ["il.is_commission_sale = TRUE"]
+        commission_conditions = ["1=1"]
         commission_params = {}
         
         if date_from:
-            commission_conditions.append("il.commission_date >= :date_from")
+            commission_conditions.append("cs.sale_date >= :date_from")
             commission_params['date_from'] = date_from
         if date_to:
-            commission_conditions.append("il.commission_date <= :date_to")
+            commission_conditions.append("cs.sale_date <= :date_to")
             commission_params['date_to'] = date_to
         if customer:
-            commission_conditions.append("c.short_name = :customer")
+            commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
         if location:
-            commission_conditions.append("il.delivered_location = :location")
+            commission_conditions.append("cs.delivered_location = :location")
             commission_params['location'] = location
             
         commission_where = " AND ".join(commission_conditions)
         
         commission_query = text(f"""
             SELECT 
-                c.short_name,
-                COALESCE(SUM(il.commission_amount), 0) as direct_commission
-            FROM invoice_lines il
-            JOIN invoices i ON il.invoice_id = i.id
-            JOIN customers c ON i.customer_id = c.id
+                cs.customer_name,
+                COALESCE(SUM(cs.commission_amount), 0) as direct_commission
+            FROM commission_sales cs
             WHERE {commission_where}
-            GROUP BY c.id, c.short_name
+            GROUP BY cs.customer_name
         """)
         
         commission_results = db.session.execute(commission_query, commission_params).fetchall()
@@ -1102,7 +1093,7 @@ def get_earnings_by_customer():
         
         # Add direct commission data
         for row in commission_results:
-            customer_name = row.short_name
+            customer_name = row.customer_name
             if customer_name not in customer_data:
                 customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
             customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)

@@ -722,7 +722,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, checking canvas elements...');
             
-            // Load saved theme
+            // Load theme immediately to prevent flashing
             loadTheme();
             
             // Check authentication first

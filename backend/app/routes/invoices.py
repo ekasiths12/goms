@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from app.models.invoice import Invoice, InvoiceLine
 from app.models.customer import Customer
 from app.models.delivery_location import DeliveryLocation
+from app.models.commission_sale import CommissionSale
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
@@ -55,14 +56,17 @@ def get_invoices():
         location_filter = request.args.get('location')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        show_consumed = request.args.get('show_consumed', 'false').lower() == 'true'
+        stock_status = request.args.get('stock_status', 'inStock')
+        print(f"DEBUG: Received stock_status parameter: '{stock_status}'")
 
-        print(f"DEBUG: Filters - customer: {customer_filter}, show_consumed: {show_consumed}")
+        print(f"DEBUG: Filters - customer: {customer_filter}, stock_status: {stock_status}")
 
         print("DEBUG: About to execute query")
 
         # Build query
-        query = db.session.query(InvoiceLine).join(Invoice).join(Customer)
+        query = db.session.query(InvoiceLine).join(Invoice).join(Customer).options(
+            db.joinedload(InvoiceLine.commission_sales)
+        )
         
         # Apply filters
         if customer_filter:
@@ -104,20 +108,30 @@ def get_invoices():
             except (ValueError, IndexError):
                 pass
         
-        # Filter out fully consumed fabrics if not showing them
-        if not show_consumed:
-            query = query.filter(
-                or_(
-                    InvoiceLine.yards_consumed.is_(None),
-                    InvoiceLine.yards_consumed == 0,
-                    InvoiceLine.yards_sent > InvoiceLine.yards_consumed
-                )
-            )
-
         # Execute query
         print("DEBUG: About to execute query")
         invoice_lines = query.all()
         print(f"DEBUG: Query executed, found {len(invoice_lines)} invoice lines")
+        
+        # Filter based on stock status
+        print(f"DEBUG: Stock status filter: {stock_status}")
+        print(f"DEBUG: Total lines before filtering: {len(invoice_lines)}")
+        
+        # Debug a few lines to see their values
+        for i, line in enumerate(invoice_lines[:5]):
+            total_commission_yards = sum(cs.yards_sold for cs in line.commission_sales)
+            total_used = (line.yards_consumed or 0) + total_commission_yards
+            yards_sent = line.yards_sent or 0
+            print(f"DEBUG: Line {i} - yards_sent: {yards_sent}, yards_consumed: {line.yards_consumed}, commission_yards: {total_commission_yards}, total_used: {total_used}, has_stock: {yards_sent > total_used}")
+        
+        if stock_status == 'inStock':
+            # In Stock: yards_sent > (yards_consumed + total_commission_yards)
+            invoice_lines = [line for line in invoice_lines if (line.yards_sent or 0) > ((line.yards_consumed or 0) + sum(cs.yards_sold for cs in line.commission_sales))]
+            print(f"DEBUG: After inStock filter: {len(invoice_lines)} lines")
+        elif stock_status == 'noStock':
+            # No Stock: yards_sent <= (yards_consumed + total_commission_yards)
+            invoice_lines = [line for line in invoice_lines if (line.yards_sent or 0) <= ((line.yards_consumed or 0) + sum(cs.yards_sold for cs in line.commission_sales))]
+            print(f"DEBUG: After noStock filter: {len(invoice_lines)} lines")
         
         # Format response
         result = []
@@ -125,7 +139,7 @@ def get_invoices():
             # Use yards_sent and yards_consumed like the old Qt app
             yards_sent = line.yards_sent or line.quantity or 0
             yards_consumed = line.yards_consumed or 0
-            pending = yards_sent - yards_consumed
+            pending = line.pending_yards
             result.append({
                 'id': line.id,
                 'invoice_id': line.invoice_id,
@@ -145,8 +159,12 @@ def get_invoices():
                 'delivered_location': line.delivered_location,
                 'yards_sent': float(yards_sent),
                 'yards_consumed': float(yards_consumed),
-                'pending': pending,
-                'total_value': float(yards_sent * (line.unit_price or 0))
+                'total_used': float(yards_consumed) + sum(float(cs.yards_sold) for cs in line.commission_sales),
+                'pending_yards': float(pending),
+                'total_value': float(yards_sent * (line.unit_price or 0)),
+                'total_commission_yards': sum(float(cs.yards_sold) for cs in line.commission_sales),
+                'total_commission_amount': sum(float(cs.commission_amount) for cs in line.commission_sales),
+                'commission_sales_count': len(line.commission_sales)
             })
         
         print(f"DEBUG: Returning {len(result)} results")
@@ -451,7 +469,7 @@ def delete_delivery_location(location_id):
 
 @invoices_bp.route('/mark-commission-sale', methods=['POST'])
 def mark_commission_sale():
-    """Mark an invoice line as a commission sale"""
+    """Create a new commission sale"""
     try:
         data = request.get_json()
         line_id = data.get('line_id')
@@ -465,29 +483,21 @@ def mark_commission_sale():
         if not sale_date:
             return {'error': 'Sale date is required'}, 400
         
-        # Get the invoice line
-        invoice_line = InvoiceLine.query.get(line_id)
-        if not invoice_line:
-            return {'error': 'Invoice line not found'}, 404
-        
-        # Check if already marked as commission sale
-        if invoice_line.is_commission_sale:
-            return {'error': 'This line is already marked as a commission sale'}, 400
-        
         # Parse sale date
         try:
             sale_date_obj = datetime.strptime(sale_date, '%Y-%m-%d').date()
         except ValueError:
             return {'error': 'Invalid sale date format. Use YYYY-MM-DD'}, 400
         
-        # Mark as commission sale
-        invoice_line.mark_as_commission_sale(yards_sold, sale_date_obj)
+        # Create commission sale
+        commission_sale = CommissionSale.create_commission_sale(line_id, yards_sold, sale_date_obj)
         db.session.commit()
         
         return {
-            'message': f'Successfully marked {yards_sold} yards as commission sale',
-            'commission_amount': float(invoice_line.commission_amount),
-            'remaining_pending': float(invoice_line.pending_yards)
+            'message': f'Successfully created commission sale for {yards_sold} yards',
+            'serial_number': commission_sale.serial_number,
+            'commission_amount': float(commission_sale.commission_amount),
+            'remaining_pending': float(commission_sale.invoice_line.pending_yards)
         }, 200
         
     except ValueError as e:
@@ -507,36 +517,29 @@ def get_commission_sales():
         date_to = request.args.get('date_to')
         
         # Build query
-        query = InvoiceLine.query.filter_by(is_commission_sale=True)
+        query = CommissionSale.query
         
         # Apply filters
         if customer_filter:
-            query = query.join(Invoice).join(Customer).filter(
-                Customer.short_name.ilike(f'%{customer_filter}%')
-            )
+            query = query.filter(CommissionSale.customer_name.ilike(f'%{customer_filter}%'))
         if date_from:
             try:
                 date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-                query = query.filter(InvoiceLine.commission_date >= date_from_obj)
+                query = query.filter(CommissionSale.sale_date >= date_from_obj)
             except ValueError:
                 pass
         if date_to:
             try:
                 date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-                query = query.filter(InvoiceLine.commission_date <= date_to_obj)
+                query = query.filter(CommissionSale.sale_date <= date_to_obj)
             except ValueError:
                 pass
         
         # Execute query
-        commission_sales = query.order_by(InvoiceLine.commission_date.desc()).all()
+        commission_sales = query.order_by(CommissionSale.sale_date.desc()).all()
         
         # Convert to dictionary
-        result = []
-        for sale in commission_sales:
-            sale_dict = sale.to_dict()
-            sale_dict['customer_name'] = sale.invoice.customer.short_name if sale.invoice and sale.invoice.customer else None
-            sale_dict['invoice_number'] = sale.invoice.invoice_number if sale.invoice else None
-            result.append(sale_dict)
+        result = [sale.to_dict() for sale in commission_sales]
         
         return jsonify(result), 200
         
@@ -553,27 +556,14 @@ def delete_commission_sale():
         if not sale_id:
             return {'error': 'Sale ID is required'}, 400
         
-        # Get the invoice line
-        invoice_line = InvoiceLine.query.get(sale_id)
-        if not invoice_line:
+        commission_sale = CommissionSale.query.get(sale_id)
+        if not commission_sale:
             return {'error': 'Commission sale not found'}, 404
         
-        # Check if it's actually a commission sale
-        if not invoice_line.is_commission_sale:
-            return {'error': 'This line is not marked as a commission sale'}, 400
+        commission_yards = commission_sale.yards_sold or 0
+        invoice_line = commission_sale.invoice_line
         
-        # Store the commission yards for reverting
-        commission_yards = invoice_line.commission_yards or 0
-        
-        # Revert the commission sale
-        invoice_line.is_commission_sale = False
-        invoice_line.commission_yards = 0
-        invoice_line.commission_amount = 0
-        invoice_line.commission_date = None
-        
-        # The pending_yards property will automatically recalculate
-        # since it subtracts commission_yards from yards_sent - yards_consumed
-        
+        db.session.delete(commission_sale)
         db.session.commit()
         
         return {

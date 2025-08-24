@@ -916,10 +916,17 @@
                 </div>
                 
                 <div class="filter-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="showConsumed">
-                        Show Fully Consumed
-                    </label>
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Stock Status:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <label class="checkbox-label">
+                            <input type="radio" name="stockStatus" value="inStock" id="inStock" checked>
+                            In Stock
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="radio" name="stockStatus" value="noStock" id="noStock">
+                            No Stock
+                        </label>
+                    </div>
                 </div>
                 
                 <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
@@ -954,7 +961,7 @@
                         <th class="sortable-header" data-sort="color">Color</th>
                         <th class="sortable-header" data-sort="delivery_note">Delivery Note</th>
                         <th class="sortable-header" data-sort="yards_sent">In Stock</th>
-                        <th class="sortable-header" data-sort="yards_consumed">Used</th>
+                        <th class="sortable-header" data-sort="total_used">Used</th>
                         <th class="sortable-header" data-sort="pending">Pending</th>
                         <th class="sortable-header" data-sort="unit_price">Price</th>
                         <th class="sortable-header" data-sort="total">Total</th>
@@ -1179,13 +1186,9 @@
             }
             
             // Add filter change listeners
-            const filterCheckboxes = ['showConsumed'];
-            
-            filterCheckboxes.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('change', applyFilters);
-                }
+            const stockStatusRadios = document.querySelectorAll('input[name="stockStatus"]');
+            stockStatusRadios.forEach(radio => {
+                radio.addEventListener('change', applyFilters);
             });
 
             // Add real-time filter listeners for text inputs
@@ -1238,7 +1241,10 @@
                 const locationFilter = document.getElementById('filterLocation')?.value?.trim();
                 const dateFrom = document.getElementById('filterDateFrom')?.value;
                 const dateTo = document.getElementById('filterDateTo')?.value;
-                const showConsumed = document.getElementById('showConsumed')?.checked;
+                const stockStatus = document.querySelector('input[name="stockStatus"]:checked')?.value;
+                console.log('🔍 Stock status from radio buttons:', stockStatus);
+                
+
                 
                 if (customerFilter) params.append('customer', customerFilter);
                 if (invoiceFilter) params.append('invoice_number', invoiceFilter);
@@ -1248,7 +1254,7 @@
                 if (locationFilter) params.append('location', locationFilter);
                 if (dateFrom) params.append('date_from', dateFrom);
                 if (dateTo) params.append('date_to', dateTo);
-                if (showConsumed) params.append('show_consumed', 'true');
+                if (stockStatus) params.append('stock_status', stockStatus);
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
                 // Use dynamic API base URL for local development vs Railway
@@ -1318,35 +1324,66 @@
                 // Use yards_sent and yards_consumed like the old Qt app
                 const yardsSent = invoice.yards_sent || invoice.quantity || 0;
                 const yardsConsumed = invoice.yards_consumed || 0;
-                const commissionYards = invoice.commission_yards || 0;
-                const pending = yardsSent - yardsConsumed - commissionYards;
+                const commissionYards = invoice.total_commission_yards || 0;
+                // Calculate pending using the same logic as backend
+                const totalUsed = (yardsConsumed + commissionYards);
+                const pending = yardsSent - totalUsed;
+                // Use backend's total_used if available, otherwise calculate it
+                const displayTotalUsed = invoice.total_used || totalUsed;
                 
-                // Create action buttons based on line status
+
+                
+                // Create status display and action buttons
+                let statusDisplay = '';
                 let actionButtons = '';
-                if (pending > 0 && !invoice.is_commission_sale) {
-                    actionButtons = `
+                
+                // Build status display
+                const statusParts = [];
+                
+                if (invoice.commission_sales_count > 0) {
+                    statusParts.push(`✓ Commission (${formatNumber(invoice.total_commission_yards || 0)} yards)`);
+                }
+                
+                if (yardsConsumed > 0) {
+                    statusParts.push(`✓ Stitched (${formatNumber(yardsConsumed)} yards)`);
+                }
+                
+                if (statusParts.length > 0) {
+                    // Use different colors for commission vs stitched
+                    const formattedParts = statusParts.map(part => {
+                        if (part.includes('Commission')) {
+                            return `<span style="color: #f57c00;">${part}</span>`;
+                        } else {
+                            return `<span style="color: #2E7D32;">${part}</span>`;
+                        }
+                    });
+                    
+                    statusDisplay = `<div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">
+                        ${formattedParts.join(' | ')}
+                    </div>`;
+                }
+                
+                // Show action buttons if there are pending yards (same logic as backend filter)
+                if (yardsSent > totalUsed) {
+                    const commissionButton = `
                         <button onclick="openCommissionSaleDialog(${invoice.id}, ${pending}, '${invoice.item_name}', '${invoice.color || ''}')" 
                                 class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">
                             Commission
                         </button>
+                    `;
+                    
+                    const stitchingButton = `
                         <button onclick="createStitchingRecordFromTable(${invoice.id})" 
                                 class="btn btn-success" style="padding: 4px 8px; font-size: 11px;">
                             Stitching
                         </button>
                     `;
-                } else if (invoice.is_commission_sale) {
-                    actionButtons = `
-                        <span style="color: #f57c00; font-size: 11px; font-weight: bold;">
-                            ✓ Commission Sale (${formatNumber(invoice.commission_yards || 0)} yards)
-                        </span>
-                    `;
-                } else {
-                    actionButtons = `
-                        <span style="color: var(--text-secondary); font-size: 11px;">
-                            No pending yards
-                        </span>
-                    `;
+                    
+                    actionButtons = commissionButton + stitchingButton;
                 }
+                
+                // Combine status and action buttons (only show status once)
+                const finalActionButtons = statusDisplay + actionButtons;
                 
                 row.innerHTML = `
                     <td class="checkbox-wrapper">
@@ -1360,12 +1397,12 @@
                     <td>${invoice.color || ''}</td>
                     <td>${invoice.delivery_note || ''}</td>
                     <td>${formatNumber(yardsSent)}</td>
-                    <td>${formatNumber(yardsConsumed)}</td>
+                    <td>${formatNumber(displayTotalUsed)}</td>
                     <td>${formatNumber(pending)}</td>
                     <td>${formatNumber(invoice.unit_price || 0)}</td>
                     <td>${formatNumber(yardsSent * (invoice.unit_price || 0))}</td>
                     <td>${invoice.delivered_location || ''}</td>
-                    <td>${actionButtons}</td>
+                    <td>${finalActionButtons}</td>
                     <td style="display: none;">${invoice.id || ''}</td>
                 `;
                 tbody.appendChild(row);
@@ -1553,7 +1590,8 @@
             // Clear date inputs
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
-            document.getElementById('showConsumed').checked = false;
+            // Reset stock status to "In Stock"
+            document.getElementById('inStock').checked = true;
             
             // Close all dropdowns
             closeAllDropdowns();
@@ -2898,7 +2936,9 @@
                     
                     const yardsSent = line.yards_sent || line.quantity || 0;
                     const yardsConsumed = line.yards_consumed || 0;
-                    const pending = yardsSent - yardsConsumed;
+                    const commissionYards = line.total_commission_yards || 0;
+                    // Use the backend's calculated pending_yards which properly accounts for commission sales
+                    const pending = line.pending_yards || 0;
                     
                     return {
                         id: line.id,
@@ -2923,7 +2963,9 @@
                     const line = invoiceData[index];
                     const yardsSent = line.yards_sent || line.quantity || 0;
                     const yardsConsumed = line.yards_consumed || 0;
-                    const pending = yardsSent - yardsConsumed;
+                    const commissionYards = line.total_commission_yards || 0;
+                    // Use the backend's calculated pending_yards which properly accounts for commission sales
+                    const pending = line.pending_yards || 0;
                     
                     return {
                         id: line.id,
@@ -3455,6 +3497,56 @@
             document.getElementById('editInvoiceDialog').style.display = 'block';
         }
 
+        function editSelectedInvoiceLine() {
+            if (selectedRows.length === 0) {
+                alert('Please select an invoice line to edit');
+                return;
+            }
+            
+            if (selectedRows.length > 1) {
+                alert('Please select only one invoice line to edit');
+                return;
+            }
+            
+            const selectedIndex = selectedRows[0];
+            const invoice = invoiceData[selectedIndex];
+            
+            if (!invoice) {
+                alert('Selected invoice line not found');
+                return;
+            }
+            
+            // Check if invoice line is already used in stitching records or commission sales
+            const hasStitching = invoice.yards_consumed > 0;
+            const hasCommission = invoice.commission_sales_count > 0;
+            
+            if (hasStitching || hasCommission) {
+                let warningMessage = 'This invoice line has been used in:';
+                if (hasStitching) warningMessage += '\n- Stitching records';
+                if (hasCommission) warningMessage += '\n- Commission sales';
+                warningMessage += '\n\nEditing may affect existing records. Do you want to continue?';
+                
+                const result = confirm(warningMessage);
+                if (!result) {
+                    return;
+                }
+            }
+            
+            currentEditInvoiceId = invoice.id;
+            
+            // Populate the edit form
+            document.getElementById('editItemName').value = invoice.item_name || '';
+            document.getElementById('editColor').value = invoice.color || '';
+            document.getElementById('editDeliveryNote').value = invoice.delivery_note || '';
+            document.getElementById('editYardsSent').value = invoice.yards_sent || invoice.quantity || 0;
+            document.getElementById('editYardsConsumed').value = invoice.yards_consumed || 0;
+            document.getElementById('editUnitPrice').value = invoice.unit_price || 0;
+            document.getElementById('editDeliveredLocation').value = invoice.delivered_location || '';
+            
+            // Show the dialog
+            document.getElementById('editInvoiceDialog').style.display = 'block';
+        }
+
         function closeEditInvoiceDialog() {
             document.getElementById('editInvoiceDialog').style.display = 'none';
             currentEditInvoiceId = null;
@@ -3661,7 +3753,9 @@
             // Check if line has pending yards
             const yardsSent = invoiceLine.yards_sent || invoiceLine.quantity || 0;
             const yardsConsumed = invoiceLine.yards_consumed || 0;
-            const pending = yardsSent - yardsConsumed;
+            const commissionYards = invoiceLine.total_commission_yards || 0;
+            // Use the backend's calculated pending_yards which properly accounts for commission sales
+            const pending = invoiceLine.pending_yards || 0;
             
             if (pending <= 0) {
                 alert('No pending yards available for this line');
@@ -3706,8 +3800,10 @@
                     return item.yards_sent || item.quantity;
                 case 'yards_consumed':
                     return item.yards_consumed;
+                case 'total_used':
+                    return item.total_used || ((item.yards_consumed || 0) + (item.total_commission_yards || 0));
                 case 'pending':
-                    return (item.yards_sent || item.quantity) - (item.yards_consumed || 0);
+                    return item.pending_yards || 0;
                 case 'unit_price':
                     return item.unit_price;
                 case 'total':
@@ -3721,7 +3817,7 @@
 
         // Initialize table sorter when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Load saved theme
+            // Load theme immediately to prevent flashing
             loadTheme();
             
             // Initialize table sorter

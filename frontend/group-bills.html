@@ -1281,6 +1281,7 @@
                     <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                 </th>
                 <th class="sortable-header" data-sort="commission_date" style="width: 80px;">Date</th>
+                <th class="sortable-header" data-sort="serial_number" style="width: 120px;">Serial #</th>
                 <th class="sortable-header" data-sort="item_name" style="width: 100px;">Fabric</th>
                 <th class="sortable-header" data-sort="color" style="width: 70px;">Color</th>
                 <th class="sortable-header" data-sort="customer" style="width: 100px;">Customer</th>
@@ -1352,6 +1353,7 @@
                         <input type="checkbox" class="commission-sale-checkbox" data-sale-id="${sale.id}" onclick="toggleCommissionSaleSelection(event, ${sale.id})">
                     </td>
                     <td>${formatDate(sale.commission_date)}</td>
+                    <td>${sale.serial_number || ''}</td>
                     <td>${sale.item_name || ''}</td>
                     <td>${sale.color || ''}</td>
                     <td>${sale.customer_name || ''}</td>
@@ -2302,7 +2304,7 @@
 
         // Initialize table sorter when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Load saved theme
+            // Load theme immediately to prevent flashing
             loadTheme();
             
             // Initialize table headers for group bills view
