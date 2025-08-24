@@ -34,6 +34,11 @@ dashboard_bp = Blueprint('dashboard', __name__)
 # Commission rate for fabric sales (5.1%)
 FABRIC_COMMISSION_RATE = 0.051
 
+@dashboard_bp.route('/ping', methods=['GET'])
+def ping():
+    """Simple ping endpoint to test if dashboard blueprint is working"""
+    return jsonify({'message': 'Dashboard blueprint is working!', 'status': 'ok'}), 200
+
 @dashboard_bp.route('/summary', methods=['GET'])
 def get_dashboard_summary():
     """Get dashboard summary data including KPIs"""

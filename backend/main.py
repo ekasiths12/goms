@@ -71,15 +71,41 @@ def create_app(config_class=Config):
     from app.routes.images import images_bp
     from app.routes.dashboard import dashboard_bp
     
+    print("🔧 Registering blueprints...")
+    
     app.register_blueprint(main_bp)
+    print("   ✅ main_bp registered")
+    
     app.register_blueprint(invoices_bp, url_prefix='/api/invoices')
+    print("   ✅ invoices_bp registered")
+    
     app.register_blueprint(stitching_bp, url_prefix='/api/stitching')
+    print("   ✅ stitching_bp registered")
+    
     app.register_blueprint(packing_lists_bp, url_prefix='/api/packing-lists')
+    print("   ✅ packing_lists_bp registered")
+    
     app.register_blueprint(group_bills_bp, url_prefix='/api/group-bills')
+    print("   ✅ group_bills_bp registered")
+    
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
+    print("   ✅ customers_bp registered")
+    
     app.register_blueprint(files_bp, url_prefix='/api/files')
+    print("   ✅ files_bp registered")
+    
     app.register_blueprint(images_bp, url_prefix='/api/images')
+    print("   ✅ images_bp registered")
+    
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    print("   ✅ dashboard_bp registered")
+    
+    print("🔧 All blueprints registered successfully!")
+    
+    # Debug: List all registered routes
+    print("📋 Registered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"   {rule.rule} -> {rule.endpoint}")
     
     # Test route
     @app.route('/test')
