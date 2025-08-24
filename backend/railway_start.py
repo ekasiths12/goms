@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 # Import all models to ensure they're registered with SQLAlchemy
 from app.models.customer import Customer
-from app.models.invoice import Invoice, InvoiceLine
+from app.models.invoice import Invoice, InvoiceLine, FabricInventory
 from app.models.commission_sale import CommissionSale
 from app.models.stitching import StitchingInvoice, GarmentFabric, LiningFabric
 from app.models.packing_list import PackingList, PackingListLine
@@ -102,11 +102,60 @@ def main():
             print(f"❌ Database connection failed: {e}")
             sys.exit(1)
         
-        # Create tables if they don't exist
+        # Add debugging here
+        result = db.session.execute(text("SHOW TABLES LIKE 'invoice_lines'"))
+        if result.fetchone():
+            print("✅ invoice_lines table exists")
+        else:
+            print("❌ invoice_lines table does not exist")
+        
+        # List all tables
+        all_tables = db.session.execute(text("SHOW TABLES")).fetchall()
+        print("📋 All tables in database:")
+        for table in all_tables:
+            print(f"   - {table[0]}")
+        
+        # Create tables in dependency order to avoid foreign key issues
+        from sqlalchemy.exc import OperationalError
+
         try:
-            db.create_all()
-            print("✅ Database tables created successfully!")
-        except Exception as e:
+            levels = [
+                # Level 1: No dependencies
+                [
+                    Customer.__table__,
+                    SerialCounter.__table__,
+                    Image.__table__,
+                    StitchedItem.__table__,
+                    CustomerIdMapping.__table__,
+                    DeliveryLocation.__table__,
+                    FabricInventory.__table__,
+                ],
+                # Level 2: Depend on customers
+                [
+                    Invoice.__table__,
+                    StitchingInvoiceGroup.__table__,
+                    PackingList.__table__,
+                ],
+                # Level 3: Depend on invoices/packing_lists/groups
+                [InvoiceLine.__table__],
+                # Level 4: Depend on invoice_lines/groups/etc.
+                [
+                    CommissionSale.__table__,
+                    StitchingInvoice.__table__,
+                ],
+                # Level 5: Depend on stitching_invoices
+                [
+                    GarmentFabric.__table__,
+                    LiningFabric.__table__,
+                    PackingListLine.__table__,
+                    StitchingInvoiceGroupLine.__table__,
+                ],
+            ]
+
+            for level in levels:
+                db.metadata.create_all(db.engine, tables=level, checkfirst=True)
+            print("✅ Database tables created successfully in order!")
+        except OperationalError as e:
             print(f"⚠️  Error creating tables: {e}")
         
         # Fix serial counters
