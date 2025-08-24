@@ -7,6 +7,40 @@
     <title>Fabric Invoices - Garment Management System</title>
     <link rel="stylesheet" href="css/table-sorting.css">
     <style>
+        :root {
+            /* Dark theme (default) */
+            --bg-primary: #212121;
+            --bg-secondary: #2c2c2c;
+            --bg-tertiary: #424242;
+            --text-primary: #eceff1;
+            --text-secondary: #b0bec5;
+            --nav-bg: #23272f;
+            --nav-border: #3949ab;
+            --nav-active: #3949ab;
+            --nav-hover: #3949ab;
+            --border-color: #555;
+            --focus-color: #5c6bc0;
+            --card-bg: #2c2c2c;
+            --chart-grid: #37474f;
+        }
+
+        [data-theme="light"] {
+            /* Light theme */
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #212121;
+            --text-secondary: #666666;
+            --nav-bg: #ffffff;
+            --nav-border: #e0e0e0;
+            --nav-active: #1976d2;
+            --nav-hover: #f5f5f5;
+            --border-color: #e0e0e0;
+            --focus-color: #1976d2;
+            --card-bg: #ffffff;
+            --chart-grid: #e0e0e0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,15 +49,16 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #212121;
-            color: #eceff1;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 13px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Navigation Bar */
         .nav-bar {
-            background: #23272f;
-            border-bottom: 1px solid #3949ab;
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--nav-border);
             position: fixed;
             top: 0;
             left: 0;
@@ -33,6 +68,7 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .nav-tabs {
@@ -44,7 +80,7 @@
         .nav-tab {
             background: transparent;
             border: none;
-            color: #eceff1;
+            color: var(--text-primary);
             padding: 15px 25px;
             cursor: pointer;
             font-size: 13px;
@@ -56,14 +92,14 @@
         }
 
         .nav-tab:hover {
-            background-color: #3949ab;
-            color: #ffffff;
+            background-color: var(--nav-hover);
+            color: var(--text-primary);
         }
 
         .nav-tab.active {
-            background-color: #3949ab;
-            color: #ffffff;
-            border-bottom-color: #5c6bc0;
+            background-color: var(--nav-active);
+            color: var(--text-primary);
+            border-bottom-color: var(--focus-color);
         }
 
         .nav-user {
@@ -74,13 +110,37 @@
         }
 
         .nav-user span {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 12px;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .theme-toggle .icon {
+            font-size: 14px;
         }
 
         .logout-btn {
             background: #d32f2f;
-            color: #ffffff;
+            color: #fff;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
@@ -104,10 +164,12 @@
 
         /* Filter Controls */
         .filter-controls {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .filter-row {
@@ -125,23 +187,24 @@
 
         .filter-group label {
             font-size: 12px;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         .filter-select, .filter-input {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
             min-width: 120px;
+            transition: border-color 0.3s ease;
         }
 
         .filter-select:focus, .filter-input:focus {
             outline: none;
-            border-color: #5c6bc0;
+            border-color: var(--focus-color);
         }
 
         /* Enhanced Filter Dropdown Styles */
@@ -151,9 +214,9 @@
         }
 
         .filter-select-enhanced {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 6px 10px;
             border-radius: 4px;
             font-size: 12px;
@@ -161,12 +224,13 @@
             cursor: text;
             position: relative;
             user-select: text;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
         }
 
         .filter-select-enhanced:focus {
             outline: none;
-            border-color: #5c6bc0;
-            background: #4a4a4a;
+            border-color: var(--focus-color);
+            background: var(--bg-secondary);
         }
 
         .filter-select-enhanced::after {
@@ -176,7 +240,7 @@
             top: 50%;
             transform: translateY(-50%);
             font-size: 10px;
-            color: #888;
+            color: var(--text-secondary);
             pointer-events: none;
         }
 
@@ -185,8 +249,8 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: #424242;
-            border: 1px solid #555;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-top: none;
             border-radius: 0 0 4px 4px;
             max-height: 200px;
@@ -201,44 +265,44 @@
 
         .filter-input-search {
             width: 100%;
-            background: #424242;
+            background: var(--bg-tertiary);
             border: none;
-            color: #eceff1;
+            color: var(--text-primary);
             padding: 8px 12px;
             font-size: 12px;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .filter-input-search:focus {
             outline: none;
-            background: #4a4a4a;
+            background: var(--bg-secondary);
         }
 
         .filter-option {
             padding: 8px 12px;
             cursor: pointer;
-            color: #eceff1;
+            color: var(--text-primary);
             font-size: 12px;
-            border-bottom: 1px solid #3a3a3a;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .filter-option:hover {
-            background: #5c6bc0;
+            background: var(--focus-color);
         }
 
         .filter-option.selected {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
         .filter-option.empty {
-            color: #888;
+            color: var(--text-secondary);
             font-style: italic;
         }
 
         .filter-option:first-child {
             font-weight: bold;
-            color: #5c6bc0;
-            border-bottom: 2px solid #555;
+            color: var(--focus-color);
+            border-bottom: 2px solid var(--border-color);
         }
 
         .checkbox-label {
@@ -255,10 +319,12 @@
 
         /* Table Styles */
         .table-container {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .data-table {
@@ -268,35 +334,35 @@
         }
 
         .data-table th {
-            background: #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
             font-size: 13px;
-            border-bottom: 2px solid #424242;
+            border-bottom: 2px solid var(--border-color);
             white-space: nowrap;
         }
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .data-table tr:hover {
-            background: #3c3c3c;
+            background: var(--bg-tertiary);
         }
 
         .data-table tr.selected {
-            background: #5c6bc0 !important;
-            color: #ffffff;
+            background: var(--focus-color) !important;
+            color: var(--text-primary);
         }
 
         /* Pagination Styles */
         .table-container {
             max-height: 600px;
             overflow-y: auto;
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             margin-bottom: 10px;
         }
@@ -306,27 +372,28 @@
         }
 
         .table-container::-webkit-scrollbar-track {
-            background: #424242;
+            background: var(--bg-tertiary);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb {
-            background: #5c6bc0;
+            background: var(--focus-color);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb:hover {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
         .pagination-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #2c2c2c;
+            background: var(--card-bg);
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
         }
 
         /* Checkbox styling */
@@ -341,7 +408,7 @@
             cursor: pointer;
             width: 16px;
             height: 16px;
-            accent-color: #5c6bc0;
+            accent-color: var(--focus-color);
         }
 
         /* Make it clear that rows are not clickable */
@@ -350,15 +417,15 @@
         }
 
         .data-table tr:hover {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         .data-table tr:hover td {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         .pagination-info {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
@@ -371,15 +438,15 @@
             padding: 8px 12px;
             border: none;
             border-radius: 4px;
-            background: #424242;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
             cursor: pointer;
             font-size: 12px;
             transition: all 0.3s ease;
         }
 
         .pagination-btn:hover:not(:disabled) {
-            background: #5c6bc0;
+            background: var(--focus-color);
         }
 
         .pagination-btn:disabled {
@@ -413,12 +480,12 @@
         }
 
         .btn-primary {
-            background: #3949ab;
+            background: var(--focus-color);
             color: #fff;
         }
 
         .btn-primary:hover {
-            background: #5c6bc0;
+            background: var(--nav-active);
         }
 
         .btn-secondary {
@@ -468,16 +535,17 @@
 
         /* Import Progress */
         .import-progress {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 20px;
             margin-top: 20px;
+            border: 1px solid var(--border-color);
         }
 
         .progress-bar {
             width: 100%;
             height: 20px;
-            background: #424242;
+            background: var(--bg-tertiary);
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 10px;
@@ -485,14 +553,14 @@
 
         .progress-fill {
             height: 100%;
-            background: #5c6bc0;
+            background: var(--focus-color);
             width: 0%;
             transition: width 0.3s ease;
         }
 
         .progress-text {
             text-align: center;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
@@ -509,7 +577,7 @@
         }
 
         .modal-content {
-            background: #2c2c2c;
+            background: var(--card-bg);
             margin: 2% auto;
             padding: 20px;
             border-radius: 8px;
@@ -517,8 +585,9 @@
             max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
-            color: #eceff1;
+            color: var(--text-primary);
             position: relative;
+            border: 1px solid var(--border-color);
         }
 
         .modal-header {
@@ -527,24 +596,24 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .modal-title {
             font-size: 18px;
             font-weight: 600;
-            color: #5c6bc0;
+            color: var(--focus-color);
         }
 
         .close {
-            color: #aaa;
+            color: var(--text-secondary);
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .close:hover {
-            color: #eceff1;
+            color: var(--text-primary);
         }
 
         .form-group {
@@ -554,23 +623,24 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px;
-            background: #424242;
-            border: 1px solid #555;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            color: #eceff1;
+            color: var(--text-primary);
             font-size: 14px;
+            transition: border-color 0.3s ease;
         }
 
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
-            border-color: #5c6bc0;
+            border-color: var(--focus-color);
         }
 
         .modal-footer {
@@ -579,11 +649,156 @@
             gap: 10px;
             margin-top: 20px;
             padding-top: 15px;
-            border-top: 1px solid #555;
+            border-top: 1px solid var(--border-color);
             position: sticky;
             bottom: 0;
-            background: #2c2c2c;
+            background: var(--card-bg);
             padding-bottom: 10px;
+        }
+
+        /* Custom Dialog Styles */
+        .custom-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .custom-dialog-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: var(--text-primary);
+        }
+
+        .custom-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .custom-dialog-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--focus-color);
+        }
+
+        .custom-dialog-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-dialog-close:hover {
+            color: var(--text-primary);
+        }
+
+        .custom-dialog-body {
+            margin-bottom: 20px;
+        }
+
+        .custom-dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .custom-dialog-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .custom-dialog-btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .custom-dialog-btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .custom-dialog-btn-primary {
+            background: var(--focus-color);
+            color: #fff;
+        }
+
+        .custom-dialog-btn-primary:hover {
+            background: var(--nav-active);
+        }
+
+        .custom-dialog-btn-success {
+            background: #388e3c;
+            color: #fff;
+        }
+
+        .custom-dialog-btn-success:hover {
+            background: #4caf50;
+        }
+
+        .custom-dialog-btn-warning {
+            background: #f57c00;
+            color: #fff;
+        }
+
+        .custom-dialog-btn-warning:hover {
+            background: #ff9800;
+        }
+
+        .custom-dialog-btn-danger {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        .custom-dialog-btn-danger:hover {
+            background: #f44336;
+        }
+
+        /* Fabric Selection Dialog Hover Effects */
+        .fabric-selection-dialog table tbody tr:hover {
+            background: var(--bg-tertiary) !important;
+        }
+
+        .fabric-selection-dialog table tbody tr:hover td {
+            background: var(--bg-tertiary) !important;
+        }
+
+        .custom-dialog-btn-info {
+            background: #1976d2;
+            color: #fff;
+        }
+
+        .custom-dialog-btn-info:hover {
+            background: #2196f3;
         }
 
 
@@ -601,6 +816,10 @@
             <li><a href="dashboard.html" class="nav-tab">Dashboard</a></li>
         </ul>
         <div class="nav-user">
+            <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
+                <span class="icon" id="themeIcon">🌙</span>
+                <span id="themeText">Dark</span>
+            </button>
             <span id="currentUser"></span>
             <button onclick="logout()" class="logout-btn">Logout</button>
         </div>
@@ -953,7 +1172,7 @@
             console.log('🧹 Cleared selectedRows due to data refresh');
             
             // Show loading state
-            tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: #b0bec5;">Loading invoice data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading invoice data...</td></tr>';
             
             try {
                 // Build query parameters from filters
@@ -1025,7 +1244,7 @@
             tbody.innerHTML = '';
 
             if (invoiceData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #b0bec5;">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: var(--text-secondary);">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
                 updatePaginationControls();
                 return;
             }
@@ -1446,13 +1665,17 @@
         function showLocationSelectionDialog(locations) {
             // Create dialog HTML
             let dialogHtml = `
-                <div style="background: #2c2c2c; padding: 20px; border-radius: 8px; min-width: 400px; border: 1px solid #555;">
-                    <h3 style="margin-top: 0; color: #eceff1;">Select Delivery Location</h3>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Location:</label>
-                        <div style="display: flex; gap: 10px; align-items: flex-end;">
-                            <select id="locationSelect" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
-                                <option value="">-- Select Location --</option>
+                <div class="custom-dialog-content" style="min-width: 400px;">
+                    <div class="custom-dialog-header">
+                        <h3 class="custom-dialog-title" style="margin: 0;">Select Delivery Location</h3>
+                        <button class="custom-dialog-close" onclick="closeLocationDialog()">×</button>
+                    </div>
+                    <div class="custom-dialog-body">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Location:</label>
+                            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                <select id="locationSelect" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+                                    <option value="">-- Select Location --</option>
             `;
             
             locations.forEach(location => {
@@ -1460,31 +1683,28 @@
             });
             
             dialogHtml += `
-                            </select>
-                            <button onclick="deleteSelectedLocation()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Delete</button>
+                                </select>
+                                <button onclick="deleteSelectedLocation()" class="custom-dialog-btn custom-dialog-btn-danger" style="white-space: nowrap;">Delete</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Or add new location:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="newLocationInput" placeholder="Enter new location name" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+                                <button onclick="addNewLocation()" class="custom-dialog-btn custom-dialog-btn-success">Add</button>
+                            </div>
                         </div>
                     </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Or add new location:</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="newLocationInput" placeholder="Enter new location name" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
-                            <button onclick="addNewLocation()" style="padding: 8px 16px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add</button>
-                        </div>
-                    </div>
-                    <div style="text-align: right; margin-top: 15px;">
-                        <button onclick="closeLocationDialog()" style="margin-right: 10px; padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                        <button onclick="confirmLocationSelection()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Assign Location</button>
+                    <div class="custom-dialog-footer">
+                        <button onclick="closeLocationDialog()" class="custom-dialog-btn custom-dialog-btn-secondary">Cancel</button>
+                        <button onclick="confirmLocationSelection()" class="custom-dialog-btn custom-dialog-btn-primary">Assign Location</button>
                     </div>
                 </div>
             `;
             
             // Create and show dialog
             const dialog = document.createElement('div');
-            dialog.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                background: rgba(0,0,0,0.7); z-index: 10000; display: flex; 
-                align-items: center; justify-content: center;
-            `;
+            dialog.className = 'custom-dialog';
             dialog.innerHTML = dialogHtml;
             dialog.id = 'locationDialog';
             document.body.appendChild(dialog);
@@ -1759,7 +1979,7 @@
                 
                 // Create a simple dropdown selection instead of typing
                 let selectionHtml = `<div style="margin-bottom: 10px;">Multiple base invoice numbers detected. Please select one:</div>`;
-                selectionHtml += `<select id="baseInvoiceSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #424242; color: #eceff1; border: 1px solid #555;">`;
+                selectionHtml += `<select id="baseInvoiceSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">`;
                 baseNumbersArray.forEach(baseNum => {
                     selectionHtml += `<option value="${baseNum}">${baseNum}</option>`;
                 });
@@ -1773,12 +1993,12 @@
                     align-items: center; justify-content: center;
                 `;
                 dialog.innerHTML = `
-                    <div style="background: #2c2c2c; padding: 20px; border-radius: 8px; min-width: 300px; border: 1px solid #555;">
-                        <h3 style="margin-top: 0; color: #eceff1;">Select Base Invoice Number</h3>
+                    <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; min-width: 300px; border: 1px solid var(--border-color);">
+                        <h3 style="margin-top: 0; color: var(--text-primary);">Select Base Invoice Number</h3>
                         ${selectionHtml}
                         <div style="text-align: right; margin-top: 15px;">
-                            <button onclick="this.closest('.base-invoice-dialog').remove()" style="margin-right: 10px; padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                            <button onclick="confirmBaseInvoiceSelection()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">OK</button>
+                                            <button onclick="this.closest('.base-invoice-dialog').remove()" style="margin-right: 10px; padding: 8px 16px; background: var(--bg-secondary); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
+                <button onclick="confirmBaseInvoiceSelection()" style="padding: 8px 16px; background: var(--focus-color); color: #fff; border: none; border-radius: 4px; cursor: pointer;">OK</button>
                         </div>
                     </div>
                 `;
@@ -1853,144 +2073,139 @@
             
             // Create dialog container
             const dialog = document.createElement('div');
-            dialog.className = 'stitching-record-dialog';
-            dialog.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
-                align-items: center; justify-content: center; overflow-y: auto;
-            `;
+            dialog.className = 'custom-dialog';
             
             // Create dialog content
             const content = document.createElement('div');
+            content.className = 'custom-dialog-content';
             content.style.cssText = `
-                background: #2c2c2c; padding: 20px; border-radius: 8px; 
                 min-width: 600px; max-width: 90%; max-height: 90%; overflow-y: auto;
-                border: 1px solid #555;
             `;
             
             content.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #5c6bc0;">Create Stitching Record</h2>
-                    <button onclick="closeStitchingRecordDialog()" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">×</button>
+                <div class="custom-dialog-header">
+                    <h2 class="custom-dialog-title" style="margin: 0;">Create Stitching Record</h2>
+                    <button class="custom-dialog-close" onclick="closeStitchingRecordDialog()">×</button>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Enter yardage consumed for each selected fabric line:</h3>
-                    <div id="consumedInputs"></div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Stitched Item Details:</h3>
+                <div class="custom-dialog-body">
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 10px;">Enter yardage consumed for each selected fabric line:</h3>
+                        <div id="consumedInputs"></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 10px;">Stitched Item Details:</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Stitched Item:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Stitched Item:</label>
                             <div style="display: flex; gap: 10px; align-items: flex-end;">
-                                <select id="stitchedItemSelect" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
+                                <select id="stitchedItemSelect" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
                                     <option value="">-- Select Item --</option>
                                 </select>
-                                <button onclick="deleteSelectedStitchedItem()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Delete</button>
+                                <button onclick="deleteSelectedStitchedItem()" class="custom-dialog-btn custom-dialog-btn-danger" style="white-space: nowrap;">Delete</button>
                             </div>
                             <div style="margin-top: 10px;">
-                                <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Or add new item:</label>
+                                <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Or add new item:</label>
                                 <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="newStitchedItemInput" placeholder="Enter new item name" style="flex: 1; padding: 8px; background: #424242; color: #eceff1; border: 1px solid #555; border-radius: 4px;">
-                                    <button onclick="addNewStitchedItem()" style="padding: 8px 16px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+                                    <input type="text" id="newStitchedItemInput" placeholder="Enter new item name" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+                                    <button onclick="addNewStitchedItem()" class="custom-dialog-btn custom-dialog-btn-success">Add</button>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Price (THB):</label>
-                            <input type="number" id="price" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;" placeholder="0.00">
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Price (THB):</label>
+                            <input type="number" id="price" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" placeholder="0.00">
                         </div>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Size Quantities:</h3>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Size Quantities:</h3>
                     <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">S:</label><input type="number" id="sizeS" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">M:</label><input type="number" id="sizeM" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">L:</label><input type="number" id="sizeL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XL:</label><input type="number" id="sizeXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XXL:</label><input type="number" id="sizeXXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
-                        <div><label style="display: block; margin-bottom: 5px; color: #b0bec5;">XXXL:</label><input type="number" id="sizeXXXL" min="0" value="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">S:</label><input type="number" id="sizeS" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">M:</label><input type="number" id="sizeM" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">L:</label><input type="number" id="sizeL" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">XL:</label><input type="number" id="sizeXL" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">XXL:</label><input type="number" id="sizeXXL" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
+                        <div><label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">XXXL:</label><input type="number" id="sizeXXXL" min="0" value="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"></div>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="addVat" checked style="width: 16px; height: 16px;">
-                        <label for="addVat" style="color: #b0bec5;">Add VAT 7%</label>
+                        <label for="addVat" style="color: var(--text-secondary);">Add VAT 7%</label>
                     </div>
                     <div style="margin-top: 10px;">
-                        <label style="display: block; margin-bottom: 5px; color: #b0bec5;">Total Value:</label>
-                        <div id="totalValue" style="padding: 8px; background: #424242; border: 1px solid #555; color: #5c6bc0; font-weight: bold; border-radius: 4px;">0.00</div>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Total Value:</label>
+                        <div id="totalValue" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--focus-color); font-weight: bold; border-radius: 4px;">0.00</div>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Lining Fabrics (Stitcher-Purchased):</h3>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Lining Fabrics (Stitcher-Purchased):</h3>
                     <div id="liningTable" style="margin-bottom: 10px;">
-                        <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                        <table style="width: 100%; border-collapse: collapse; background: var(--bg-tertiary); border-radius: 4px;">
                             <thead>
-                                <tr style="background: #555;">
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Lining Name</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Consumption (yards)</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price (THB)</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Total Cost</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                                <tr style="background: var(--bg-secondary);">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Lining Name</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Consumption (yards)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Unit Price (THB)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Total Cost</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="liningTableBody"></tbody>
                         </table>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 10px; align-items: end;">
-                        <input type="text" id="liningName" placeholder="Lining Name" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
-                        <input type="number" id="liningConsumption" step="0.01" min="0" placeholder="Consumption (yards)" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
-                        <input type="number" id="liningUnitPrice" step="0.01" min="0" placeholder="Unit Price (THB)" style="padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
-                        <button onclick="addLiningFabric()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add Lining</button>
-                        <button onclick="removeSelectedLining()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                        <input type="text" id="liningName" placeholder="Lining Name" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                        <input type="number" id="liningConsumption" step="0.01" min="0" placeholder="Consumption (yards)" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                        <input type="number" id="liningUnitPrice" step="0.01" min="0" placeholder="Unit Price (THB)" style="padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                        <button onclick="addLiningFabric()" class="custom-dialog-btn custom-dialog-btn-primary">Add Lining</button>
+                        <button onclick="removeSelectedLining()" class="custom-dialog-btn custom-dialog-btn-danger">Remove</button>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Multi-Fabric Selection (Beta Weaving Fabrics):</h3>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Multi-Fabric Selection (Beta Weaving Fabrics):</h3>
                     <div id="multiFabricTable" style="margin-bottom: 10px; overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px; min-width: 800px;">
+                        <table style="width: 100%; border-collapse: collapse; background: var(--bg-tertiary); border-radius: 4px; min-width: 800px;">
                             <thead>
-                                <tr style="background: #555;">
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Fabric Name</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Color</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Invoice</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Customer</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Delivery Note</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Location</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Consumption (yards)</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price (THB)</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                                <tr style="background: var(--bg-secondary);">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Fabric Name</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Color</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Invoice</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Customer</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Delivery Note</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Location</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Consumption (yards)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Unit Price (THB)</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="multiFabricTableBody"></tbody>
                         </table>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button onclick="openFabricSelectionDialog()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Add Fabric</button>
-                        <button onclick="removeSelectedMultiFabric()" style="padding: 8px 16px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+                        <button onclick="openFabricSelectionDialog()" class="custom-dialog-btn custom-dialog-btn-primary">Add Fabric</button>
+                        <button onclick="removeSelectedMultiFabric()" class="custom-dialog-btn custom-dialog-btn-danger">Remove</button>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <h3 style="color: #eceff1; margin-bottom: 10px;">Garment Image:</h3>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Garment Image:</h3>
                     <div style="display: flex; gap: 15px; align-items: center;">
                         <input type="file" id="garmentImage" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-                        <button onclick="document.getElementById('garmentImage').click()" style="padding: 8px 16px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Upload Image</button>
-                        <div id="imagePreview" style="width: 120px; height: 120px; border: 1px solid #555; background: #222; display: flex; align-items: center; justify-content: center; color: #888;">No image</div>
+                        <button onclick="document.getElementById('garmentImage').click()" class="custom-dialog-btn custom-dialog-btn-primary">Upload Image</button>
+                        <div id="imagePreview" style="width: 120px; height: 120px; border: 1px solid var(--border-color); background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">No image</div>
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button onclick="closeStitchingRecordDialog()" style="padding: 10px 20px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                    <button onclick="submitStitchingRecord()" style="padding: 10px 20px; background: #4caf50; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Create Stitching Record</button>
+                <div class="custom-dialog-footer">
+                    <button onclick="closeStitchingRecordDialog()" class="custom-dialog-btn custom-dialog-btn-secondary">Cancel</button>
+                    <button onclick="submitStitchingRecord()" class="custom-dialog-btn custom-dialog-btn-success">Create Stitching Record</button>
                 </div>
             `;
             
@@ -2024,11 +2239,11 @@
             
             selectedLines.forEach((line, index) => {
                 const div = document.createElement('div');
-                div.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #424242; border-radius: 4px;';
+                div.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color);';
                 div.innerHTML = `
-                    <span style="color: #b0bec5; min-width: 200px;">Invoice #${line.invoice_number} | Item: ${line.item_name} | Pending: ${line.pending} yards</span>
+                    <span style="color: var(--text-secondary); min-width: 200px;">Invoice #${line.invoice_number} | Item: ${line.item_name} | Pending: ${line.pending} yards</span>
                     <input type="number" id="consumed${index}" step="0.01" min="0" max="${line.pending}" value="0" 
-                           style="padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; width: 100px;"
+                           style="padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; width: 100px;"
                            onchange="updateStitchingSelectedLine(${index}, this.value)">
                 `;
                 consumedInputs.appendChild(div);
@@ -2101,16 +2316,25 @@
             const tbody = document.getElementById('liningTableBody');
             tbody.innerHTML = '';
             
+            if (stitchingLiningFabrics.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="5" style="padding: 20px; text-align: center; color: var(--text-secondary);">No lining fabrics</td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
+            
             stitchingLiningFabrics.forEach((lining, index) => {
                 const row = document.createElement('tr');
-                row.style.cssText = 'border-bottom: 1px solid #666;';
+                row.style.cssText = 'border-bottom: 1px solid var(--border-color);';
                 row.innerHTML = `
-                    <td style="padding: 8px;">${lining.name}</td>
-                    <td style="padding: 8px;">${lining.consumption.toFixed(2)}</td>
-                    <td style="padding: 8px;">${lining.unit_price.toFixed(2)}</td>
-                    <td style="padding: 8px;">${lining.total_cost.toFixed(2)}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${lining.name}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${lining.consumption.toFixed(2)}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${lining.unit_price.toFixed(2)}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${lining.total_cost.toFixed(2)}</td>
                     <td style="padding: 8px;">
-                        <button onclick="removeLiningFabric(${index})" style="padding: 4px 8px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+                        <button onclick="removeLiningFabric(${index})" class="custom-dialog-btn custom-dialog-btn-danger" style="padding: 4px 8px; font-size: 12px;">Remove</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -2160,99 +2384,99 @@
             
             const content = document.createElement('div');
             content.style.cssText = `
-                background: #2c2c2c; padding: 20px; border-radius: 8px; 
+                background: var(--card-bg); padding: 20px; border-radius: 8px; 
                 min-width: 800px; max-width: 90%; max-height: 90%; overflow-y: auto;
-                border: 1px solid #555;
+                border: 1px solid var(--border-color);
             `;
             
             content.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #5c6bc0;">Select Fabric</h2>
-                    <button onclick="closeFabricSelectionDialog()" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">×</button>
+                    <h2 style="margin: 0; color: var(--focus-color);">Select Fabric</h2>
+                    <button onclick="closeFabricSelectionDialog()" style="background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer;">×</button>
                 </div>
                 
                 <!-- Enhanced Filters like Original Qt App -->
-                <div style="margin-bottom: 20px; background: #424242; padding: 15px; border-radius: 4px;">
-                    <h3 style="color: #eceff1; margin-bottom: 15px; font-size: 16px;">Filters</h3>
+                <div style="margin-bottom: 20px; background: var(--bg-tertiary); padding: 15px; border-radius: 4px;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 15px; font-size: 16px;">Filters</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Customer:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Customer:</label>
                             <input type="text" id="fabricFilterCustomer" placeholder="Filter by customer" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Invoice Number:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Invoice Number:</label>
                             <input type="text" id="fabricFilterInvoice" placeholder="Filter by invoice number" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Item Name:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Item Name:</label>
                             <input type="text" id="fabricFilterItem" placeholder="Filter by item name" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Color:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Color:</label>
                             <input type="text" id="fabricFilterColor" placeholder="Filter by color" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Delivery Note:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Delivery Note:</label>
                             <input type="text" id="fabricFilterDN" placeholder="Filter by delivery note" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 5px; color: #b0bec5; font-size: 12px;">Location:</label>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Location:</label>
                             <input type="text" id="fabricFilterLocation" placeholder="Filter by location" 
-                                   style="width: 100%; padding: 8px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; font-size: 12px;"
+                                   style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; font-size: 12px;"
                                    onkeyup="filterFabrics()">
                         </div>
                     </div>
                     <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button onclick="clearFabricFilters()" style="padding: 6px 12px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Filters</button>
-                        <button onclick="refreshFabricList()" style="padding: 6px 12px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Refresh</button>
+                        <button onclick="clearFabricFilters()" style="padding: 6px 12px; background: var(--bg-secondary); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Filters</button>
+                        <button onclick="refreshFabricList()" style="padding: 6px 12px; background: var(--focus-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Refresh</button>
                     </div>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
                     <input type="text" id="fabricSearch" placeholder="Quick search all fields..." 
-                           style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;"
+                           style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;"
                            onkeyup="filterFabrics()">
                 </div>
                 
                 <div style="max-height: 400px; overflow-y: auto;">
-                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                    <table style="width: 100%; border-collapse: collapse; background: var(--bg-tertiary); border-radius: 4px;">
                         <thead>
-                            <tr style="background: #555;">
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Fabric Name</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Color</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Invoice</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Customer</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Delivery Note</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Location</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Pending Yards</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Unit Price</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #666;">Action</th>
+                            <tr style="background: var(--bg-secondary);">
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Fabric Name</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Color</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Invoice</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Customer</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Delivery Note</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Location</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Pending Yards</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Unit Price</th>
+                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Action</th>
                             </tr>
                         </thead>
                         <tbody id="fabricSelectionTableBody">
                             ${fabrics.map(fabric => `
-                                <tr style="border-bottom: 1px solid #666;" data-fabric-id="${fabric.id}">
-                                    <td style="padding: 8px;">${fabric.item_name || ''}</td>
-                                    <td style="padding: 8px;">${fabric.color || ''}</td>
-                                    <td style="padding: 8px;">${fabric.invoice_number || ''}</td>
-                                    <td style="padding: 8px;">${fabric.customer_name || ''}</td>
-                                    <td style="padding: 8px;">${fabric.delivery_note || ''}</td>
-                                    <td style="padding: 8px;">${fabric.delivered_location || ''}</td>
-                                    <td style="padding: 8px;">${fabric.pending_yards.toFixed(2)}</td>
-                                    <td style="padding: 8px;">${fabric.unit_price.toFixed(2)}</td>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-primary);" data-fabric-id="${fabric.id}">
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.item_name || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.color || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.invoice_number || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.customer_name || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.delivery_note || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.delivered_location || ''}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.pending_yards.toFixed(2)}</td>
+                                    <td style="padding: 8px; color: var(--text-primary);">${fabric.unit_price.toFixed(2)}</td>
                                     <td style="padding: 8px;">
                                         <button onclick="selectFabric(${fabric.id}, '${fabric.item_name || ''}', '${fabric.color || ''}', '${fabric.invoice_number || ''}', ${fabric.unit_price}, ${fabric.pending_yards})" 
-                                                style="padding: 4px 8px; background: #5c6bc0; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Select</button>
+                                                style="padding: 4px 8px; background: var(--focus-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Select</button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -2261,7 +2485,7 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                    <button onclick="closeFabricSelectionDialog()" style="padding: 8px 16px; background: #666; color: #eceff1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button onclick="closeFabricSelectionDialog()" style="padding: 8px 16px; background: var(--bg-secondary); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
                 </div>
             `;
             
@@ -2364,24 +2588,33 @@
             const tbody = document.getElementById('multiFabricTableBody');
             tbody.innerHTML = '';
             
+            if (stitchingMultiFabrics.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="9" style="padding: 20px; text-align: center; color: var(--text-secondary);">No additional fabrics</td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
+            
             stitchingMultiFabrics.forEach((fabric, index) => {
                 const row = document.createElement('tr');
-                row.style.cssText = 'border-bottom: 1px solid #666;';
+                row.style.cssText = 'border-bottom: 1px solid var(--border-color);';
                 row.innerHTML = `
-                    <td style="padding: 8px;">${fabric.name}</td>
-                    <td style="padding: 8px;">${fabric.color}</td>
-                    <td style="padding: 8px;">${fabric.invoice}</td>
-                    <td style="padding: 8px;">${fabric.customer_name}</td>
-                    <td style="padding: 8px;">${fabric.delivery_note}</td>
-                    <td style="padding: 8px;">${fabric.delivered_location}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.name}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.color}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.invoice}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.customer_name}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.delivery_note}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.delivered_location}</td>
                     <td style="padding: 8px;">
                         <input type="number" step="0.01" min="0" max="${fabric.pending_yards}" value="${fabric.consumption}" 
-                               style="padding: 4px; background: #555; border: 1px solid #666; color: #eceff1; border-radius: 4px; width: 80px;"
+                               style="padding: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; width: 80px;"
                                onchange="updateMultiFabricConsumption(${index}, this.value)">
                     </td>
-                    <td style="padding: 8px;">${fabric.unit_price.toFixed(2)}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.unit_price.toFixed(2)}</td>
                     <td style="padding: 8px;">
-                        <button onclick="removeMultiFabric(${index})" style="padding: 4px 8px; background: #f44336; color: #eceff1; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+                        <button onclick="removeMultiFabric(${index})" class="custom-dialog-btn custom-dialog-btn-danger" style="padding: 4px 8px; font-size: 12px;">Remove</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -2557,7 +2790,7 @@
         }
         
         function closeStitchingRecordDialog() {
-            const dialog = document.querySelector('.stitching-record-dialog');
+            const dialog = document.querySelector('.custom-dialog');
             if (dialog) {
                 dialog.remove();
             }
@@ -2666,6 +2899,55 @@
             window.location.href = 'login.html';
         }
 
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Switch to dark theme
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            } else {
+                // Switch to light theme
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            }
+            
+            // Update any charts if they exist
+            if (window.charts) {
+                setTimeout(() => {
+                    Object.values(window.charts).forEach(chart => {
+                        if (chart && chart.update) {
+                            chart.update('none');
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (savedTheme === 'light') {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
 
 
         function createModal(modalId, title) {
@@ -2687,7 +2969,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Customer ID Filtering:</label>
-                                <p style="color: #b0bec5; font-size: 12px; margin: 5px 0;">
+                                <p style="color: var(--text-secondary); font-size: 12px; margin: 5px 0;">
                                     Use the "Customer IDs" button to manage which customer IDs to import. 
                                     If no customer IDs are selected, all customers will be imported.
                                 </p>
@@ -2761,7 +3043,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Selected Customer IDs:</label>
-                                <div id="customerIdList" style="max-height: 200px; overflow-y: auto; border: 1px solid #555; padding: 10px; background: #424242;">
+                                <div id="customerIdList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; background: var(--bg-tertiary);">
                                     <!-- Customer IDs will be loaded here -->
                                 </div>
                             </div>
@@ -2915,15 +3197,15 @@
             list.innerHTML = '';
             customerIds.sort().forEach(id => {
                 const div = document.createElement('div');
-                div.style.cssText = 'padding: 5px; margin: 2px 0; background: #555; border-radius: 3px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s;';
+                div.style.cssText = 'padding: 5px; margin: 2px 0; background: var(--bg-secondary); border-radius: 3px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s;';
                 div.onclick = () => {
                     div.classList.toggle('selected');
                     // Update background color for visual feedback
                     if (div.classList.contains('selected')) {
                         div.style.backgroundColor = '#2196F3';
-                        div.style.color = 'white';
+                        div.style.color = 'var(--text-primary)';
                     } else {
-                        div.style.backgroundColor = '#555';
+                        div.style.backgroundColor = 'var(--bg-secondary)';
                         div.style.color = 'inherit';
                     }
                 };
@@ -3189,6 +3471,9 @@
 
         // Initialize table sorter when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved theme
+            loadTheme();
+            
             // Initialize table sorter
             tableSorter = createTableSorter('invoiceTable', {
                 dataGetter: getInvoiceValueForSorting

@@ -5,6 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Garment Management System</title>
     <style>
+        :root {
+            /* Dark theme (default) */
+            --bg-primary: #212121;
+            --bg-secondary: #2c2c2c;
+            --bg-tertiary: #424242;
+            --text-primary: #eceff1;
+            --text-secondary: #b0bec5;
+            --nav-bg: #23272f;
+            --nav-border: #3949ab;
+            --nav-active: #3949ab;
+            --nav-hover: #3949ab;
+            --border-color: #555;
+            --focus-color: #5c6bc0;
+            --card-bg: #2c2c2c;
+            --chart-grid: #37474f;
+            --login-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --login-container-bg: rgba(44, 44, 44, 0.95);
+        }
+
+        [data-theme="light"] {
+            /* Light theme */
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #212121;
+            --text-secondary: #666666;
+            --nav-bg: #ffffff;
+            --nav-border: #e0e0e0;
+            --nav-active: #1976d2;
+            --nav-hover: #f5f5f5;
+            --border-color: #e0e0e0;
+            --focus-color: #1976d2;
+            --card-bg: #ffffff;
+            --chart-grid: #e0e0e0;
+            --login-bg: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            --login-container-bg: rgba(255, 255, 255, 0.95);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,23 +51,25 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #eceff1;
+            background: var(--login-bg);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .login-container {
-            background: rgba(44, 44, 44, 0.95);
+            background: var(--login-container-bg);
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
             width: 100%;
             max-width: 400px;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .login-header {
@@ -40,12 +80,12 @@
         .login-header h1 {
             font-size: 28px;
             font-weight: 600;
-            color: #5c6bc0;
+            color: var(--focus-color);
             margin-bottom: 8px;
         }
 
         .login-header p {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
@@ -56,7 +96,7 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
             font-weight: 500;
         }
@@ -64,18 +104,18 @@
         .form-group input {
             width: 100%;
             padding: 12px 16px;
-            background: #424242;
-            border: 1px solid #555;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            color: #eceff1;
+            color: var(--text-primary);
             font-size: 16px;
             transition: all 0.3s ease;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #5c6bc0;
-            background: #4a4a4a;
+            border-color: var(--focus-color);
+            background: var(--bg-secondary);
             box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.1);
         }
 
@@ -83,7 +123,7 @@
             width: 100%;
             padding: 14px;
             background: #5c6bc0;
-            color: #ffffff;
+            color: var(--text-primary);
             border: none;
             border-radius: 6px;
             font-size: 16px;
@@ -117,7 +157,35 @@
         .loading {
             display: none;
             text-align: center;
-            color: #b0bec5;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .theme-toggle .icon {
             font-size: 14px;
         }
 
@@ -143,6 +211,11 @@
     </style>
 </head>
 <body>
+    <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
+        <span class="icon" id="themeIcon">🌙</span>
+        <span id="themeText">Dark</span>
+    </button>
+    
     <div class="login-container">
         <div class="login-header">
             <h1>GMS Login</h1>
@@ -170,6 +243,49 @@
     </div>
 
     <script>
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Switch to dark theme
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            } else {
+                // Switch to light theme
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (savedTheme === 'light') {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
+        // Load theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+        });
+
         // Valid users
         const validUsers = {
             'nita': 'nitabeta',

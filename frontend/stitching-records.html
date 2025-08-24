@@ -6,6 +6,40 @@
     <title>Stitching Records - Garment Management System</title>
     <link rel="stylesheet" href="css/table-sorting.css">
     <style>
+        :root {
+            /* Dark theme (default) */
+            --bg-primary: #212121;
+            --bg-secondary: #2c2c2c;
+            --bg-tertiary: #424242;
+            --text-primary: #eceff1;
+            --text-secondary: #b0bec5;
+            --nav-bg: #23272f;
+            --nav-border: #3949ab;
+            --nav-active: #3949ab;
+            --nav-hover: #3949ab;
+            --border-color: #555;
+            --focus-color: #5c6bc0;
+            --card-bg: #2c2c2c;
+            --chart-grid: #37474f;
+        }
+
+        [data-theme="light"] {
+            /* Light theme */
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #212121;
+            --text-secondary: #666666;
+            --nav-bg: #ffffff;
+            --nav-border: #e0e0e0;
+            --nav-active: #1976d2;
+            --nav-hover: #f5f5f5;
+            --border-color: #e0e0e0;
+            --focus-color: #1976d2;
+            --card-bg: #ffffff;
+            --chart-grid: #e0e0e0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,15 +48,16 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #212121;
-            color: #eceff1;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 13px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Navigation Bar */
         .nav-bar {
-            background: #23272f;
-            border-bottom: 1px solid #3949ab;
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--nav-border);
             position: fixed;
             top: 0;
             left: 0;
@@ -32,6 +67,7 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .nav-tabs {
@@ -43,7 +79,7 @@
         .nav-tab {
             background: transparent;
             border: none;
-            color: #eceff1;
+            color: var(--text-primary);
             padding: 15px 25px;
             cursor: pointer;
             font-size: 13px;
@@ -55,14 +91,14 @@
         }
 
         .nav-tab:hover {
-            background-color: #3949ab;
-            color: #ffffff;
+            background-color: var(--nav-hover);
+            color: var(--text-primary);
         }
 
         .nav-tab.active {
-            background-color: #3949ab;
-            color: #ffffff;
-            border-bottom-color: #5c6bc0;
+            background-color: var(--nav-active);
+            color: var(--text-primary);
+            border-bottom-color: var(--focus-color);
         }
 
         .nav-user {
@@ -73,13 +109,37 @@
         }
 
         .nav-user span {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 12px;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .theme-toggle .icon {
+            font-size: 14px;
         }
 
         .logout-btn {
             background: #d32f2f;
-            color: #ffffff;
+            color: #fff;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
@@ -103,10 +163,12 @@
 
         /* Filter Controls */
         .filter-controls {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .filter-row {
@@ -124,38 +186,40 @@
 
         .filter-group label {
             font-size: 12px;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         .filter-input {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
             min-width: 120px;
+            transition: border-color 0.3s ease;
         }
 
         .filter-input:focus {
             outline: none;
-            border-color: #5c6bc0;
+            border-color: var(--focus-color);
         }
 
         .filter-select {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
             min-width: 120px;
+            transition: border-color 0.3s ease;
         }
 
         .filter-select:focus {
             outline: none;
-            border-color: #5c6bc0;
+            border-color: var(--focus-color);
         }
 
         .radio-group {
@@ -169,7 +233,7 @@
         }
 
         .radio-group label {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 12px;
             cursor: pointer;
         }
@@ -195,12 +259,12 @@
         }
 
         .btn-primary {
-            background: #3949ab;
+            background: var(--focus-color);
             color: #fff;
         }
 
         .btn-primary:hover {
-            background: #5c6bc0;
+            background: var(--nav-active);
         }
 
         .btn-secondary {
@@ -250,10 +314,12 @@
 
         /* Table Styles */
         .table-container {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .data-table {
@@ -263,8 +329,8 @@
         }
 
         .data-table th {
-            background: #3949ab;
-            color: #eceff1;
+            background: var(--nav-active);
+            color: var(--text-primary);
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -275,25 +341,28 @@
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
         }
 
         .data-table tr:hover {
-            background: #3c3c3c;
+            background: var(--bg-tertiary);
         }
 
         .data-table tr.selected {
-            background: #5c6bc0 !important;
-            color: #ffffff;
+            background: var(--focus-color) !important;
+            color: var(--text-primary);
         }
 
         /* Pagination Styles */
         .table-container {
             max-height: 600px;
             overflow-y: auto;
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .table-container::-webkit-scrollbar {
@@ -301,17 +370,17 @@
         }
 
         .table-container::-webkit-scrollbar-track {
-            background: #424242;
+            background: var(--bg-tertiary);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb {
-            background: #5c6bc0;
+            background: var(--focus-color);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb:hover {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
         .treeview-container::-webkit-scrollbar {
@@ -319,31 +388,33 @@
         }
 
         .treeview-container::-webkit-scrollbar-track {
-            background: #424242;
+            background: var(--bg-tertiary);
             border-radius: 4px;
         }
 
         .treeview-container::-webkit-scrollbar-thumb {
-            background: #5c6bc0;
+            background: var(--focus-color);
             border-radius: 4px;
         }
 
         .treeview-container::-webkit-scrollbar-thumb:hover {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
         .pagination-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #2c2c2c;
+            background: var(--card-bg);
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .pagination-info {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
@@ -356,15 +427,15 @@
             padding: 8px 12px;
             border: none;
             border-radius: 4px;
-            background: #424242;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
             cursor: pointer;
             font-size: 12px;
             transition: all 0.3s ease;
         }
 
         .pagination-btn:hover:not(:disabled) {
-            background: #5c6bc0;
+            background: var(--focus-color);
         }
 
         .pagination-btn:disabled {
@@ -373,7 +444,7 @@
         }
 
         .pagination-btn.active {
-            background: #5c6bc0;
+            background: var(--focus-color);
             color: #fff;
         }
 
@@ -416,12 +487,12 @@
 
         .status-billed {
             background: #4caf50;
-            color: #ffffff;
+            color: var(--text-primary);
         }
 
         .status-unbilled {
             background: #ff9800;
-            color: #ffffff;
+            color: var(--text-primary);
         }
 
         /* Image preview */
@@ -431,7 +502,7 @@
             border-radius: 4px;
             object-fit: cover;
             cursor: pointer;
-            border: 1px solid #555;
+            border: 1px solid var(--border-color);
         }
 
         .image-preview:hover {
@@ -452,7 +523,7 @@
         }
 
         .modal-content {
-            background-color: #2c2c2c;
+            background-color: var(--card-bg);
             margin: 5% auto;
             padding: 20px;
             border-radius: 8px;
@@ -460,6 +531,8 @@
             max-width: 800px;
             max-height: 80%;
             overflow-y: auto;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .modal-header {
@@ -468,24 +541,24 @@
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #555;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .modal-title {
-            color: #5c6bc0;
+            color: var(--focus-color);
             font-size: 20px;
             font-weight: 600;
         }
 
         .close {
-            color: #888;
+            color: var(--text-secondary);
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .close:hover {
-            color: #eceff1;
+            color: var(--text-primary);
         }
 
         .modal-body {
@@ -497,7 +570,7 @@
             justify-content: flex-end;
             gap: 10px;
             padding-top: 15px;
-            border-top: 1px solid #555;
+            border-top: 1px solid var(--border-color);
         }
 
         /* Detail sections */
@@ -506,7 +579,7 @@
         }
 
         .detail-section h3 {
-            color: #5c6bc0;
+            color: var(--focus-color);
             margin-bottom: 10px;
             font-size: 16px;
         }
@@ -518,19 +591,20 @@
         }
 
         .detail-item {
-            background: #424242;
+            background: var(--bg-tertiary);
             padding: 10px;
             border-radius: 4px;
+            border: 1px solid var(--border-color);
         }
 
         .detail-label {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 12px;
             margin-bottom: 5px;
         }
 
         .detail-value {
-            color: #eceff1;
+            color: var(--text-primary);
             font-weight: 500;
         }
 
@@ -543,32 +617,35 @@
         }
 
         .size-item {
-            background: #424242;
+            background: var(--bg-tertiary);
             padding: 8px;
             border-radius: 4px;
             text-align: center;
+            border: 1px solid var(--border-color);
         }
 
         .size-label {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 11px;
             margin-bottom: 5px;
         }
 
         .size-value {
-            color: #eceff1;
+            color: var(--text-primary);
             font-weight: bold;
             font-size: 14px;
         }
 
         /* Treeview Styles */
         .treeview-container {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
             max-height: 600px;
             overflow-y: auto;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .treeview-header {
@@ -578,16 +655,16 @@
         .treeview-table {
             width: 100%;
             border-collapse: collapse;
-            background: #2c2c2c;
+            background: var(--card-bg);
             font-size: 12px;
         }
 
         .treeview-table th {
-            background: #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
             padding: 8px 4px;
             text-align: left;
-            border-bottom: 1px solid #666;
+            border-bottom: 1px solid var(--border-color);
             font-weight: 600;
             white-space: nowrap;
             position: sticky;
@@ -597,54 +674,54 @@
 
         .treeview-table td {
             padding: 6px 4px;
-            border-bottom: 1px solid #444;
-            color: #eceff1;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
             white-space: nowrap;
         }
 
         .treeview-table tbody tr:hover {
-            background: #424242;
+            background: var(--bg-tertiary);
         }
 
         .treeview-table tbody tr.selected {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
         /* Parent row styling */
         .treeview-parent {
-            background: #3c3c3c;
+            background: var(--bg-secondary);
             font-weight: 500;
         }
 
         .treeview-parent:hover {
-            background: #4a4a4a;
+            background: var(--bg-tertiary);
         }
 
         /* Child row styling */
         .treeview-child {
-            background: #2a2a2a;
+            background: var(--card-bg);
             font-size: 11px;
         }
 
         .treeview-child:hover {
-            background: #353535;
+            background: var(--bg-tertiary);
         }
 
         .treeview-child td {
             padding-left: 20px;
-            color: #b0bec5;
+            color: var(--text-secondary);
         }
 
         /* Expand/collapse indicator */
         .expand-indicator {
             cursor: pointer;
-            color: #5c6bc0;
+            color: var(--focus-color);
             font-weight: bold;
             margin-right: 5px;
         }
 
         .expand-indicator:hover {
-            color: #7986cb;
+            color: var(--nav-active);
         }
 
         /* Column widths matching Qt app */
@@ -713,6 +790,10 @@
             <li><a href="dashboard.html" class="nav-tab">Dashboard</a></li>
         </ul>
         <div class="nav-user">
+            <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
+                <span class="icon" id="themeIcon">🌙</span>
+                <span id="themeText">Dark</span>
+            </button>
             <span id="currentUser"></span>
             <button onclick="logout()" class="logout-btn">Logout</button>
         </div>
@@ -770,7 +851,7 @@
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="refreshStitchingTable()">Refresh</button>
             <button class="btn btn-success" onclick="exportStitchingRecords()">Export</button>
-            <button class="btn btn-warning" onclick="generatePackingList()">Generate Packing List</button>
+            <button class="btn btn-success" onclick="generatePackingList()">Generate Packing List</button>
 
             <button class="btn btn-danger" onclick="deleteSelectedStitchingRecords()">Delete Selected</button>
         </div>
@@ -811,7 +892,7 @@
                     </thead>
                     <tbody id="stitchingTreeviewBody">
                         <tr>
-                            <td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">Loading stitching records...</td>
+                            <td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -945,7 +1026,7 @@
             }
             
             console.log('✅ Found stitching table body, showing loading state');
-            tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">Loading stitching records...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td></tr>';
             
             try {
                 // Build query parameters from filters
@@ -1006,7 +1087,7 @@
             tbody.innerHTML = '';
 
             if (stitchingData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #b0bec5;">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
                 updatePaginationControls();
                 return;
             }
@@ -1625,7 +1706,7 @@
                         <td>${lining.unit_price.toFixed(2)}</td>
                         <td>${lining.total_cost.toFixed(2)}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="4" style="text-align: center; color: #666;">No lining fabrics</td></tr>';
+                `).join('') : '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No lining fabrics</td></tr>';
             
             // Format garment fabrics
             const garmentFabricsHtml = record.garment_fabrics && record.garment_fabrics.length > 0 ? 
@@ -1638,7 +1719,7 @@
                         <td>${fabric.unit_price.toFixed(2)}</td>
                         <td>${fabric.total_fabric_cost.toFixed(2)}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="6" style="text-align: center; color: #666;">No additional fabrics</td></tr>';
+                `).join('') : '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No additional fabrics</td></tr>';
             
             content.innerHTML = `
                 <div class="detail-section">
@@ -1710,13 +1791,13 @@
                 
                 <div class="detail-section">
                     <h3>Lining Fabrics</h3>
-                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                    <table style="width: 100%; border-collapse: collapse; background: var(--bg-tertiary); border-radius: 4px;">
                         <thead>
-                            <tr style="background: #555;">
-                                <th style="padding: 8px; text-align: left;">Lining Name</th>
-                                <th style="padding: 8px; text-align: left;">Consumption (yards)</th>
-                                <th style="padding: 8px; text-align: left;">Unit Price (THB)</th>
-                                <th style="padding: 8px; text-align: left;">Total Cost</th>
+                            <tr style="background: var(--bg-secondary);">
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Lining Name</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Consumption (yards)</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Unit Price (THB)</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Total Cost</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1727,15 +1808,15 @@
                 
                 <div class="detail-section">
                     <h3>Additional Fabrics</h3>
-                    <table style="width: 100%; border-collapse: collapse; background: #424242; border-radius: 4px;">
+                    <table style="width: 100%; border-collapse: collapse; background: var(--bg-tertiary); border-radius: 4px;">
                         <thead>
-                            <tr style="background: #555;">
-                                <th style="padding: 8px; text-align: left;">Fabric Name</th>
-                                <th style="padding: 8px; text-align: left;">Color</th>
-                                <th style="padding: 8px; text-align: left;">Invoice</th>
-                                <th style="padding: 8px; text-align: left;">Consumption (yards)</th>
-                                <th style="padding: 8px; text-align: left;">Unit Price (THB)</th>
-                                <th style="padding: 8px; text-align: left;">Total Cost</th>
+                            <tr style="background: var(--bg-secondary);">
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Fabric Name</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Color</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Invoice</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Consumption (yards)</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Unit Price (THB)</th>
+                                <th style="padding: 8px; text-align: left; color: var(--text-primary);">Total Cost</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1749,11 +1830,11 @@
                     <div class="detail-grid">
                         <div class="detail-item">
                             <div class="detail-label">Stitched Item</div>
-                            <input type="text" id="amendStitchedItem" value="${record.stitched_item}" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            <input type="text" id="amendStitchedItem" value="${record.stitched_item}" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Price (THB)</div>
-                            <input type="number" id="amendPrice" value="${record.price}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                            <input type="number" id="amendPrice" value="${record.price}" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Add VAT</div>
@@ -1766,27 +1847,27 @@
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <div class="detail-label">S</div>
-                                <input type="number" id="amendSizeS" value="${sizeQty.S || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeS" value="${sizeQty.S || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">M</div>
-                                <input type="number" id="amendSizeM" value="${sizeQty.M || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeM" value="${sizeQty.M || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">L</div>
-                                <input type="number" id="amendSizeL" value="${sizeQty.L || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeL" value="${sizeQty.L || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XL</div>
-                                <input type="number" id="amendSizeXL" value="${sizeQty.XL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXL" value="${sizeQty.XL || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XXL</div>
-                                <input type="number" id="amendSizeXXL" value="${sizeQty.XXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXXL" value="${sizeQty.XXL || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">XXXL</div>
-                                <input type="number" id="amendSizeXXXL" value="${sizeQty.XXXL || 0}" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendSizeXXXL" value="${sizeQty.XXXL || 0}" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                         </div>
                     </div>
@@ -1796,7 +1877,7 @@
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Main Fabric Yards</div>
-                                <input type="number" id="amendMainFabricConsumption" value="${record.yard_consumed}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                <input type="number" id="amendMainFabricConsumption" value="${record.yard_consumed}" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                             </div>
                         </div>
                     </div>
@@ -1807,9 +1888,9 @@
                             ${record.garment_fabrics ? record.garment_fabrics.map((fabric, index) => `
                                 <div class="detail-item" style="margin-bottom: 10px;">
                                     <div class="detail-label">${fabric.fabric_name}</div>
-                                    <input type="number" id="amendMultiFabric${index}" value="${fabric.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                    <input type="number" id="amendMultiFabric${index}" value="${fabric.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                                 </div>
-                            `).join('') : '<p style="color: #b0bec5;">No multi-fabrics found</p>'}
+                            `).join('') : '<p style="color: var(--text-secondary);">No multi-fabrics found</p>'}
                         </div>
                     </div>
                     
@@ -1819,9 +1900,9 @@
                             ${record.lining_fabrics ? record.lining_fabrics.map((lining, index) => `
                                 <div class="detail-item" style="margin-bottom: 10px;">
                                     <div class="detail-label">${lining.lining_name}</div>
-                                    <input type="number" id="amendLining${index}" value="${lining.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: #424242; border: 1px solid #555; color: #eceff1; border-radius: 4px;">
+                                    <input type="number" id="amendLining${index}" value="${lining.consumption_yards}" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
                                 </div>
-                            `).join('') : '<p style="color: #b0bec5;">No lining fabrics found</p>'}
+                            `).join('') : '<p style="color: var(--text-secondary);">No lining fabrics found</p>'}
                         </div>
                     </div>
                 </div>
@@ -2072,11 +2153,11 @@
                         <div class="modal-body">
                             <div style="margin-bottom: 15px;">
                                 <label for="deliveryDate" style="display: block; margin-bottom: 5px; font-weight: bold;">Delivery Date:</label>
-                                <input type="date" id="deliveryDate" value="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px;">
+                                <input type="date" id="deliveryDate" value="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 4px;">
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <label for="packingComments" style="display: block; margin-bottom: 5px; font-weight: bold;">Comments (optional):</label>
-                                <textarea id="packingComments" placeholder="Enter any comments that will appear in the packing list header..." style="width: 100%; height: 80px; padding: 8px; border: 1px solid #555; background: #424242; color: #eceff1; border-radius: 4px; resize: vertical;"></textarea>
+                                <textarea id="packingComments" placeholder="Enter any comments that will appear in the packing list header..." style="width: 100%; height: 80px; padding: 8px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 4px; resize: vertical;"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -2174,6 +2255,55 @@
             window.location.href = 'login.html';
         }
 
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Switch to dark theme
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            } else {
+                // Switch to light theme
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            }
+            
+            // Update any charts if they exist
+            if (window.charts) {
+                setTimeout(() => {
+                    Object.values(window.charts).forEach(chart => {
+                        if (chart && chart.update) {
+                            chart.update('none');
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (savedTheme === 'light') {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
         // ===== TABLE SORTING FUNCTIONALITY =====
         
         // Initialize table sorter
@@ -2237,6 +2367,9 @@
 
         // Initialize table sorter when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved theme
+            loadTheme();
+            
             // Initialize table sorter
             tableSorter = createTableSorter('stitchingTreeview', {
                 dataGetter: getStitchingValueForSorting

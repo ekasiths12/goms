@@ -6,6 +6,40 @@
     <title>Packing Lists - Garment Management System</title>
     <link rel="stylesheet" href="css/table-sorting.css">
     <style>
+        :root {
+            /* Dark theme (default) */
+            --bg-primary: #212121;
+            --bg-secondary: #2c2c2c;
+            --bg-tertiary: #424242;
+            --text-primary: #eceff1;
+            --text-secondary: #b0bec5;
+            --nav-bg: #23272f;
+            --nav-border: #3949ab;
+            --nav-active: #3949ab;
+            --nav-hover: #3949ab;
+            --border-color: #555;
+            --focus-color: #5c6bc0;
+            --card-bg: #2c2c2c;
+            --chart-grid: #37474f;
+        }
+
+        [data-theme="light"] {
+            /* Light theme */
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #212121;
+            --text-secondary: #666666;
+            --nav-bg: #ffffff;
+            --nav-border: #e0e0e0;
+            --nav-active: #1976d2;
+            --nav-hover: #f5f5f5;
+            --border-color: #e0e0e0;
+            --focus-color: #1976d2;
+            --card-bg: #ffffff;
+            --chart-grid: #e0e0e0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,15 +48,16 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #212121;
-            color: #eceff1;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 13px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Navigation Bar */
         .nav-bar {
-            background: #23272f;
-            border-bottom: 1px solid #3949ab;
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--nav-border);
             position: fixed;
             top: 0;
             left: 0;
@@ -32,6 +67,7 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .nav-tabs {
@@ -43,7 +79,7 @@
         .nav-tab {
             background: transparent;
             border: none;
-            color: #eceff1;
+            color: var(--text-primary);
             padding: 15px 25px;
             cursor: pointer;
             font-size: 13px;
@@ -55,14 +91,14 @@
         }
 
         .nav-tab:hover {
-            background-color: #3949ab;
-            color: #ffffff;
+            background-color: var(--nav-hover);
+            color: var(--text-primary);
         }
 
         .nav-tab.active {
-            background-color: #3949ab;
-            color: #ffffff;
-            border-bottom-color: #5c6bc0;
+            background-color: var(--nav-active);
+            color: var(--text-primary);
+            border-bottom-color: var(--focus-color);
         }
 
         .nav-user {
@@ -73,13 +109,37 @@
         }
 
         .nav-user span {
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-size: 12px;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-secondary);
+            border-color: var(--focus-color);
+        }
+
+        .theme-toggle .icon {
+            font-size: 14px;
         }
 
         .logout-btn {
             background: #d32f2f;
-            color: #ffffff;
+            color: #fff;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
@@ -101,10 +161,12 @@
 
         /* Filter Controls - Compact Design */
         .filter-controls {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .filter-row {
@@ -122,33 +184,35 @@
 
         .filter-group label {
             font-size: 12px;
-            color: #b0bec5;
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         .filter-input {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
             min-width: 120px;
+            transition: border-color 0.3s ease;
         }
 
         .filter-input:focus {
             outline: none;
-            border-color: #5c6bc0;
+            border-color: var(--focus-color);
         }
 
         .filter-select {
-            background: #424242;
-            border: 1px solid #555;
-            color: #eceff1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
             min-width: 120px;
+            transition: border-color 0.3s ease;
         }
 
         .radio-group {
@@ -195,12 +259,12 @@
         }
 
         .btn-primary {
-            background: #3949ab;
+            background: var(--focus-color);
             color: #fff;
         }
 
         .btn-primary:hover {
-            background: #5c6bc0;
+            background: var(--nav-active);
         }
 
         .btn-secondary {
@@ -250,19 +314,23 @@
 
         /* Table Styles */
         .table-container {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .data-table-container {
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             overflow-x: auto;
             margin-bottom: 10px;
             max-height: 600px;
             overflow-y: auto;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .data-table {
@@ -274,8 +342,8 @@
         }
 
         .data-table th {
-            background: #3949ab;
-            color: #eceff1;
+            background: var(--nav-active);
+            color: var(--text-primary);
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -290,28 +358,31 @@
 
         .data-table td {
             padding: 10px 8px;
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid var(--border-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-primary);
         }
 
         .data-table tr:hover {
-            background: #3c3c3c;
+            background: var(--bg-tertiary);
         }
 
         .data-table tr.selected {
-            background: #5c6bc0 !important;
-            color: #ffffff;
+            background: var(--focus-color) !important;
+            color: var(--text-primary);
         }
 
         /* Pagination Styles */
         .table-container {
             max-height: 500px;
             overflow-y: auto;
-            background: #2c2c2c;
+            background: var(--card-bg);
             border-radius: 8px;
             margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .table-container::-webkit-scrollbar,
@@ -322,39 +393,39 @@
 
         .table-container::-webkit-scrollbar-track,
         .data-table-container::-webkit-scrollbar-track {
-            background: #424242;
+            background: var(--bg-tertiary);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb,
         .data-table-container::-webkit-scrollbar-thumb {
-            background: #5c6bc0;
+            background: var(--focus-color);
             border-radius: 4px;
         }
 
         .table-container::-webkit-scrollbar-thumb:hover,
         .data-table-container::-webkit-scrollbar-thumb:hover {
-            background: #3949ab;
+            background: var(--nav-active);
         }
 
 
 
         .data-table tr:hover {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         .data-table tr:hover td {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         .parent-row {
-            background: #424242;
+            background: var(--bg-tertiary);
             font-weight: bold;
         }
 
         .parent-row td {
-            background: #424242;
-            color: #5c6bc0;
+            background: var(--bg-secondary);
+            color: var(--focus-color);
         }
 
         .parent-row td:first-child {
@@ -362,7 +433,7 @@
         }
 
         .child-row {
-            background: #2c2c2c;
+            background: var(--bg-secondary);
             display: none;
         }
 
@@ -372,7 +443,7 @@
 
         .child-row td {
             padding-left: 20px;
-            background: #2c2c2c;
+            background: var(--bg-secondary);
         }
 
         .child-row td:first-child {
@@ -380,7 +451,7 @@
         }
 
         .secondary-fabric-row {
-            background: #1e1e1e;
+            background: var(--bg-tertiary);
             display: none;
         }
 
@@ -390,8 +461,8 @@
 
         .secondary-fabric-row td {
             padding-left: 20px;
-            background: #1e1e1e;
-            color: #b0bec5;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
         }
 
         .secondary-fabric-row td:first-child {
@@ -399,7 +470,7 @@
         }
 
         .lining-fabric-row {
-            background: #1a1a1a;
+            background: var(--bg-tertiary);
             display: none;
         }
 
@@ -409,8 +480,8 @@
 
         .lining-fabric-row td {
             padding-left: 20px;
-            background: #1a1a1a;
-            color: #90a4ae;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
         }
 
         .lining-fabric-row td:first-child {
@@ -442,11 +513,11 @@
             cursor: pointer;
             user-select: none;
             font-weight: bold;
-            color: #5c6bc0;
+            color: var(--focus-color);
         }
 
         .expand-indicator:hover {
-            color: #ffffff;
+            color: var(--text-primary);
         }
 
         /* Checkbox styling */
@@ -470,18 +541,18 @@
         }
 
         .data-table tr:hover {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         .data-table tr:hover td {
-            background: #424242 !important;
+            background: var(--bg-tertiary) !important;
         }
 
         /* Loading and Error States */
         .loading-state {
             text-align: center;
             padding: 40px;
-            color: #b0bec5;
+            color: var(--text-secondary);
         }
 
         .error-state {
@@ -681,13 +752,14 @@
             align-items: center;
             margin-top: 20px;
             padding: 15px 20px;
-            background: #2c3e50;
+            background: var(--card-bg);
             border-radius: 8px;
-            border: 1px solid #34495e;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .pagination-info {
-            color: #bdc3c7;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
@@ -698,9 +770,9 @@
         }
 
         .pagination-btn {
-            background: #34495e;
-            color: #ecf0f1;
-            border: 1px solid #2c3e50;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -710,19 +782,19 @@
         }
 
         .pagination-btn:hover:not(:disabled) {
-            background: #3498db;
-            border-color: #2980b9;
+            background: var(--focus-color);
+            border-color: var(--nav-active);
         }
 
         .pagination-btn:disabled {
-            background: #2c3e50;
-            color: #7f8c8d;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
             cursor: not-allowed;
         }
 
         .pagination-btn.active {
-            background: #3498db;
-            border-color: #2980b9;
+            background: var(--focus-color);
+            border-color: var(--nav-active);
             font-weight: bold;
         }
 
@@ -743,6 +815,10 @@
             <li><a href="dashboard.html" class="nav-tab">Dashboard</a></li>
         </ul>
         <div class="nav-user">
+            <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
+                <span class="icon" id="themeIcon">🌙</span>
+                <span id="themeText">Dark</span>
+            </button>
             <span id="currentUser"></span>
             <button onclick="logout()" class="logout-btn">Logout</button>
         </div>
@@ -820,7 +896,7 @@
             <button class="btn btn-warning" onclick="downloadPDF(true)">
                 <i class="fas fa-download"></i> Save PDF with Cost
             </button>
-            <button class="btn btn-primary" onclick="createGroupBillingNote()">
+            <button class="btn btn-success" onclick="createGroupBillingNote()">
                 <i class="fas fa-file-invoice"></i> Group and Create Billing Note
             </button>
             <button class="btn btn-secondary" onclick="refreshPackingListTable()">
@@ -830,7 +906,7 @@
                 <i class="fas fa-tag"></i> Apply MSK Tax #
             </button>
             <div style="flex-grow: 1;"></div>
-            <span style="color: #b0bec5; font-size: 12px; align-self: center;">
+            <span style="color: var(--text-secondary); font-size: 12px; align-self: center;">
                 Tip: Use checkboxes to select packing lists, then click 'Save PDF' to download PDFs or 'Group and Create Billing Note' to create billing notes.
             </span>
             <button class="btn btn-danger" onclick="deleteSelectedPackingList()">
@@ -1337,7 +1413,7 @@
                                         <td>${packingList.packing_list_serial || ''}</td>
                                         <td>${line.stitching_invoice_number || ''}</td>
                                         <td>${line.stitched_item || ''}</td>
-                                        <td style="padding-left: 20px; color: #666;">↳ ${fabric.lining_name || fabric.fabric_name || ''}</td>
+                                        <td style="padding-left: 20px; color: var(--text-secondary);">↳ ${fabric.lining_name || fabric.fabric_name || ''}</td>
                                         <td>${fabric.color || ''}</td>
                                         <td>${packingList.customer_name || ''}</td>
                                         <td>${fabric.beta_tax_invoice_number || ''}</td>
@@ -1368,7 +1444,7 @@
                                         <td>${packingList.packing_list_serial || ''}</td>
                                         <td>${line.stitching_invoice_number || ''}</td>
                                         <td>${line.stitched_item || ''}</td>
-                                        <td style="padding-left: 20px; color: #666;">↳ Lining: ${lining.lining_name || ''}</td>
+                                        <td style="padding-left: 20px; color: var(--text-secondary);">↳ Lining: ${lining.lining_name || ''}</td>
                                         <td>${lining.color || ''}</td>
                                         <td>${packingList.customer_name || ''}</td>
                                         <td></td>
@@ -1531,37 +1607,37 @@
             modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             
             modal.innerHTML = `
-                <div style="background: #2c2c2c; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; color: #eceff1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #555;">
-                        <h2 style="font-size: 18px; font-weight: 600;">Create Group Billing Note</h2>
-                        <span style="color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer;" onclick="this.closest('.modal').remove()">&times;</span>
+                <div style="background: var(--card-bg); margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; color: var(--text-primary); border: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                        <h2 style="font-size: 18px; font-weight: 600; color: var(--focus-color);">Create Group Billing Note</h2>
+                        <span style="color: var(--text-secondary); font-size: 28px; font-weight: bold; cursor: pointer;" onclick="this.closest('.modal').remove()">&times;</span>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
                         <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Invoice Date:</label>
-                            <input type="text" id="invoiceDate" placeholder="DD/MM/YY" style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px;" required>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary);">Invoice Date:</label>
+                            <input type="text" id="invoiceDate" placeholder="DD/MM/YY" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 12px;" required>
                         </div>
                         
                         <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Stitching Invoice Comments (optional):</label>
-                            <textarea id="stitchingComments" placeholder="Enter comments for the stitching invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary);">Stitching Invoice Comments (optional):</label>
+                            <textarea id="stitchingComments" placeholder="Enter comments for the stitching invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
                         </div>
                         
                         <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #b0bec5;">Fabric Invoice Comments (optional):</label>
-                            <textarea id="fabricComments" placeholder="Enter comments for the fabric invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid #555; border-radius: 4px; background: #424242; color: #eceff1; font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-secondary);">Fabric Invoice Comments (optional):</label>
+                            <textarea id="fabricComments" placeholder="Enter comments for the fabric invoice..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 12px; resize: vertical; min-height: 80px;"></textarea>
                         </div>
                         
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
                             <input type="checkbox" id="applyWithholdingTax" checked style="width: auto; margin: 0;">
-                            <label for="applyWithholdingTax" style="color: #b0bec5;">Apply Withholding Tax (3%)</label>
+                            <label for="applyWithholdingTax" style="color: var(--text-secondary);">Apply Withholding Tax (3%)</label>
                         </div>
                     </div>
                     
-                    <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid #555;">
-                        <button id="cancelBtn" style="padding: 8px 16px; background: #757575; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Cancel</button>
-                        <button id="createBtn" style="padding: 8px 16px; background: #3949ab; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Create Group Bill</button>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <button id="cancelBtn" style="padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px;">Cancel</button>
+                        <button id="createBtn" style="padding: 8px 16px; background: var(--focus-color); color: var(--text-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Create Group Bill</button>
                     </div>
                 </div>
             `;
@@ -1777,6 +1853,55 @@
             window.location.href = 'login.html';
         }
 
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Switch to dark theme
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            } else {
+                // Switch to light theme
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            }
+            
+            // Update any charts if they exist
+            if (window.charts) {
+                setTimeout(() => {
+                    Object.values(window.charts).forEach(chart => {
+                        if (chart && chart.update) {
+                            chart.update('none');
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (savedTheme === 'light') {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                html.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
         // Pagination Functions
         function getTotalPages() {
             return Math.ceil(filteredPackingListData.length / itemsPerPage);
@@ -1899,6 +2024,9 @@
 
         // Initialize table sorter when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved theme
+            loadTheme();
+            
             // Initialize table sorter
             tableSorter = createTableSorter('packingListTable', {
                 dataGetter: getPackingListValueForSorting
