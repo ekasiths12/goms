@@ -135,6 +135,70 @@ def main():
         from sqlalchemy.exc import OperationalError
 
         try:
+            # First, ensure invoice_lines table exists and is properly structured
+            print("🔍 Checking invoice_lines table structure...")
+            result = db.session.execute(text("SHOW TABLES LIKE 'invoice_lines'"))
+            if result.fetchone():
+                print("✅ invoice_lines table exists")
+                # Check if it has the id column
+                result = db.session.execute(text("DESCRIBE invoice_lines"))
+                columns = [row[0] for row in result.fetchall()]
+                print(f"📋 invoice_lines columns: {columns}")
+                if 'id' not in columns:
+                    print("❌ invoice_lines missing id column - this is the problem!")
+            else:
+                print("❌ invoice_lines table does not exist - creating it first")
+                db.session.execute(text("""
+                    CREATE TABLE invoice_lines (
+                        id INTEGER NOT NULL AUTO_INCREMENT,
+                        invoice_id INTEGER NOT NULL,
+                        item_name VARCHAR(255) NOT NULL,
+                        quantity NUMERIC(10, 2) DEFAULT 0,
+                        unit_price NUMERIC(10, 2) DEFAULT 0,
+                        delivered_location VARCHAR(255),
+                        is_defective BOOLEAN DEFAULT FALSE,
+                        color VARCHAR(100),
+                        delivery_note VARCHAR(255),
+                        yards_sent NUMERIC(10, 2) DEFAULT 0,
+                        yards_consumed NUMERIC(10, 2) DEFAULT 0,
+                        PRIMARY KEY (id),
+                        FOREIGN KEY(invoice_id) REFERENCES invoices (id)
+                    )
+                """))
+                db.session.commit()
+                print("✅ Created invoice_lines table")
+
+            # Now try to create commission_sales table explicitly
+            print("🔍 Checking commission_sales table...")
+            result = db.session.execute(text("SHOW TABLES LIKE 'commission_sales'"))
+            if not result.fetchone():
+                print("📝 Creating commission_sales table...")
+                db.session.execute(text("""
+                    CREATE TABLE commission_sales (
+                        id INTEGER NOT NULL AUTO_INCREMENT,
+                        invoice_line_id INTEGER NOT NULL,
+                        serial_number VARCHAR(50) NOT NULL,
+                        yards_sold NUMERIC(10, 2) NOT NULL,
+                        unit_price NUMERIC(10, 2) NOT NULL,
+                        commission_rate NUMERIC(5, 4),
+                        commission_amount NUMERIC(10, 2) NOT NULL,
+                        sale_date DATE NOT NULL,
+                        customer_name VARCHAR(255),
+                        item_name VARCHAR(255),
+                        color VARCHAR(100),
+                        delivered_location VARCHAR(255),
+                        created_at DATETIME,
+                        PRIMARY KEY (id),
+                        FOREIGN KEY(invoice_line_id) REFERENCES invoice_lines (id),
+                        UNIQUE (serial_number)
+                    )
+                """))
+                db.session.commit()
+                print("✅ Created commission_sales table successfully!")
+            else:
+                print("✅ commission_sales table already exists")
+
+            # Now create other tables in dependency order
             levels = [
                 # Level 1: No dependencies
                 [
@@ -168,11 +232,19 @@ def main():
                 ],
             ]
 
-            for level in levels:
-                db.metadata.create_all(db.engine, tables=level, checkfirst=True)
+            for i, level in enumerate(levels):
+                print(f"🔧 Creating level {i+1} tables...")
+                for table in level:
+                    try:
+                        db.metadata.create_all(db.engine, tables=[table], checkfirst=True)
+                        print(f"   ✅ {table.name}")
+                    except Exception as e:
+                        print(f"   ⚠️  {table.name}: {e}")
+            
             print("✅ Database tables created successfully in order!")
         except OperationalError as e:
             print(f"⚠️  Error creating tables: {e}")
+            print(f"   Full error details: {str(e)}")
         
         # Fix serial counters
         fix_serial_counters()
