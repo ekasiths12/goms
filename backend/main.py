@@ -251,11 +251,15 @@ def create_app(config_class=Config):
             # Import specific models instead of using import *
             from app.models.customer import Customer
             from app.models.invoice import Invoice, InvoiceLine
+            from app.models.commission_sale import CommissionSale
             from app.models.stitching import StitchingInvoice, GarmentFabric, LiningFabric
             from app.models.packing_list import PackingList, PackingListLine
             from app.models.group_bill import StitchingInvoiceGroup, StitchingInvoiceGroupLine
             from app.models.image import Image
             from app.models.serial_counter import SerialCounter
+            from app.models.stitched_item import StitchedItem
+            from app.models.customer_id_mapping import CustomerIdMapping
+            from app.models.delivery_location import DeliveryLocation
             
             # Create all tables
             db.create_all()
