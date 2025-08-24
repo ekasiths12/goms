@@ -233,6 +233,7 @@ def get_dashboard_summary():
             SELECT COALESCE(SUM(
                 CASE 
                     WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                    AND JSON_VALID(si.size_qty_json) = 1
                     THEN (
                         COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                         COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
@@ -367,11 +368,14 @@ def get_revenue_trends():
         
         # Query for direct commission sales
         commission_conditions = ["1=1"]
-        commission_params = {
-            'date_from': date_from,
-            'date_to': date_to
-        }
+        commission_params = {}
         
+        if date_from:
+            commission_conditions.append("cs.sale_date >= :date_from")
+            commission_params['date_from'] = date_from
+        if date_to:
+            commission_conditions.append("cs.sale_date <= :date_to")
+            commission_params['date_to'] = date_to
         if customer:
             commission_conditions.append("cs.customer_name = :customer")
             commission_params['customer'] = customer
@@ -584,6 +588,7 @@ def get_fabric_consumption():
                 SUM(
                     CASE 
                         WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
                         THEN (
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
@@ -611,6 +616,7 @@ def get_fabric_consumption():
                     WHEN SUM(
                         CASE 
                             WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                            AND JSON_VALID(si.size_qty_json) = 1
                             THEN (
                                 COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                                 COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
@@ -637,6 +643,7 @@ def get_fabric_consumption():
                     THEN SUM(COALESCE(si.yard_consumed, 0)) / SUM(
                         CASE 
                             WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                            AND JSON_VALID(si.size_qty_json) = 1
                             THEN (
                                 COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                                 COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
@@ -727,6 +734,7 @@ def get_production_overview():
                 SUM(
                     CASE 
                         WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
                         THEN (
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
@@ -878,6 +886,7 @@ def get_production_rate():
                 SUM(
                     CASE 
                         WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
                         THEN (
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
                             COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
