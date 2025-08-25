@@ -99,6 +99,47 @@ def get_image(image_id):
     except Exception as e:
         return jsonify({'error': f'Error retrieving image: {str(e)}'}), 500
 
+@images_bp.route('/serve/<int:image_id>', methods=['GET'])
+def serve_image(image_id):
+    """Serve image file directly"""
+    try:
+        from flask import send_file, abort
+        
+        image = Image.query.get(image_id)
+        if not image:
+            abort(404)
+        
+        # Get storage service
+        storage_service = StorageServiceFactory.get_storage_service()
+        
+        # For local storage, serve directly from file system
+        if hasattr(storage_service, 'base_path'):
+            # Local storage service
+            file_path = storage_service.base_path / image.file_path
+            if file_path.exists():
+                return send_file(str(file_path), mimetype='image/jpeg')
+            else:
+                abort(404)
+        
+        # For S3 storage, download to temp and serve
+        else:
+            import tempfile
+            import os
+            
+            # Create temporary file
+            temp_dir = tempfile.gettempdir()
+            temp_file_path = os.path.join(temp_dir, f"temp_image_{image_id}_{os.path.basename(image.file_path)}")
+            
+            # Download from S3 to temp location
+            if storage_service.download_file(image.file_path, temp_file_path):
+                return send_file(temp_file_path, mimetype='image/jpeg')
+            else:
+                abort(404)
+                
+    except Exception as e:
+        print(f"Error serving image {image_id}: {e}")
+        abort(500)
+
 @images_bp.route('/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
     """Delete image from AWS S3"""

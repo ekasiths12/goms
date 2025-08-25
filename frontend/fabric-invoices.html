@@ -3665,7 +3665,17 @@
             // Set default values
             document.getElementById('commissionYardsSold').value = availableYards;
             document.getElementById('commissionYardsSold').max = availableYards;
-            document.getElementById('commissionSaleDate').value = new Date().toISOString().split('T')[0];
+            
+            // Set commission sale date to the same date as the fabric invoice line
+            let defaultSaleDate = new Date().toISOString().split('T')[0]; // fallback to current date
+            if (invoiceLine.invoice && invoiceLine.invoice.invoice_date) {
+                // Use the fabric invoice date
+                defaultSaleDate = invoiceLine.invoice.invoice_date;
+            } else if (invoiceLine.invoice_date) {
+                // Fallback to invoice_date if invoice object is not available
+                defaultSaleDate = invoiceLine.invoice_date;
+            }
+            document.getElementById('commissionSaleDate').value = defaultSaleDate;
             
             // Calculate initial commission amount
             updateCommissionAmount();

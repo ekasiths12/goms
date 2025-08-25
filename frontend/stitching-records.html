@@ -933,7 +933,21 @@
         </div>
     </div>
 
-
+    <!-- Image Modal for Full Size View -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content" style="max-width: 90%; max-height: 90%; padding: 10px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="imageModalTitle">Image</h2>
+                <span class="close" onclick="closeImageModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 10px;">
+                <img id="fullSizeImage" src="" alt="Full Size Image" style="max-width: 100%; max-height: 70vh; border-radius: 4px;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImageModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Stitching Records Functions
@@ -1721,6 +1735,67 @@
                     </tr>
                 `).join('') : '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No additional fabrics</td></tr>';
             
+            // Format image section
+            console.log('🔍 Image data:', record.image);
+            
+            let imageHtml = '';
+            if (record.image && record.image.id) {
+                console.log('🔍 Image ID:', record.image.id);
+                console.log('🔍 Image URL:', record.image.image_url);
+                console.log('🔍 Image filename:', record.image.filename);
+                
+                // Use the new image serving endpoint
+                const apiBaseUrl = getApiBaseUrl();
+                const imageUrl = `${apiBaseUrl}/api/images/serve/${record.image.id}`;
+                
+                console.log('🔍 API Base URL:', apiBaseUrl);
+                console.log('🔍 Image ID:', record.image.id);
+                console.log('🔍 Final image URL:', imageUrl);
+                
+                // Test the URL immediately
+                fetch(imageUrl, { method: 'HEAD' })
+                    .then(response => {
+                        console.log('🔍 Image URL test response:', response.status, response.statusText);
+                    })
+                    .catch(error => {
+                        console.log('🔍 Image URL test error:', error);
+                    });
+                
+                imageHtml = `
+                    <div class="detail-section">
+                        <h3>Uploaded Image</h3>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <img src="${imageUrl}" 
+                                 alt="Stitching Record Image" 
+                                 style="max-width: 50%; max-height: 200px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer; display: block; margin: 0 auto;"
+                                 onclick="openImageModal('${imageUrl}', '${record.image.filename || 'Stitching Image'}')"
+                                 title="Click to view full size"
+                                 onload="console.log('✅ Image loaded successfully:', this.src); this.style.border='2px solid green';"
+                                 onerror="console.log('❌ Image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="margin-top: 10px; color: var(--text-secondary); font-size: 12px;">
+                                ${record.image.filename || 'Image'} - Click to view full size
+                            </div>
+                            <div style="display: none; margin-top: 10px; color: #f44336; font-size: 12px;">
+                                Image could not be loaded. URL: ${imageUrl}
+                            </div>
+
+                            <div style="margin-top: 10px; color: var(--text-secondary); font-size: 10px;">
+                                <a href="${imageUrl}" target="_blank">Open image in new tab</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="detail-section">
+                        <h3>Uploaded Image</h3>
+                        <div style="text-align: center; margin: 20px 0; color: var(--text-secondary);">
+                            No image uploaded for this stitching record
+                        </div>
+                    </div>
+                `;
+            }
+            
             content.innerHTML = `
                 <div class="detail-section">
                     <h3>Basic Information</h3>
@@ -1751,6 +1826,8 @@
                         </div>
                     </div>
                 </div>
+                
+                ${imageHtml}
                 
                 <div class="detail-section">
                     <h3>Size Quantities</h3>
@@ -1950,6 +2027,21 @@
             modal.style.display = 'none';
             currentStitchingRecord = null;
             isAmendMode = false;
+        }
+        
+        function openImageModal(imageUrl, imageTitle) {
+            const modal = document.getElementById('imageModal');
+            const image = document.getElementById('fullSizeImage');
+            const title = document.getElementById('imageModalTitle');
+            
+            image.src = imageUrl;
+            title.textContent = imageTitle || 'Image';
+            modal.style.display = 'block';
+        }
+        
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'none';
         }
         
         function toggleAmendMode() {
@@ -2243,9 +2335,15 @@
 
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('stitchingDetailModal');
-            if (event.target === modal) {
+            const stitchingModal = document.getElementById('stitchingDetailModal');
+            const imageModal = document.getElementById('imageModal');
+            
+            if (event.target === stitchingModal) {
                 closeStitchingDetailModal();
+            }
+            
+            if (event.target === imageModal) {
+                closeImageModal();
             }
         }
 
