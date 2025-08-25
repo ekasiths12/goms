@@ -20,6 +20,8 @@ from app.models.image import Image
 from app.models.stitched_item import StitchedItem
 from app.models.customer_id_mapping import CustomerIdMapping
 from app.models.delivery_location import DeliveryLocation
+from app.models.stitching_cost import StitchingCost
+from app.models.stitching_price import StitchingPrice
 
 def fix_serial_counters():
     """Fix serial_counters table structure if needed"""
@@ -215,6 +217,8 @@ def main():
                     Invoice.__table__,
                     StitchingInvoiceGroup.__table__,
                     PackingList.__table__,
+                    StitchingCost.__table__,
+                    StitchingPrice.__table__,
                 ],
                 # Level 3: Depend on invoices/packing_lists/groups
                 [InvoiceLine.__table__],
