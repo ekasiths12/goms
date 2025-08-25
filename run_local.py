@@ -7,6 +7,8 @@ Run this script to start the Flask backend locally for testing.
 import os
 import sys
 import subprocess
+import signal
+import time
 from pathlib import Path
 
 def check_dependencies():
@@ -36,6 +38,34 @@ def check_dependencies():
     
     print("✅ All required packages are installed")
     return True
+
+def kill_processes_on_ports():
+    """Kill any processes running on ports 3000 and 8000"""
+    print("🔫 Killing processes on ports 3000 and 8000...")
+    
+    ports = [3000, 8000]
+    for port in ports:
+        try:
+            # Find processes using the port
+            result = subprocess.run(['lsof', '-ti', f':{port}'], 
+                                  capture_output=True, text=True, check=False)
+            
+            if result.stdout.strip():
+                pids = result.stdout.strip().split('\n')
+                for pid in pids:
+                    if pid:
+                        try:
+                            print(f"   🎯 Killing process {pid} on port {port}")
+                            os.kill(int(pid), signal.SIGKILL)
+                        except (ValueError, ProcessLookupError) as e:
+                            print(f"   ⚠️  Could not kill process {pid}: {e}")
+                time.sleep(1)  # Give time for processes to terminate
+            else:
+                print(f"   ✅ No processes found on port {port}")
+        except Exception as e:
+            print(f"   ⚠️  Error checking port {port}: {e}")
+    
+    print("   ✅ Process cleanup completed")
 
 def setup_environment():
     """Set up environment variables for local development"""
@@ -98,6 +128,9 @@ def main():
     # Check dependencies
     if not check_dependencies():
         return
+    
+    # Kill existing processes on ports 3000 and 8000
+    kill_processes_on_ports()
     
     # Setup environment
     setup_environment()

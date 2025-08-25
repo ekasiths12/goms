@@ -608,8 +608,8 @@
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Stitching Revenue</div>
-                <div class="kpi-value" id="stitchingRevenue">฿0</div>
+                                        <div class="kpi-title">Stitching Profit</div>
+                        <div class="kpi-value" id="stitchingProfit">฿0</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Active Orders</div>
@@ -630,13 +630,13 @@
 
         <!-- Charts Grid -->
         <div class="charts-grid">
-            <!-- Revenue Trends -->
-            <div class="chart-card">
-                <h3 class="chart-title">📈 Revenue Trends</h3>
-                <div class="chart-container" data-chart="revenueChart">
-                    <canvas id="revenueChart"></canvas>
+                            <!-- Profit Trends -->
+                <div class="chart-card">
+                    <h3 class="chart-title">📈 Profit Trends</h3>
+                    <div class="chart-container" data-chart="revenueChart">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
                 </div>
-            </div>
 
             <!-- Top Customers -->
             <div class="chart-card">
@@ -701,6 +701,30 @@
                     <canvas id="productionRateChart"></canvas>
                 </div>
             </div>
+
+            <!-- Profit Margin by Garment -->
+            <div class="chart-card">
+                <h3 class="chart-title">📈 Profit Margin by Garment Type</h3>
+                <div class="chart-container" data-chart="profitMarginChart">
+                    <canvas id="profitMarginChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Profitability Trend -->
+            <div class="chart-card">
+                <h3 class="chart-title">📊 Profitability Trend Over Time</h3>
+                <div class="chart-container" data-chart="profitabilityTrendChart">
+                    <canvas id="profitabilityTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Customer Profitability -->
+            <div class="chart-card">
+                <h3 class="chart-title">💰 Customer Profitability Analysis</h3>
+                <div class="chart-container" data-chart="customerProfitabilityChart">
+                    <canvas id="customerProfitabilityChart"></canvas>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -721,6 +745,14 @@
         // Initialize dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, checking canvas elements...');
+            
+            // Test if chart containers exist
+            const fabricContainer = document.querySelector('[data-chart="fabricChart"]');
+            const profitMarginContainer = document.querySelector('[data-chart="profitMarginChart"]');
+            console.log('Chart containers found:', {
+                fabricContainer: !!fabricContainer,
+                profitMarginContainer: !!profitMarginContainer
+            });
             
             // Load theme immediately to prevent flashing
             loadTheme();
@@ -820,7 +852,10 @@
                     earningsByCustomerData,
                     stockData,
                     fabricAgingData,
-                    productionRateData
+                    productionRateData,
+                    profitMarginData,
+                    profitabilityTrendData,
+                    customerProfitabilityData
                 ] = await Promise.all([
                     fetchDashboardData('summary', filters),
                     fetchDashboardData('revenue-trends', filters),
@@ -831,14 +866,30 @@
                     fetchDashboardData('earnings-by-customer', filters),
                     fetchDashboardData('stock-status', filters),
                     fetchDashboardData('fabric-aging', filters),
-                    fetchDashboardData('production-rate', filters)
+                    fetchDashboardData('production-rate', filters),
+                    fetchDashboardData('profit-margin-by-garment', filters),
+                    fetchDashboardData('profitability-trend', filters),
+                    fetchDashboardData('customer-profitability', filters)
                 ]);
+                
+                console.log('All data fetched successfully:', {
+                    fabricData,
+                    profitMarginData,
+                    profitabilityTrendData,
+                    customerProfitabilityData
+                });
 
                 // Update KPIs
                 updateKPIs(summaryData);
                 
                 // Update charts
-                updateRevenueChart(revenueData);
+                console.log('Updating charts with data:', {
+                    fabricData,
+                    profitMarginData,
+                    profitabilityTrendData,
+                    customerProfitabilityData
+                });
+                updateProfitChart(revenueData);
                 updateCustomersChart(customersData);
                 updateFabricChart(fabricData);
                 updateProductionChart(productionData);
@@ -847,6 +898,9 @@
                 updateStockChart(stockData);
                 updateFabricAgingChart(fabricAgingData);
                 updateProductionRateChart(productionRateData);
+                updateProfitMarginChart(profitMarginData);
+                updateProfitabilityTrendChart(profitabilityTrendData);
+                updateCustomerProfitabilityChart(customerProfitabilityData);
                 
                 hideLoading();
                 
@@ -936,7 +990,7 @@
             document.getElementById('directCommission').textContent = formatCurrency(data.directCommission || 0);
             document.getElementById('fabricCommission').textContent = formatCurrency(data.fabricCommission || 0);
             
-            document.getElementById('stitchingRevenue').textContent = formatCurrency(data.stitchingRevenue || 0);
+            document.getElementById('stitchingProfit').textContent = formatCurrency(data.stitchingProfit || 0);
             document.getElementById('activeOrders').textContent = data.activeOrders || 0;
             document.getElementById('fabricStock').textContent = formatNumber(data.fabricStock || 0);
             document.getElementById('productionRate').textContent = data.productionRate || 0;
@@ -945,7 +999,7 @@
             // Removed revenue change indicators as requested
         }
 
-        function updateRevenueChart(data) {
+        function updateProfitChart(data) {
             let canvas = document.getElementById('revenueChart');
             if (!canvas) {
                 const container = document.querySelector('[data-chart="revenueChart"]');
@@ -992,8 +1046,8 @@
                             fill: false
                         },
                         {
-                            label: 'Stitching Revenue',
-                            data: data.stitchingRevenue || [],
+                            label: 'Stitching Profit',
+                            data: data.stitchingProfit || [],
                             borderColor: '#F44336',
                             backgroundColor: 'rgba(244, 67, 54, 0.1)',
                             borderWidth: 2,
@@ -1094,8 +1148,8 @@
                             borderWidth: 2
                         },
                         {
-                            label: 'Stitching Revenue',
-                            data: data.stitchingRevenue || [],
+                            label: 'Stitching Profit',
+                            data: data.stitchingProfit || [],
                             backgroundColor: '#F44336',
                             borderColor: '#37474f',
                             borderWidth: 2
@@ -1152,6 +1206,7 @@
         }
 
         function updateFabricChart(data) {
+            console.log('updateFabricChart called with data:', data);
             let canvas = document.getElementById('fabricChart');
             if (!canvas) {
                 const container = document.querySelector('[data-chart="fabricChart"]');
@@ -1161,6 +1216,9 @@
                     canvas.width = 400;
                     canvas.height = 280;
                     container.appendChild(canvas);
+                    console.log('Created new fabric chart canvas');
+                } else {
+                    console.error('Fabric chart container not found');
                 }
             }
             
@@ -1183,6 +1241,7 @@
                 '#3f51b5', '#009688', '#ffc107', '#8bc34a', '#ff4081'
             ];
             
+            console.log('Creating fabric chart with data:', data.labels, data.values);
             charts.fabric = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -2021,6 +2080,289 @@
                     }
                 });
             }
+        }
+
+        function updateProfitMarginChart(data) {
+            console.log('updateProfitMarginChart called with data:', data);
+            let canvas = document.getElementById('profitMarginChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="profitMarginChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'profitMarginChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                    console.log('Created new profit margin chart canvas');
+                } else {
+                    console.error('Profit margin chart container not found');
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.profitMargin) {
+                charts.profitMargin.destroy();
+            }
+            
+            // Color palette for different bars
+            const colors = [
+                '#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0',
+                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63'
+            ];
+            
+            console.log('Creating profit margin chart with data:', data.labels, data.values);
+            charts.profitMargin = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Profit Margin (%)',
+                        data: data.values || [],
+                        backgroundColor: (context) => {
+                            const value = context.parsed?.y || 0;
+                            const index = context.dataIndex;
+                            // Green for positive margins, red for negative
+                            return value >= 0 ? '#4caf50' : '#f44336';
+                        },
+                        borderColor: '#37474f',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: getThemeColors().text
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: getThemeColors().text,
+                                callback: function(value) {
+                                    return value.toFixed(1) + '%';
+                                }
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: getThemeColors().text
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Profit Margin: ' + context.parsed.y.toFixed(2) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateProfitabilityTrendChart(data) {
+            let canvas = document.getElementById('profitabilityTrendChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="profitabilityTrendChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'profitabilityTrendChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.profitabilityTrend) {
+                charts.profitabilityTrend.destroy();
+            }
+            
+            charts.profitabilityTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: data.revenue || [],
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Cost',
+                            data: data.cost || [],
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            borderWidth: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Profit',
+                            data: data.profit || [],
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: getThemeColors().text
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: getThemeColors().text,
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: getThemeColors().text
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCustomerProfitabilityChart(data) {
+            let canvas = document.getElementById('customerProfitabilityChart');
+            if (!canvas) {
+                const container = document.querySelector('[data-chart="customerProfitabilityChart"]');
+                if (container) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'customerProfitabilityChart';
+                    canvas.width = 400;
+                    canvas.height = 280;
+                    container.appendChild(canvas);
+                }
+            }
+            
+            canvas.style.display = 'block';
+            canvas.style.visibility = 'visible';
+            canvas.style.opacity = '1';
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '1';
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (charts.customerProfitability) {
+                charts.customerProfitability.destroy();
+            }
+            
+            // Color palette for different bars
+            const colors = [
+                '#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0',
+                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63'
+            ];
+            
+            charts.customerProfitability = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [{
+                        label: 'Total Profit',
+                        data: data.profits || [],
+                        backgroundColor: (context) => {
+                            const value = context.parsed?.y || 0;
+                            const index = context.dataIndex;
+                            // Green for positive profits, red for negative
+                            return value >= 0 ? '#4caf50' : '#f44336';
+                        },
+                        borderColor: '#37474f',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: getThemeColors().text
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: getThemeColors().text,
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            },
+                            grid: {
+                                color: getThemeColors().grid
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: getThemeColors().text
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Profit: ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>

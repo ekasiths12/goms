@@ -130,10 +130,63 @@ def get_dashboard_summary():
         print(f"DEBUG: Direct commission: {direct_commission}")
         
         # Calculate stitching profit (based on packing list delivery dates)
+        # Calculate total quantity from size_qty_json
         stitching_query = text(f"""
             SELECT 
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
-                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
+                COALESCE(SUM(si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_cost
             FROM packing_lists pl
             JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
             JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
@@ -291,8 +344,14 @@ def get_dashboard_summary():
         fabric_change = 8.3    # Mock positive growth
         stitching_change = 15.7  # Mock positive growth
         
+        # Calculate total revenue (commission revenue + stitching profit)
+        commission_revenue = direct_commission + fabric_commission
+        total_revenue = commission_revenue + stitching_profit
+        print(f"DEBUG: Commission revenue: {commission_revenue}, Total revenue: {total_revenue}")
+        
         result = {
             'totalProfit': float(total_profit),
+            'totalRevenue': float(total_revenue),  # Total revenue for frontend
             'directCommission': float(direct_commission),  # Direct commission sales
             'fabricCommission': float(fabric_commission),  # Fabric commission from stitching
             'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
@@ -317,7 +376,7 @@ def get_dashboard_summary():
 
 @dashboard_bp.route('/revenue-trends', methods=['GET'])
 def get_revenue_trends():
-    """Get revenue trends over time based on packing list delivery dates"""
+    """Get profit trends over time based on packing list delivery dates"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -357,8 +416,60 @@ def get_revenue_trends():
             SELECT 
                 DATE(pl.delivery_date) as date,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
-                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
+                COALESCE(SUM(si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -484,8 +595,60 @@ def get_top_customers():
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
-                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
+                COALESCE(SUM(si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -829,13 +992,21 @@ def get_stock_status():
         query = text(f"""
             SELECT 
                 COALESCE(il.delivered_location, 'Unknown') as location,
-                SUM(il.yards_sent - COALESCE(il.yards_consumed, 0)) as pending_yards
+                SUM(il.yards_sent - COALESCE(il.yards_consumed, 0) - COALESCE(commission_yards, 0)) as pending_yards
             FROM invoice_lines il
             JOIN invoices i ON il.invoice_id = i.id
             JOIN customers c ON i.customer_id = c.id
-            WHERE (il.yards_sent - COALESCE(il.yards_consumed, 0)) > 0
+            LEFT JOIN (
+                SELECT 
+                    invoice_line_id,
+                    SUM(yards_sold) as commission_yards
+                FROM commission_sales
+                GROUP BY invoice_line_id
+            ) cs ON il.id = cs.invoice_line_id
+            WHERE (il.yards_sent - COALESCE(il.yards_consumed, 0) - COALESCE(commission_yards, 0)) > 0
             AND {where_clause}
             GROUP BY il.delivered_location
+            HAVING pending_yards > 0
             ORDER BY pending_yards DESC
             LIMIT 10
         """)
@@ -993,7 +1164,60 @@ def get_earnings_breakdown():
         stitching_query = text(f"""
             SELECT 
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+                COALESCE(SUM(si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -1006,6 +1230,8 @@ def get_earnings_breakdown():
         stitching_result = db.session.execute(stitching_query, params).fetchone()
         fabric_commission = float(stitching_result.fabric_commission or 0)
         stitching_revenue = float(stitching_result.stitching_revenue or 0)
+        stitching_cost = float(stitching_result.stitching_cost or 0)
+        stitching_profit = stitching_revenue - stitching_cost
         
         # Query for direct commission sales
         commission_conditions = ["1=1"]
@@ -1035,15 +1261,15 @@ def get_earnings_breakdown():
         commission_result = db.session.execute(commission_query, commission_params).fetchone()
         direct_commission = float(commission_result.direct_commission or 0)
         
-        total = fabric_commission + stitching_revenue + direct_commission
+        total = fabric_commission + stitching_profit + direct_commission
         
         # Calculate percentages
         fabric_percentage = ((fabric_commission + direct_commission) / total * 100) if total > 0 else 0
-        stitching_percentage = (stitching_revenue / total * 100) if total > 0 else 0
+        stitching_percentage = (stitching_profit / total * 100) if total > 0 else 0
         
         return jsonify({
-            'labels': ['Direct Commission', 'Fabric Commission', 'Stitching Revenue'],
-            'values': [direct_commission, fabric_commission, stitching_revenue],
+            'labels': ['Direct Commission', 'Fabric Commission', 'Stitching Profit'],
+            'values': [direct_commission, fabric_commission, stitching_profit],
             'percentages': [
                 round((direct_commission / total * 100) if total > 0 else 0, 1),
                 round((fabric_commission / total * 100) if total > 0 else 0, 1),
@@ -1088,12 +1314,65 @@ def get_earnings_by_customer():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Query for stitching revenue and commission
+        # Query for stitching profit and commission
         stitching_query = text(f"""
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+                COALESCE(SUM(si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                )), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -1143,26 +1422,28 @@ def get_earnings_by_customer():
         for row in stitching_results:
             customer_name = row.short_name
             if customer_name not in customer_data:
-                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
             customer_data[customer_name]['fabric_commission'] = float(row.fabric_commission or 0)
-            customer_data[customer_name]['stitching_revenue'] = float(row.stitching_revenue or 0)
+            stitching_revenue = float(row.stitching_revenue or 0)
+            stitching_cost = float(row.stitching_cost or 0)
+            customer_data[customer_name]['stitching_profit'] = stitching_revenue - stitching_cost
         
         # Add direct commission data
         for row in commission_results:
             customer_name = row.customer_name
             if customer_name not in customer_data:
-                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
             customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)
         
-        # Sort by total revenue and get top 10
+        # Sort by total profit and get top 10
         sorted_customers = sorted(
             customer_data.items(),
-            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_revenue'] + x[1]['direct_commission'],
+            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_profit'] + x[1]['direct_commission'],
             reverse=True
         )[:10]
         
         labels = [customer[0] for customer in sorted_customers]
-        total_earnings = [customer[1]['fabric_commission'] + customer[1]['stitching_revenue'] + customer[1]['direct_commission'] for customer in sorted_customers]
+        total_earnings = [customer[1]['fabric_commission'] + customer[1]['stitching_profit'] + customer[1]['direct_commission'] for customer in sorted_customers]
         
         return jsonify({
             'labels': labels,
@@ -1408,6 +1689,529 @@ def get_fabric_aging():
             'aging_data': result_data,
             'summary': summary_data
         })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/debug-stitching', methods=['GET'])
+def debug_stitching():
+    """Debug endpoint to see raw stitching data for a specific date"""
+    try:
+        date_from = request.args.get('dateFrom', '2025-07-20')
+        date_to = request.args.get('dateTo', '2025-07-20')
+        
+        # Query to see raw stitching data
+        debug_query = text(f"""
+            SELECT 
+                si.id,
+                si.stitched_item,
+                si.price * (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                ) as total_value,
+                si.stitching_cost,
+                (
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                ) as total_qty,
+                si.price,
+                pl.delivery_date,
+                c.short_name as customer_name
+            FROM stitching_invoices si
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN invoices i ON il.invoice_id = i.id
+            JOIN customers c ON i.customer_id = c.id
+            JOIN packing_list_lines pll ON si.id = pll.stitching_invoice_id
+            JOIN packing_lists pl ON pll.packing_list_id = pl.id
+            WHERE pl.delivery_date BETWEEN :date_from AND :date_to
+            ORDER BY pl.delivery_date, si.id
+        """)
+        
+        result = db.session.execute(debug_query, {
+            'date_from': date_from,
+            'date_to': date_to
+        }).fetchall()
+        
+        # Convert to list of dictionaries
+        data = []
+        for row in result:
+            data.append({
+                'id': row.id,
+                'stitched_item': row.stitched_item,
+                'total_value': float(row.total_value or 0),
+                'stitching_cost': float(row.stitching_cost or 0),
+                'total_qty': int(row.total_qty or 0),
+                'price': float(row.price or 0),
+                'delivery_date': row.delivery_date.strftime('%Y-%m-%d') if row.delivery_date else None,
+                'customer_name': row.customer_name
+            })
+        
+        # Calculate totals
+        total_revenue = sum(item['total_value'] for item in data)
+        total_cost = sum(item['stitching_cost'] * item['total_qty'] for item in data)
+        total_profit = total_revenue - total_cost
+        
+        return jsonify({
+            'date_range': f'{date_from} to {date_to}',
+            'records': data,
+            'summary': {
+                'total_records': len(data),
+                'total_revenue': total_revenue,
+                'total_cost': total_cost,
+                'total_profit': total_profit
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/profit-margin-by-garment', methods=['GET'])
+def get_profit_margin_by_garment():
+    """Get profit margin percentage by garment type"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_from, "date_from", ">=")
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_to, "date_to", "<=")
+        add_filter_condition(where_conditions, params, "c.short_name", customer, "customer")
+        add_filter_condition(where_conditions, params, "il.delivered_location", location, "location")
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                si.stitched_item,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                ) as total_quantity,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.price
+                ) as total_revenue,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.stitching_cost
+                ) as total_cost,
+                SUM(COALESCE(si.yard_consumed, 0) * COALESCE(il.unit_price, 0)) as fabric_cost
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY si.stitched_item
+            HAVING total_revenue > 0
+            ORDER BY total_revenue DESC
+            LIMIT 10
+        """)
+        
+        results = db.session.execute(query, params).fetchall()
+        
+        labels = []
+        profit_margins = []
+        
+        for row in results:
+            total_revenue = float(row.total_revenue or 0)
+            total_cost = float(row.total_cost or 0)  # Only stitching cost, not fabric cost
+            
+            if total_revenue > 0:
+                profit_margin = ((total_revenue - total_cost) / total_revenue) * 100
+                labels.append(row.stitched_item)
+                profit_margins.append(round(profit_margin, 2))
+        
+        return jsonify({
+            'labels': labels,
+            'values': profit_margins
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/profitability-trend', methods=['GET'])
+def get_profitability_trend():
+    """Get profitability trends over time (monthly)"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        customer = request.args.get('customer')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_from, "date_from", ">=")
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_to, "date_to", "<=")
+        add_filter_condition(where_conditions, params, "c.short_name", customer, "customer")
+        add_filter_condition(where_conditions, params, "si.stitched_item", garment, "garment")
+        add_filter_condition(where_conditions, params, "il.delivered_location", location, "location")
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                DATE_FORMAT(pl.delivery_date, '%Y-%m') as month,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.price
+                ) as revenue,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.stitching_cost
+                ) as stitching_cost,
+                SUM(COALESCE(si.yard_consumed, 0) * COALESCE(il.unit_price, 0)) as fabric_cost
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY DATE_FORMAT(pl.delivery_date, '%Y-%m')
+            ORDER BY month
+        """)
+        
+        results = db.session.execute(query, params).fetchall()
+        
+        months = []
+        revenues = []
+        costs = []
+        profits = []
+        
+        for row in results:
+            revenue = float(row.revenue or 0)
+            total_cost = float(row.stitching_cost or 0)  # Only stitching cost, not fabric cost
+            profit = revenue - total_cost
+            
+            months.append(row.month)
+            revenues.append(revenue)
+            costs.append(total_cost)
+            profits.append(profit)
+        
+        return jsonify({
+            'labels': months,
+            'revenue': revenues,
+            'cost': costs,
+            'profit': profits
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dashboard_bp.route('/customer-profitability', methods=['GET'])
+def get_customer_profitability():
+    """Get profitability analysis by customer"""
+    try:
+        # Get filter parameters
+        date_from = request.args.get('dateFrom')
+        date_to = request.args.get('dateTo')
+        garment = request.args.get('garment')
+        location = request.args.get('location')
+        
+        # Build filter conditions
+        where_conditions = []
+        params = {}
+        
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_from, "date_from", ">=")
+        add_filter_condition(where_conditions, params, "pl.delivery_date", date_to, "date_to", "<=")
+        add_filter_condition(where_conditions, params, "si.stitched_item", garment, "garment")
+        add_filter_condition(where_conditions, params, "il.delivered_location", location, "location")
+        
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        query = text(f"""
+            SELECT 
+                c.short_name as customer_name,
+                COUNT(DISTINCT pl.id) as order_count,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END
+                ) as total_quantity,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.price
+                ) as total_revenue,
+                SUM(
+                    CASE 
+                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
+                        AND JSON_VALID(si.size_qty_json) = 1
+                        THEN (
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
+                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
+                        )
+                        ELSE 0 
+                    END * si.stitching_cost
+                ) as total_stitching_cost,
+                SUM(COALESCE(si.yard_consumed, 0) * COALESCE(il.unit_price, 0)) as total_fabric_cost
+            FROM packing_lists pl
+            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
+            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
+            JOIN invoice_lines il ON si.invoice_line_id = il.id
+            JOIN customers c ON pl.customer_id = c.id
+            WHERE {where_clause}
+            GROUP BY c.id, c.short_name
+            HAVING total_revenue > 0
+            ORDER BY total_revenue DESC
+            LIMIT 10
+        """)
+        
+        results = db.session.execute(query, params).fetchall()
+        
+        customers = []
+        profits = []
+        profit_margins = []
+        order_counts = []
+        
+        for row in results:
+            total_revenue = float(row.total_revenue or 0)
+            total_cost = float(row.total_stitching_cost or 0)  # Only stitching cost, not fabric cost
+            profit = total_revenue - total_cost
+            profit_margin = (profit / total_revenue * 100) if total_revenue > 0 else 0
+            
+            customers.append(row.customer_name)
+            profits.append(profit)
+            profit_margins.append(round(profit_margin, 2))
+            order_counts.append(int(row.order_count or 0))
+        
+        return jsonify({
+            'labels': customers,
+            'profits': profits,
+            'profit_margins': profit_margins,
+            'order_counts': order_counts
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
