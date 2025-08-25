@@ -6,6 +6,8 @@ from app.models.packing_list import PackingList, PackingListLine
 from app.models.image import Image
 from app.models.serial_counter import SerialCounter
 from app.models.stitched_item import StitchedItem
+from app.models.stitching_cost import StitchingCost
+from app.models.stitching_price import StitchingPrice
 from datetime import datetime
 import json
 import os
@@ -201,6 +203,7 @@ def create_stitching_record():
             price=price,
             total_value=total_value,
             add_vat=data['add_vat'],
+            stitching_cost=float(data.get('stitching_cost', 0)),  # Add stitching cost field
             created_at=datetime.utcnow(),
             invoice_line_id=selected_lines[0]['id'],
             image_id=image_id
@@ -257,6 +260,41 @@ def create_stitching_record():
                 consumed = line_data.get('consumed', 0)
                 invoice_line.yards_consumed = (invoice_line.yards_consumed or 0) + consumed
         
+        # Memorize the cost and price if provided
+        # Get the invoice line to access delivery location and customer info
+        invoice_line = InvoiceLine.query.get(selected_lines[0]['id'])
+        print(f"🔍 Debug: Invoice line found: {invoice_line is not None}")
+        print(f"🔍 Debug: Stitching cost provided: {data.get('stitching_cost')}")
+        print(f"🔍 Debug: Price provided: {data.get('price')}")
+        
+        if invoice_line and data.get('stitching_cost'):
+            # Get delivery location from the invoice line
+            delivered_location = invoice_line.delivered_location
+            print(f"🔍 Debug: Delivery location: {delivered_location}")
+            if delivered_location:
+                print(f"💰 Memorizing cost: {data['stitched_item']} at {delivered_location} = {data['stitching_cost']}")
+                StitchingCost.create_or_update_cost(
+                    garment_name=data['stitched_item'],
+                    stitching_location=delivered_location,
+                    cost=float(data['stitching_cost'])
+                )
+                print(f"✅ Cost memorized successfully")
+            else:
+                print(f"⚠️ No delivery location found for cost memorization")
+        
+        if invoice_line and data.get('price'):
+            # Get customer ID from the invoice line's invoice
+            if invoice_line.invoice and invoice_line.invoice.customer_id:
+                print(f"💵 Memorizing price: {data['stitched_item']} for customer {invoice_line.invoice.customer_id} = {data['price']}")
+                StitchingPrice.create_or_update_price(
+                    garment_name=data['stitched_item'],
+                    customer_id=invoice_line.invoice.customer_id,
+                    price=float(data['price'])
+                )
+                print(f"✅ Price memorized successfully")
+            else:
+                print(f"⚠️ No customer found for price memorization")
+        
         db.session.commit()
         
         return jsonify({
@@ -312,6 +350,7 @@ def amend_stitching_record(stitching_id):
         # Update basic fields
         stitching_record.stitched_item = data.get('stitched_item', stitching_record.stitched_item)
         stitching_record.price = float(data.get('price', stitching_record.price))
+        stitching_record.stitching_cost = float(data.get('stitching_cost', stitching_record.stitching_cost or 0))
         stitching_record.add_vat = data.get('add_vat', stitching_record.add_vat)
         stitching_record.size_qty_json = json.dumps(data.get('size_qty', {}))
         
@@ -735,3 +774,57 @@ def delete_stitched_item(item_id):
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
+
+# ===== AUTO-POPULATION ENDPOINTS =====
+
+@stitching_bp.route('/auto-populate-cost', methods=['GET'])
+def get_auto_populate_cost():
+    """Get memorized cost for auto-population in stitching record creation"""
+    try:
+        garment_name = request.args.get('garment_name')
+        stitching_location = request.args.get('stitching_location')
+        
+        print(f"🔍 Auto-populate cost request: garment='{garment_name}', location='{stitching_location}'")
+        
+        if not garment_name or not stitching_location:
+            return jsonify({'error': 'Garment name and stitching location are required'}), 400
+        
+        cost_entry = StitchingCost.get_by_garment_and_location(garment_name, stitching_location)
+        print(f"🔍 Cost entry found: {cost_entry is not None}")
+        
+        if cost_entry:
+            print(f"💰 Returning memorized cost: {cost_entry.cost}")
+            return jsonify({'cost': float(cost_entry.cost)}), 200
+        else:
+            print(f"ℹ️ No memorized cost found")
+            return jsonify({'cost': None}), 200
+        
+    except Exception as e:
+        print(f"❌ Error in auto-populate cost: {str(e)}")
+        return jsonify({'error': f'Error fetching memorized cost: {str(e)}'}), 500
+
+@stitching_bp.route('/auto-populate-price', methods=['GET'])
+def get_auto_populate_price():
+    """Get memorized price for auto-population in stitching record creation"""
+    try:
+        garment_name = request.args.get('garment_name')
+        customer_id = request.args.get('customer_id')
+        
+        print(f"🔍 Auto-populate price request: garment='{garment_name}', customer_id='{customer_id}'")
+        
+        if not garment_name or not customer_id:
+            return jsonify({'error': 'Garment name and customer ID are required'}), 400
+        
+        price_entry = StitchingPrice.get_by_garment_and_customer(garment_name, customer_id)
+        print(f"🔍 Price entry found: {price_entry is not None}")
+        
+        if price_entry:
+            print(f"💵 Returning memorized price: {price_entry.price}")
+            return jsonify({'price': float(price_entry.price)}), 200
+        else:
+            print(f"ℹ️ No memorized price found")
+            return jsonify({'price': None}), 200
+        
+    except Exception as e:
+        print(f"❌ Error in auto-populate price: {str(e)}")
+        return jsonify({'error': f'Error fetching memorized price: {str(e)}'}), 500

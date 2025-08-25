@@ -49,17 +49,6 @@ def create_app(config_class=Config):
          allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cache-Control', 'Pragma'],
          expose_headers=['Content-Type', 'Authorization'])
     
-    # Add CORS headers to all responses
-    @app.after_request
-    def after_request(response):
-        origin = request.headers.get('Origin')
-        if origin in ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:8000", "http://127.0.0.1:8000"]:
-            response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-    
     # Register blueprints
     from app.routes.main import main_bp
     from app.routes.invoices import invoices_bp
@@ -70,6 +59,7 @@ def create_app(config_class=Config):
     from app.routes.files import files_bp
     from app.routes.images import images_bp
     from app.routes.dashboard import dashboard_bp
+    from app.routes.cost_price_lists import cost_price_bp
     
     print("🔧 Registering blueprints...")
     
@@ -98,6 +88,10 @@ def create_app(config_class=Config):
     print("   ✅ images_bp registered")
     
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    print("   ✅ dashboard_bp registered")
+    
+    app.register_blueprint(cost_price_bp, url_prefix='/api/cost-price')
+    print("   ✅ cost_price_bp registered")
     print("   ✅ dashboard_bp registered")
     
     print("🔧 All blueprints registered successfully!")

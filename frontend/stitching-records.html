@@ -746,8 +746,8 @@
         .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 45px; } /* 2XL */
         .treeview-table th:nth-child(19), .treeview-table td:nth-child(19) { width: 45px; } /* 3XL */
         .treeview-table th:nth-child(20), .treeview-table td:nth-child(20) { width: 60px; } /* Total Qty */
-        .treeview-table th:nth-child(21), .treeview-table td:nth-child(21) { width: 80px; } /* Sew Cost */
-        .treeview-table th:nth-child(22), .treeview-table td:nth-child(22) { width: 110px; } /* Sew Value */
+        .treeview-table th:nth-child(21), .treeview-table td:nth-child(21) { width: 80px; } /* Cost */
+        .treeview-table th:nth-child(22), .treeview-table td:nth-child(22) { width: 110px; } /* Price */
         .treeview-table th:nth-child(23), .treeview-table td:nth-child(23) { width: 60px; } /* Yd/Pcs */
         .treeview-table th:nth-child(24), .treeview-table td:nth-child(24) { width: 80px; } /* Grmt Cost */
         .treeview-table th:nth-child(25), .treeview-table td:nth-child(25) { width: 110px; } /* Created At */
@@ -883,8 +883,11 @@
                             <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
                             <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
                             <th class="sortable-header" data-sort="total_qty">Total Qty</th>
-                            <th class="sortable-header" data-sort="sewing_cost">Sew Cost</th>
-                            <th class="sortable-header" data-sort="sewing_value">Sew Value</th>
+                            <th class="sortable-header" data-sort="sewing_cost">Cost</th>
+                            <th class="sortable-header" data-sort="sewing_price">Price</th>
+                            <th class="sortable-header" data-sort="sewing_profit">Profit</th>
+                            <th class="sortable-header" data-sort="sewing_value">Value</th>
+                            <th class="sortable-header" data-sort="sewing_earning">Earnings</th>
                             <th class="sortable-header" data-sort="yards_per_piece">Yd/Pcs</th>
                             <th class="sortable-header" data-sort="garment_cost">Grmt Cost</th>
                             <th>Actions</th>
@@ -892,7 +895,7 @@
                     </thead>
                     <tbody id="stitchingTreeviewBody">
                         <tr>
-                            <td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td>
+                            <td colspan="29" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1087,11 +1090,11 @@
                     console.error('❌ Failed to load stitching data, status:', response.status);
                     const errorText = await response.text();
                     console.error('❌ Error response:', errorText);
-                    tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #f44336;">Failed to load stitching data. Please try refreshing the page.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: #f44336;">Failed to load stitching data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading stitching data:', error);
-                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: #f44336;">Error loading stitching data. Please check your connection and try again.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: #f44336;">Error loading stitching data. Please check your connection and try again.</td></tr>';
             }
         }
 
@@ -1101,7 +1104,7 @@
             tbody.innerHTML = '';
 
             if (stitchingData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: var(--text-secondary);">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
                 updatePaginationControls();
                 return;
             }
@@ -1219,8 +1222,11 @@
                     <td>${sizeQty.XXL || 0}</td>
                     <td>${sizeQty.XXXL || 0}</td>
                     <td>${totalQty}</td>
+                    <td>${(record.stitching_cost || 0).toFixed(2)}</td>
                     <td>${vatInclusivePrice.toFixed(2)}</td>
+                    <td>${(record.stitching_profit || 0).toFixed(2)}</td>
                     <td>${record.total_value.toFixed(2)}</td>
+                    <td>${((record.stitching_profit || 0) * totalQty).toFixed(2)}</td>
                     <td>${yardsPerPiece.toFixed(3)}</td>
                     <td>${garmentCostPerPiece.toFixed(2)}</td>
                     <td>
@@ -1300,6 +1306,13 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td>${yardsPerPiece.toFixed(3)}</td>
                 <td></td>
                 <td></td>
@@ -1340,6 +1353,8 @@
                 <td>${parseFloat(lining.consumption_yards).toFixed(2)}</td>
                 <td>${parseFloat(lining.unit_price).toFixed(2)}</td>
                 <td>${parseFloat(lining.total_cost).toFixed(2)}</td>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -2452,8 +2467,14 @@
                     return item.total_qty;
                 case 'sewing_cost':
                     return item.sewing_cost;
+                case 'sewing_price':
+                    return item.price || 0;
+                case 'sewing_profit':
+                    return item.stitching_profit || 0;
                 case 'sewing_value':
-                    return item.sewing_value;
+                    return item.total_value || 0;
+                case 'sewing_earning':
+                    return (item.stitching_profit || 0) * (item.total_qty || 0);
                 case 'yards_per_piece':
                     return item.yards_per_piece;
                 case 'garment_cost':

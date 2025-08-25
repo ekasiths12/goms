@@ -198,8 +198,77 @@
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 14px;
-            min-width: 120px;
-            transition: border-color 0.3s ease;
+        }
+
+        /* Enhanced Filter Dropdown Styling */
+        .searchable-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .dropdown-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-option:hover {
+            background-color: var(--focus-color);
+        }
+
+        .dropdown-option.selected {
+            background-color: var(--focus-color);
+            color: var(--text-primary);
+        }
+
+        .selected-items {
+            margin-top: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .selected-item {
+            background: var(--focus-color);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .selected-item .remove-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .selected-item .remove-btn:hover {
+            color: #f44336;
         }
 
         .filter-select:focus, .filter-input:focus {
@@ -809,6 +878,110 @@
             background: #2196f3;
         }
 
+        /* Content Section Styles */
+        .content-section {
+            margin-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* Cost and Price List Table Styles */
+        #costListTable, #priceListTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        #costListTable th, #costListTable td,
+        #priceListTable th, #priceListTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #costListTable th, #priceListTable th {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #costListTable tbody tr:hover,
+        #priceListTable tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: #1976d2;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2196f3;
+        }
+
+        .btn-delete {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #f44336;
+        }
+
+        /* Dialog-specific styles */
+        .modal-content[style*="width: 90%"] {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content[style*="width: 90%"] .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-content[style*="width: 90%"] .table-container {
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        /* Location dialog specific styles */
+        #selectedLinesInfo {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #selectedLinesInfo div {
+            font-family: monospace;
+            font-size: 11px;
+        }
+
 
     </style>
     <script src="js/table-sorting.js"></script>
@@ -936,6 +1109,7 @@
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="assignDeliveredLocation()">Assign Delivered Location</button>
+            <button class="btn btn-danger" onclick="removeLocationFromSelected()">Remove Location</button>
             <button class="btn btn-primary" onclick="assignTaxInvoiceNumber()">Assign Tax Invoice Number</button>
             <button class="btn btn-secondary" onclick="refreshInvoiceTable()">Refresh</button>
             <button class="btn btn-info" onclick="openCustomerIdDialog()">Customer IDs</button>
@@ -943,6 +1117,8 @@
             <button class="btn btn-primary" onclick="editSelectedInvoice()">Edit Selected Invoice</button>
             <button class="btn btn-danger" onclick="deleteSelectedInvoice()">Delete Selected Invoice</button>
             <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
+            <button class="btn btn-success" onclick="openCostListDialog()">Cost List</button>
+            <button class="btn btn-success" onclick="openPriceListDialog()">Price List</button>
         </div>
 
         <!-- Invoice Table -->
@@ -1087,6 +1263,184 @@
                 </div>
             </div>
         </div>
+        
+
+        
+        <!-- Add/Edit Cost Dialog -->
+        <div id="costDialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="costDialogTitle">Add New Cost</h2>
+                    <span class="close" onclick="closeCostDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="costForm">
+                        <input type="hidden" id="costId">
+                        <div class="form-group">
+                            <label for="costGarmentName">Garment Name:</label>
+                            <input type="text" id="costGarmentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="costStitchingLocation">Stitching Location:</label>
+                            <input type="text" id="costStitchingLocation" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="costAmount">Cost (฿):</label>
+                            <input type="number" id="costAmount" step="0.01" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeCostDialog()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveCost()">Save</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add/Edit Price Dialog -->
+        <div id="priceDialog" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="priceDialogTitle">Add New Price</h2>
+                    <span class="close" onclick="closePriceDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="priceForm">
+                        <input type="hidden" id="priceId">
+                        <div class="form-group">
+                            <label for="priceGarmentName">Garment Name:</label>
+                            <input type="text" id="priceGarmentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="priceCustomerId">Customer:</label>
+                            <select id="priceCustomerId" required>
+                                <option value="">Select Customer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priceAmount">Price (฿):</label>
+                            <input type="number" id="priceAmount" step="0.01" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closePriceDialog()">Cancel</button>
+                    <button class="btn btn-primary" onclick="savePrice()">Save</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cost List Dialog -->
+        <div id="costListDialog" class="modal" style="display: none;">
+            <div class="modal-content" style="width: 90%; max-width: 1200px; max-height: 80vh;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Stitching Cost List</h2>
+                    <span class="close" onclick="closeCostListDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="filter-controls">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>Garment:</label>
+                                <div class="searchable-dropdown">
+                                    <input type="text" id="costFilterGarment" class="filter-input" placeholder="Type to search garments..." oninput="filterCostDropdown('costFilterGarment', 'costGarmentDropdown')" onfocus="showCostDropdown('costGarmentDropdown')">
+                                    <div id="costGarmentDropdown" class="dropdown-options" style="display: none;"></div>
+                                    <div id="costGarmentSelected" class="selected-items"></div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label>Location:</label>
+                                <div class="searchable-dropdown">
+                                    <input type="text" id="costFilterLocation" class="filter-input" placeholder="Type to search locations..." oninput="filterCostDropdown('costFilterLocation', 'costLocationDropdown')" onfocus="showCostDropdown('costLocationDropdown')">
+                                    <div id="costLocationDropdown" class="dropdown-options" style="display: none;"></div>
+                                    <div id="costLocationSelected" class="selected-items"></div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <button class="btn btn-secondary" onclick="loadCostList()">Refresh</button>
+                                <button class="btn btn-primary" onclick="showAddCostDialog()">Add New Cost</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+                        <table id="costListTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Garment</th>
+                                    <th>Stitching Location</th>
+                                    <th>Cost (฿)</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="costListTableBody">
+                                <!-- Cost data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeCostListDialog()">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Price List Dialog -->
+        <div id="priceListDialog" class="modal" style="display: none;">
+            <div class="modal-content" style="width: 90%; max-width: 1200px; max-height: 80vh;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Stitching Price List</h2>
+                    <span class="close" onclick="closePriceListDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="filter-controls">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label>Garment:</label>
+                                <div class="searchable-dropdown">
+                                    <input type="text" id="priceFilterGarment" class="filter-input" placeholder="Type to search garments..." oninput="filterPriceDropdown('priceFilterGarment', 'priceGarmentDropdown')" onfocus="showPriceDropdown('priceGarmentDropdown')">
+                                    <div id="priceGarmentDropdown" class="dropdown-options" style="display: none;"></div>
+                                    <div id="priceGarmentSelected" class="selected-items"></div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label>Customer:</label>
+                                <div class="searchable-dropdown">
+                                    <input type="text" id="priceFilterCustomer" class="filter-input" placeholder="Type to search customers..." oninput="filterPriceDropdown('priceFilterCustomer', 'priceCustomerDropdown')" onfocus="showPriceDropdown('priceCustomerDropdown')">
+                                    <div id="priceCustomerDropdown" class="dropdown-options" style="display: none;"></div>
+                                    <div id="priceCustomerSelected" class="selected-items"></div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <button class="btn btn-secondary" onclick="loadPriceList()">Refresh</button>
+                                <button class="btn btn-primary" onclick="showAddPriceDialog()">Add New Price</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+                        <table id="priceListTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Garment</th>
+                                    <th>Customer</th>
+                                    <th>Price (฿)</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="priceListTableBody">
+                                <!-- Price data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closePriceListDialog()">Close</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -1095,6 +1449,11 @@
         let selectedRows = [];
         let currentPage = 1;
         const itemsPerPage = 50;
+        
+        // Cost and Price List Data
+        let costListData = [];
+        let priceListData = [];
+        let customersList = [];
         
         // API Base URL - works for both local development and Railway
         const getApiBaseUrl = () => {
@@ -1106,15 +1465,7 @@
             
             // Local development - Flask backend runs on port 8000
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                // If frontend is on port 3000, backend should be on 8000
-                if (port === '3000') {
-                    return 'http://localhost:8000';
-                }
-                // If frontend is on port 5000, backend is on 8000
-                if (port === '5000') {
-                    return 'http://localhost:8000';
-                }
-                // Default to port 8000 for local development
+                // Always use port 8000 for backend in local development
                 return 'http://localhost:8000';
             }
             
@@ -1134,6 +1485,55 @@
                 return origin.replace('http://', 'https://');
             }
         };
+
+        // Simple notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 300px;
+                word-wrap: break-word;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                transition: all 0.3s ease;
+            `;
+            
+            // Set background color based on type
+            switch(type) {
+                case 'success':
+                    notification.style.backgroundColor = '#4caf50';
+                    break;
+                case 'error':
+                    notification.style.backgroundColor = '#f44336';
+                    break;
+                case 'warning':
+                    notification.style.backgroundColor = '#ff9800';
+                    break;
+                default:
+                    notification.style.backgroundColor = '#2196f3';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
 
         // Enhanced Filter Dropdown Variables
         let filterTimer = null;
@@ -1173,6 +1573,10 @@
             
             // Initialize enhanced filter dropdowns
             initializeEnhancedFilters();
+            
+            // Load cost and price lists for filter options
+            await loadCostList();
+            await loadPriceList();
             
             // Add date input formatting
             const dateFromInput = document.getElementById('filterDateFrom');
@@ -1791,6 +2195,14 @@
                     </div>
                     <div class="custom-dialog-body">
                         <div style="margin-bottom: 15px;">
+                            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                                <strong style="color: var(--text-primary);">Selected Lines:</strong>
+                                <div id="selectedLinesInfo" style="margin-top: 5px; font-size: 12px; color: var(--text-secondary);">
+                                    <!-- Selected lines info will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Location:</label>
                             <div style="display: flex; gap: 10px; align-items: flex-end;">
                                 <select id="locationSelect" style="flex: 1; padding: 8px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
@@ -1827,6 +2239,9 @@
             dialog.innerHTML = dialogHtml;
             dialog.id = 'locationDialog';
             document.body.appendChild(dialog);
+            
+            // Populate selected lines info
+            populateSelectedLinesInfo();
         }
         
         function addNewLocation() {
@@ -1956,6 +2371,83 @@
             .catch(error => {
                 alert('Error deleting location: ' + error.message);
             });
+        }
+        
+        function removeLocationFromSelected() {
+            if (selectedRows.length === 0) {
+                alert('Please select one or more invoice lines.');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to remove the delivery location from the selected invoice lines?')) {
+                return;
+            }
+            
+            // Get the selected line IDs
+            const lineIds = selectedRows.map(index => invoiceData[index].id);
+            
+            console.log('🗑️ Removing location from line IDs:', lineIds);
+            
+            // Simple fetch request
+            fetch(`${getApiBaseUrl()}/api/invoices/remove-location`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    line_ids: lineIds
+                })
+            })
+            .then(response => {
+                console.log('📡 Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📡 Response data:', data);
+                if (data.message) {
+                    alert(data.message);
+                    loadInvoiceData(); // Refresh the table
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                alert('Error removing location: ' + error.message);
+            });
+        }
+        
+        function populateSelectedLinesInfo() {
+            const selectedLinesInfo = document.getElementById('selectedLinesInfo');
+            if (!selectedLinesInfo) return;
+            
+            let infoHtml = '';
+            let linesWithLocation = 0;
+            let linesWithoutLocation = 0;
+            
+            selectedRows.forEach(index => {
+                const line = invoiceData[index];
+                const hasLocation = line.delivered_location && line.delivered_location.trim() !== '';
+                const locationText = hasLocation ? `📍 ${line.delivered_location}` : '❌ No location';
+                const statusColor = hasLocation ? 'color: #4CAF50;' : 'color: #f44336;';
+                
+                infoHtml += `<div style="margin-bottom: 3px; ${statusColor}">`;
+                infoHtml += `Invoice #${line.invoice_number} | ${line.item_name} | ${line.color} | ${locationText}`;
+                infoHtml += `</div>`;
+                
+                if (hasLocation) {
+                    linesWithLocation++;
+                } else {
+                    linesWithoutLocation++;
+                }
+            });
+            
+            // Add summary
+            infoHtml += `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color); font-weight: bold;">`;
+            infoHtml += `Summary: ${linesWithLocation} with location, ${linesWithoutLocation} without location`;
+            infoHtml += `</div>`;
+            
+            selectedLinesInfo.innerHTML = infoHtml;
         }
 
         // ===== STITCHED ITEMS MANAGEMENT FUNCTIONS =====
@@ -2236,6 +2728,10 @@
                             <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Price (THB):</label>
                             <input type="number" id="price" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" placeholder="0.00">
                         </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Cost (THB):</label>
+                            <input type="number" id="stitchingCost" step="0.01" min="0" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" placeholder="0.00">
+                        </div>
                     </div>
                 </div>
                 
@@ -2370,12 +2866,102 @@
             
             // Add event listeners for total calculation
             document.getElementById('price').addEventListener('input', updateTotalValue);
+            document.getElementById('stitchingCost').addEventListener('input', updateTotalValue);
             document.getElementById('addVat').addEventListener('change', updateTotalValue);
             ['sizeS', 'sizeM', 'sizeL', 'sizeXL', 'sizeXXL', 'sizeXXXL'].forEach(id => {
                 document.getElementById(id).addEventListener('input', updateTotalValue);
             });
             
+            // Add event listener for stitched item selection to trigger auto-population
+            document.getElementById('stitchedItemSelect').addEventListener('change', function() {
+                const selectedItem = this.value;
+                
+                // Reset fields if no garment is selected
+                if (!selectedItem || selectedItem === '') {
+                    document.getElementById('stitchingCost').value = '0';
+                    document.getElementById('price').value = '0';
+                    updateTotalValue();
+                    console.log('🔄 No garment selected, fields reset to 0');
+                    return;
+                }
+                
+                // Trigger auto-population when stitched item changes
+                if (selectedLines.length > 0) {
+                    const firstLine = selectedLines[0];
+                    const invoiceLine = invoiceData.find(inv => inv.id === firstLine.id);
+                    console.log('🔍 Auto-population triggered:', {
+                        firstLine: firstLine,
+                        invoiceLine: invoiceLine,
+                        selectedItem: selectedItem
+                    });
+                    
+                    if (invoiceLine) {
+                        
+                        // Auto-populate cost
+                        if (invoiceLine.delivered_location && selectedItem) {
+                            console.log('💰 Auto-populating cost for:', selectedItem, 'at location:', invoiceLine.delivered_location);
+                            const apiBaseUrl = getApiBaseUrl();
+                            fetch(`${apiBaseUrl}/api/stitching/auto-populate-cost?garment_name=${encodeURIComponent(selectedItem)}&stitching_location=${encodeURIComponent(invoiceLine.delivered_location)}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('💰 Cost auto-population result:', data);
+                                    if (data.cost !== null) {
+                                        document.getElementById('stitchingCost').value = data.cost;
+                                        console.log('✅ Cost auto-populated:', data.cost);
+                                    } else {
+                                        document.getElementById('stitchingCost').value = '0';
+                                        console.log('ℹ️ No memorized cost found, reset to 0');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('❌ Error auto-populating cost:', error);
+                                    document.getElementById('stitchingCost').value = '0';
+                                });
+                        } else {
+                            console.log('⚠️ Cannot auto-populate cost - missing location or item');
+                            document.getElementById('stitchingCost').value = '0';
+                        }
+                        
+                        // Auto-populate price
+                        if (invoiceLine.customer?.id && selectedItem) {
+                            console.log('💵 Auto-populating price for:', selectedItem, 'for customer:', invoiceLine.customer.id);
+                            const apiBaseUrl = getApiBaseUrl();
+                            fetch(`${apiBaseUrl}/api/stitching/auto-populate-price?garment_name=${encodeURIComponent(selectedItem)}&customer_id=${invoiceLine.customer.id}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('💵 Price auto-population result:', data);
+                                    if (data.price !== null) {
+                                        document.getElementById('price').value = data.price;
+                                        updateTotalValue();
+                                        console.log('✅ Price auto-populated:', data.price);
+                                    } else {
+                                        document.getElementById('price').value = '0';
+                                        updateTotalValue();
+                                        console.log('ℹ️ No memorized price found, reset to 0');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('❌ Error auto-populating price:', error);
+                                    document.getElementById('price').value = '0';
+                                    updateTotalValue();
+                                });
+                        } else {
+                            console.log('⚠️ Cannot auto-populate price - missing customer or item');
+                            document.getElementById('price').value = '0';
+                            updateTotalValue();
+                        }
+                    } else {
+                        console.log('❌ Invoice line not found for auto-population');
+                        document.getElementById('stitchingCost').value = '0';
+                        document.getElementById('price').value = '0';
+                        updateTotalValue();
+                    }
+                }
+            });
+            
             updateTotalValue();
+            
+            // Auto-population will be triggered when stitched item is selected
         }
         
         function updateStitchingSelectedLine(index, consumed) {
@@ -2873,11 +3459,14 @@
             
             const addVat = document.getElementById('addVat').checked;
             
+            const stitchingCost = parseFloat(document.getElementById('stitchingCost').value) || 0;
+            
             const data = {
                 selected_lines: stitchingSelectedLines,
                 stitched_item: stitchedItem,
                 size_qty: sizeQty,
                 price: price,
+                stitching_cost: stitchingCost,
                 add_vat: addVat,
                 lining_fabrics: stitchingLiningFabrics,
                 garment_fabrics: stitchingMultiFabrics,
@@ -2967,6 +3556,12 @@
                     // Use the backend's calculated pending_yards which properly accounts for commission sales
                     const pending = line.pending_yards || 0;
                     
+                    // Check if delivery location is assigned
+                    if (!line.delivered_location || line.delivered_location.trim() === '') {
+                        console.warn(`⚠️ Line ${line.id} (${line.item_name}) has no delivery location assigned`);
+                        return null;
+                    }
+                    
                     return {
                         id: line.id,
                         invoice_number: line.invoice_number,
@@ -2975,11 +3570,21 @@
                         pending: pending,
                         consumed: 0 // Will be set by user
                     };
-                });
+                }).filter(line => line !== null);
             }
             
             if (selectedLines.length === 0) {
-                alert('No valid lines selected for stitching record.');
+                // Check if any lines were filtered out due to missing delivery location
+                const linesWithoutLocation = selectedRows.map(index => {
+                    const line = invoiceData[index];
+                    return (!line.delivered_location || line.delivered_location.trim() === '') ? line : null;
+                }).filter(line => line !== null);
+                
+                if (linesWithoutLocation.length > 0) {
+                    alert('Cannot create stitching record: Some selected lines have no delivery location assigned. Please assign delivery locations first.');
+                } else {
+                    alert('No valid lines selected for stitching record.');
+                }
                 return;
             }
             
@@ -3772,6 +4377,12 @@
                 return;
             }
             
+            // Check if delivery location is assigned
+            if (!invoiceLine.delivered_location || invoiceLine.delivered_location.trim() === '') {
+                alert('Cannot create stitching record: No delivery location assigned. Please assign a delivery location first.');
+                return;
+            }
+            
             // Open stitching record dialog with the selected line
             openStitchingRecordDialog([lineId]);
         }
@@ -3874,6 +4485,526 @@
                 console.log('⚠️ No data available for table sorter');
             }
         }
+
+        // ===== COST LIST AND PRICE LIST FUNCTIONALITY =====
+
+        // Show/Hide dialog boxes
+        function openCostListDialog() {
+            document.getElementById('costListDialog').style.display = 'block';
+            loadCostList();
+        }
+
+        function closeCostListDialog() {
+            document.getElementById('costListDialog').style.display = 'none';
+        }
+
+        function openPriceListDialog() {
+            document.getElementById('priceListDialog').style.display = 'block';
+            loadPriceList();
+        }
+
+        function closePriceListDialog() {
+            document.getElementById('priceListDialog').style.display = 'none';
+        }
+
+        // Load Cost List
+        async function loadCostList() {
+            try {
+                // Get selected items from dropdowns
+                const selectedGarments = getSelectedItems('costGarmentSelected');
+                const selectedLocations = getSelectedItems('costLocationSelected');
+                
+                const apiBaseUrl = getApiBaseUrl();
+                let url = `${apiBaseUrl}/api/cost-price/costs`;
+                const params = new URLSearchParams();
+                
+                // Add garment filters
+                if (selectedGarments.length > 0) {
+                    selectedGarments.forEach(garment => {
+                        params.append('garment_name', garment);
+                    });
+                }
+                
+                // Add location filters
+                if (selectedLocations.length > 0) {
+                    selectedLocations.forEach(location => {
+                        params.append('location', location);
+                    });
+                }
+                
+                if (params.toString()) url += '?' + params.toString();
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load cost list');
+                
+                costListData = await response.json();
+                populateCostListTable();
+            } catch (error) {
+                console.error('Error loading cost list:', error);
+                showNotification('Error loading cost list', 'error');
+            }
+        }
+
+        // Load Price List
+        async function loadPriceList() {
+            try {
+                // Get selected items from dropdowns
+                const selectedGarments = getSelectedItems('priceGarmentSelected');
+                const selectedCustomers = getSelectedItems('priceCustomerSelected');
+                
+                const apiBaseUrl = getApiBaseUrl();
+                let url = `${apiBaseUrl}/api/cost-price/prices`;
+                const params = new URLSearchParams();
+                
+                // Add garment filters
+                if (selectedGarments.length > 0) {
+                    selectedGarments.forEach(garment => {
+                        params.append('garment_name', garment);
+                    });
+                }
+                
+                // Add customer filters
+                if (selectedCustomers.length > 0) {
+                    selectedCustomers.forEach(customer => {
+                        params.append('customer_name', customer);
+                    });
+                }
+                
+                if (params.toString()) url += '?' + params.toString();
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load price list');
+                
+                priceListData = await response.json();
+                populatePriceListTable();
+            } catch (error) {
+                console.error('Error loading price list:', error);
+                showNotification('Error loading price list', 'error');
+            }
+        }
+
+        // Load Customers for Price Dialog
+        async function loadCustomers() {
+            try {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/api/customers`);
+                if (!response.ok) throw new Error('Failed to load customers');
+                
+                customersList = await response.json();
+                populateCustomerSelect();
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        function populateCustomerSelect() {
+            const select = document.getElementById('priceCustomerId');
+            select.innerHTML = '<option value="">Select Customer</option>';
+            
+            customersList.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.short_name;
+                select.appendChild(option);
+            });
+        }
+
+        // Populate Cost List Table
+        function populateCostListTable() {
+            const tbody = document.getElementById('costListTableBody');
+            tbody.innerHTML = '';
+
+            costListData.forEach(cost => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${cost.garment_name}</td>
+                    <td>${cost.stitching_location}</td>
+                    <td>฿${cost.cost.toFixed(2)}</td>
+                    <td>${new Date(cost.updated_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-edit" onclick="editCost(${cost.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteCost(${cost.id})">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Populate Price List Table
+        function populatePriceListTable() {
+            const tbody = document.getElementById('priceListTableBody');
+            tbody.innerHTML = '';
+
+            priceListData.forEach(price => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${price.garment_name}</td>
+                    <td>${price.customer_name}</td>
+                    <td>฿${price.price.toFixed(2)}</td>
+                    <td>${new Date(price.updated_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-edit" onclick="editPrice(${price.id})">Edit</button>
+                            <button class="btn-delete" onclick="deletePrice(${price.id})">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Cost Dialog Functions
+        function showAddCostDialog() {
+            document.getElementById('costDialogTitle').textContent = 'Add New Cost';
+            document.getElementById('costId').value = '';
+            document.getElementById('costForm').reset();
+            document.getElementById('costDialog').style.display = 'block';
+        }
+
+        function editCost(costId) {
+            const cost = costListData.find(c => c.id === costId);
+            if (!cost) return;
+
+            document.getElementById('costDialogTitle').textContent = 'Edit Cost';
+            document.getElementById('costId').value = cost.id;
+            document.getElementById('costGarmentName').value = cost.garment_name;
+            document.getElementById('costStitchingLocation').value = cost.stitching_location;
+            document.getElementById('costAmount').value = cost.cost;
+            document.getElementById('costDialog').style.display = 'block';
+        }
+
+        function closeCostDialog() {
+            document.getElementById('costDialog').style.display = 'none';
+        }
+
+        async function saveCost() {
+            try {
+                const costId = document.getElementById('costId').value;
+                const data = {
+                    garment_name: document.getElementById('costGarmentName').value,
+                    stitching_location: document.getElementById('costStitchingLocation').value,
+                    cost: parseFloat(document.getElementById('costAmount').value)
+                };
+
+                const apiBaseUrl = getApiBaseUrl();
+                const url = costId ? `${apiBaseUrl}/api/cost-price/costs/${costId}` : `${apiBaseUrl}/api/cost-price/costs`;
+                const method = costId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('Failed to save cost');
+
+                closeCostDialog();
+                loadCostList();
+                showNotification('Cost saved successfully', 'success');
+            } catch (error) {
+                console.error('Error saving cost:', error);
+                showNotification('Error saving cost', 'error');
+            }
+        }
+
+        async function deleteCost(costId) {
+            if (!confirm('Are you sure you want to delete this cost?')) return;
+
+            try {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/api/cost-price/costs/${costId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete cost');
+
+                loadCostList();
+                showNotification('Cost deleted successfully', 'success');
+            } catch (error) {
+                console.error('Error deleting cost:', error);
+                showNotification('Error deleting cost', 'error');
+            }
+        }
+
+        // Price Dialog Functions
+        function showAddPriceDialog() {
+            document.getElementById('priceDialogTitle').textContent = 'Add New Price';
+            document.getElementById('priceId').value = '';
+            document.getElementById('priceForm').reset();
+            loadCustomers();
+            document.getElementById('priceDialog').style.display = 'block';
+        }
+
+        function editPrice(priceId) {
+            const price = priceListData.find(p => p.id === priceId);
+            if (!price) return;
+
+            document.getElementById('priceDialogTitle').textContent = 'Edit Price';
+            document.getElementById('priceId').value = price.id;
+            document.getElementById('priceGarmentName').value = price.garment_name;
+            document.getElementById('priceCustomerId').value = price.customer_id;
+            document.getElementById('priceAmount').value = price.price;
+            loadCustomers();
+            document.getElementById('priceDialog').style.display = 'block';
+        }
+
+        function closePriceDialog() {
+            document.getElementById('priceDialog').style.display = 'none';
+        }
+
+        async function savePrice() {
+            try {
+                const priceId = document.getElementById('priceId').value;
+                const data = {
+                    garment_name: document.getElementById('priceGarmentName').value,
+                    customer_id: parseInt(document.getElementById('priceCustomerId').value),
+                    price: parseFloat(document.getElementById('priceAmount').value)
+                };
+
+                const apiBaseUrl = getApiBaseUrl();
+                const url = priceId ? `${apiBaseUrl}/api/cost-price/prices/${priceId}` : `${apiBaseUrl}/api/cost-price/prices`;
+                const method = priceId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('Failed to save price');
+
+                closePriceDialog();
+                loadPriceList();
+                showNotification('Price saved successfully', 'success');
+            } catch (error) {
+                console.error('Error saving price:', error);
+                showNotification('Error saving price', 'error');
+            }
+        }
+
+        async function deletePrice(priceId) {
+            if (!confirm('Are you sure you want to delete this price?')) return;
+
+            try {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/api/cost-price/prices/${priceId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete price');
+
+                loadPriceList();
+                showNotification('Price deleted successfully', 'success');
+            } catch (error) {
+                console.error('Error deleting price:', error);
+                showNotification('Error deleting price', 'error');
+            }
+        }
+
+        // Enhanced Filter Functions
+        function getSelectedItems(selectedElementId) {
+            const selectedElement = document.getElementById(selectedElementId);
+            if (!selectedElement) return [];
+            
+            const selectedItems = selectedElement.querySelectorAll('.selected-item');
+            return Array.from(selectedItems).map(item => item.dataset.value);
+        }
+
+        function filterCostDropdown(inputId, dropdownId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if (!input || !dropdown) return;
+            
+            const searchTerm = input.value.toLowerCase();
+            const filterType = dropdownId.replace('Dropdown', '');
+            
+            // Get unique values from cost data
+            let options = [];
+            if (filterType === 'costGarment') {
+                options = [...new Set(costListData.map(cost => cost.garment_name))];
+            } else if (filterType === 'costLocation') {
+                options = [...new Set(costListData.map(cost => cost.stitching_location))];
+            }
+            
+            dropdown.innerHTML = '';
+            const filteredOptions = options.filter(option => 
+                option.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'dropdown-option';
+                optionElement.textContent = option;
+                optionElement.dataset.value = option;
+                optionElement.onclick = () => selectCostOption(filterType, option);
+                dropdown.appendChild(optionElement);
+            });
+            
+            dropdown.style.display = filteredOptions.length > 0 ? 'block' : 'none';
+        }
+
+        function filterPriceDropdown(inputId, dropdownId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if (!input || !dropdown) return;
+            
+            const searchTerm = input.value.toLowerCase();
+            const filterType = dropdownId.replace('Dropdown', '');
+            
+            // Get unique values from price data
+            let options = [];
+            if (filterType === 'priceGarment') {
+                options = [...new Set(priceListData.map(price => price.garment_name))];
+            } else if (filterType === 'priceCustomer') {
+                options = [...new Set(priceListData.map(price => price.customer_name))];
+            }
+            
+            dropdown.innerHTML = '';
+            const filteredOptions = options.filter(option => 
+                option.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'dropdown-option';
+                optionElement.textContent = option;
+                optionElement.dataset.value = option;
+                optionElement.onclick = () => selectPriceOption(filterType, option);
+                dropdown.appendChild(optionElement);
+            });
+            
+            dropdown.style.display = filteredOptions.length > 0 ? 'block' : 'none';
+        }
+
+        function selectCostOption(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            const input = document.getElementById(filterType.replace('cost', 'costFilter').replace('Garment', 'Garment').replace('Location', 'Location'));
+            const dropdown = document.getElementById(filterType + 'Dropdown');
+            
+            if (!selectedElement || !input) return;
+            
+            // Check if already selected
+            const existingItems = selectedElement.querySelectorAll('.selected-item');
+            const alreadySelected = Array.from(existingItems).some(item => item.dataset.value === value);
+            
+            if (!alreadySelected) {
+                // Add selected item
+                const selectedItem = document.createElement('div');
+                selectedItem.className = 'selected-item';
+                selectedItem.dataset.value = value;
+                selectedItem.innerHTML = `
+                    ${value}
+                    <button class="remove-btn" onclick="removeCostSelectedItem('${filterType}', '${value}')">&times;</button>
+                `;
+                selectedElement.appendChild(selectedItem);
+            }
+            
+            // Clear input and hide dropdown
+            input.value = '';
+            dropdown.style.display = 'none';
+            
+            // Update cost list
+            loadCostList();
+        }
+
+        function selectPriceOption(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            const input = document.getElementById(filterType.replace('price', 'priceFilter').replace('Garment', 'Garment').replace('Customer', 'Customer'));
+            const dropdown = document.getElementById(filterType + 'Dropdown');
+            
+            if (!selectedElement || !input) return;
+            
+            // Check if already selected
+            const existingItems = selectedElement.querySelectorAll('.selected-item');
+            const alreadySelected = Array.from(existingItems).some(item => item.dataset.value === value);
+            
+            if (!alreadySelected) {
+                // Add selected item
+                const selectedItem = document.createElement('div');
+                selectedItem.className = 'selected-item';
+                selectedItem.dataset.value = value;
+                selectedItem.innerHTML = `
+                    ${value}
+                    <button class="remove-btn" onclick="removePriceSelectedItem('${filterType}', '${value}')">&times;</button>
+                `;
+                selectedElement.appendChild(selectedItem);
+            }
+            
+            // Clear input and hide dropdown
+            input.value = '';
+            dropdown.style.display = 'none';
+            
+            // Update price list
+            loadPriceList();
+        }
+
+        function removeCostSelectedItem(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            if (!selectedElement) return;
+            
+            const itemToRemove = selectedElement.querySelector(`[data-value="${value}"]`);
+            if (itemToRemove) {
+                itemToRemove.remove();
+                loadCostList();
+            }
+        }
+
+        function removePriceSelectedItem(filterType, value) {
+            const selectedElement = document.getElementById(filterType + 'Selected');
+            if (!selectedElement) return;
+            
+            const itemToRemove = selectedElement.querySelector(`[data-value="${value}"]`);
+            if (itemToRemove) {
+                itemToRemove.remove();
+                loadPriceList();
+            }
+        }
+
+        function showCostDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) {
+                dropdown.style.display = 'block';
+            }
+        }
+
+        function showPriceDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) {
+                dropdown.style.display = 'block';
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.dropdown-options');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target) && !event.target.closest('.searchable-dropdown')) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+
+        // Add filter event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cost list filters - now using enhanced dropdowns
+            // Price list filters - now using enhanced dropdowns
+        });
+
+        // Debounce function for filters
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
     </script>
 </body>
 </html>
+

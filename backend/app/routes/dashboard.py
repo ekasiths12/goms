@@ -129,9 +129,11 @@ def get_dashboard_summary():
         direct_commission = float(commission_result.direct_commission or 0)
         print(f"DEBUG: Direct commission: {direct_commission}")
         
-        # Calculate stitching revenue (based on packing list delivery dates)
+        # Calculate stitching profit (based on packing list delivery dates)
         stitching_query = text(f"""
-            SELECT COALESCE(SUM(si.total_value), 0) as stitching_revenue
+            SELECT 
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
             FROM packing_lists pl
             JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
             JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
@@ -143,10 +145,12 @@ def get_dashboard_summary():
         print("DEBUG: Executing stitching query...")
         stitching_result = db.session.execute(stitching_query, params).fetchone()
         stitching_revenue = float(stitching_result.stitching_revenue or 0)
-        print(f"DEBUG: Stitching revenue: {stitching_revenue}")
+        stitching_cost = float(stitching_result.stitching_cost or 0)
+        stitching_profit = stitching_revenue - stitching_cost
+        print(f"DEBUG: Stitching revenue: {stitching_revenue}, cost: {stitching_cost}, profit: {stitching_profit}")
         
-        # Total revenue (including direct commission sales)
-        total_revenue = fabric_commission + stitching_revenue + direct_commission
+        # Total profit (including direct commission sales)
+        total_profit = fabric_commission + stitching_profit + direct_commission
         
         # Active orders (count of all stitching records based on packing list delivery date)
         active_orders_conditions = ["1=1"]  # Always true, so we count all records
@@ -288,15 +292,17 @@ def get_dashboard_summary():
         stitching_change = 15.7  # Mock positive growth
         
         result = {
-            'totalRevenue': float(total_revenue),
+            'totalProfit': float(total_profit),
             'directCommission': float(direct_commission),  # Direct commission sales
             'fabricCommission': float(fabric_commission),  # Fabric commission from stitching
             'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
-            'stitchingRevenue': float(stitching_revenue),
+            'stitchingProfit': float(stitching_profit),
+            'stitchingRevenue': float(stitching_revenue),  # Keep for reference
+            'stitchingCost': float(stitching_cost),  # Keep for reference
             'activeOrders': active_orders,
             'fabricStock': float(fabric_stock),
             'productionRate': round(production_rate, 1),
-            'revenueChange': revenue_change,
+            'profitChange': revenue_change,  # Renamed from revenueChange
             'fabricChange': fabric_change,
             'stitchingChange': stitching_change
         }
@@ -346,12 +352,13 @@ def get_revenue_trends():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Query for revenue by packing list delivery date (stitching commission)
+        # Query for profit by packing list delivery date (stitching commission)
         stitching_query = text(f"""
             SELECT 
                 DATE(pl.delivery_date) as date,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -399,45 +406,47 @@ def get_revenue_trends():
         commission_results = db.session.execute(commission_query, commission_params).fetchall()
         
         # Combine both datasets
-        revenue_data = {}
+        profit_data = {}
         
-        # Add stitching revenue
+        # Add stitching profit
         for row in stitching_results:
             date_str = row.date.strftime('%m/%d')
-            if date_str not in revenue_data:
-                revenue_data[date_str] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
-            revenue_data[date_str]['fabric_commission'] = float(row.fabric_commission or 0)
-            revenue_data[date_str]['stitching_revenue'] = float(row.stitching_revenue or 0)
+            if date_str not in profit_data:
+                profit_data[date_str] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
+            profit_data[date_str]['fabric_commission'] = float(row.fabric_commission or 0)
+            stitching_revenue = float(row.stitching_revenue or 0)
+            stitching_cost = float(row.stitching_cost or 0)
+            profit_data[date_str]['stitching_profit'] = stitching_revenue - stitching_cost
         
         # Add direct commission sales
         for row in commission_results:
             date_str = row.date.strftime('%m/%d')
-            if date_str not in revenue_data:
-                revenue_data[date_str] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
-            revenue_data[date_str]['direct_commission'] = float(row.direct_commission or 0)
+            if date_str not in profit_data:
+                profit_data[date_str] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
+            profit_data[date_str]['direct_commission'] = float(row.direct_commission or 0)
         
         # Only include dates with actual data (non-zero values)
         dates = []
         fabric_commission = []
-        stitching_revenue = []
+        stitching_profit = []
         
-        for date_str, data in sorted(revenue_data.items()):
+        for date_str, data in sorted(profit_data.items()):
             fabric_comm = data['fabric_commission']
-            stitch_rev = data['stitching_revenue']
+            stitch_profit = data['stitching_profit']
             direct_comm = data['direct_commission']
-            total = fabric_comm + stitch_rev + direct_comm
+            total = fabric_comm + stitch_profit + direct_comm
             
-            # Only include dates with actual revenue
+            # Only include dates with actual profit
             if total > 0:
                 dates.append(date_str)
                 fabric_commission.append(fabric_comm + direct_comm)  # Combine both commission types
-                stitching_revenue.append(stitch_rev)
+                stitching_profit.append(stitch_profit)
         
         return jsonify({
             'labels': dates,
-            'directCommission': [data['direct_commission'] for date_str, data in sorted(revenue_data.items())],
-            'fabricCommission': [data['fabric_commission'] for date_str, data in sorted(revenue_data.items())],
-            'stitchingRevenue': stitching_revenue
+            'directCommission': [data['direct_commission'] for date_str, data in sorted(profit_data.items())],
+            'fabricCommission': [data['fabric_commission'] for date_str, data in sorted(profit_data.items())],
+            'stitchingProfit': stitching_profit
         }), 200
         
     except Exception as e:
@@ -470,12 +479,13 @@ def get_top_customers():
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
-        # Query for stitching revenue and commission
+        # Query for stitching profit and commission
         stitching_query = text(f"""
             SELECT 
                 c.short_name,
                 COALESCE(SUM(il.yards_sent * il.unit_price * :commission_rate), 0) as fabric_commission,
-                COALESCE(SUM(si.total_value), 0) as stitching_revenue
+                COALESCE(SUM(si.total_value), 0) as stitching_revenue,
+                COALESCE(SUM(si.stitching_cost), 0) as stitching_cost
             FROM stitching_invoices si
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
@@ -525,34 +535,36 @@ def get_top_customers():
         for row in stitching_results:
             customer_name = row.short_name
             if customer_name not in customer_data:
-                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
             customer_data[customer_name]['fabric_commission'] = float(row.fabric_commission or 0)
-            customer_data[customer_name]['stitching_revenue'] = float(row.stitching_revenue or 0)
+            stitching_revenue = float(row.stitching_revenue or 0)
+            stitching_cost = float(row.stitching_cost or 0)
+            customer_data[customer_name]['stitching_profit'] = stitching_revenue - stitching_cost
         
         # Add direct commission data
         for row in commission_results:
             customer_name = row.customer_name
             if customer_name not in customer_data:
-                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_revenue': 0, 'direct_commission': 0}
+                customer_data[customer_name] = {'fabric_commission': 0, 'stitching_profit': 0, 'direct_commission': 0}
             customer_data[customer_name]['direct_commission'] = float(row.direct_commission or 0)
         
-        # Sort by total revenue and get top 10
+        # Sort by total profit and get top 10
         sorted_customers = sorted(
             customer_data.items(),
-            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_revenue'] + x[1]['direct_commission'],
+            key=lambda x: x[1]['fabric_commission'] + x[1]['stitching_profit'] + x[1]['direct_commission'],
             reverse=True
         )[:10]
         
         labels = [customer[0] for customer in sorted_customers]
         direct_commission = [customer[1]['direct_commission'] for customer in sorted_customers]
         fabric_commission = [customer[1]['fabric_commission'] for customer in sorted_customers]
-        stitching_revenue = [customer[1]['stitching_revenue'] for customer in sorted_customers]
+        stitching_profit = [customer[1]['stitching_profit'] for customer in sorted_customers]
         
         return jsonify({
             'labels': labels,
             'directCommission': direct_commission,
             'fabricCommission': fabric_commission,
-            'stitchingRevenue': stitching_revenue
+            'stitchingProfit': stitching_profit
         }), 200
         
     except Exception as e:

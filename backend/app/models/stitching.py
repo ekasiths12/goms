@@ -21,6 +21,7 @@ class StitchingInvoice(db.Model):
     billing_group_id = db.Column(db.Integer, db.ForeignKey('stitching_invoice_groups.id'))
     total_lining_cost = db.Column(db.Numeric(12, 2), default=0)
     total_fabric_cost = db.Column(db.Numeric(12, 2), default=0)
+    stitching_cost = db.Column(db.Numeric(10, 2), default=0)  # New field for stitching cost
     
     # Relationships
     garment_fabrics = db.relationship('GarmentFabric', backref='stitching_invoice', lazy=True, cascade='all, delete-orphan')
@@ -61,6 +62,7 @@ class StitchingInvoice(db.Model):
             'billing_group_id': self.billing_group_id,
             'total_lining_cost': float(self.total_lining_cost) if self.total_lining_cost else 0,
             'total_fabric_cost': float(self.total_fabric_cost) if self.total_fabric_cost else 0,
+            'stitching_cost': float(self.stitching_cost) if self.stitching_cost else 0,
             'fabric_name': self.invoice_line.item_name if self.invoice_line else None,
             'color': self.invoice_line.color if self.invoice_line else None,
             'customer_name': self.invoice_line.invoice.customer.short_name if self.invoice_line and self.invoice_line.invoice else None,
@@ -68,7 +70,8 @@ class StitchingInvoice(db.Model):
             'fabric_invoice_number': self.invoice_line.invoice.invoice_number if self.invoice_line and self.invoice_line.invoice else None,
             'delivery_note': self.invoice_line.delivery_note if self.invoice_line else None,
             'fabric_unit_price': float(self.invoice_line.unit_price) if self.invoice_line else 0,
-            'fabric_value': float(self.invoice_line.unit_price * self.yard_consumed) if self.invoice_line and self.yard_consumed else 0
+            'fabric_value': float(self.invoice_line.unit_price * self.yard_consumed) if self.invoice_line and self.yard_consumed else 0,
+            'stitching_profit': float(self.price - self.stitching_cost) if self.price and self.stitching_cost else 0
         }
     
     def get_size_qty(self):

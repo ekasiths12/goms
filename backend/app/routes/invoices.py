@@ -375,6 +375,51 @@ def assign_delivered_location():
             pass
         return {'error': str(e)}, 500
 
+@invoices_bp.route('/remove-location', methods=['POST'])
+def remove_delivered_location():
+    """Remove delivered location from selected invoice lines"""
+    try:
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return {'error': 'No data provided'}, 400
+        
+        # Get selected line IDs
+        line_ids = data.get('line_ids', [])
+        if not line_ids:
+            return {'error': 'No invoice lines selected'}, 400
+        
+        print(f"🔍 Removing location from {len(line_ids)} lines: {line_ids}")
+        
+        # Update invoice lines directly by ID
+        updated_count = 0
+        for line_id in line_ids:
+            try:
+                # Get the invoice line
+                invoice_line = InvoiceLine.query.get(line_id)
+                if invoice_line:
+                    # Clear the delivered location
+                    invoice_line.delivered_location = None
+                    updated_count += 1
+                    print(f"✅ Cleared location for line {line_id}")
+                else:
+                    print(f"❌ Line {line_id} not found")
+            except Exception as e:
+                print(f"❌ Error processing line {line_id}: {str(e)}")
+        
+        # Commit changes
+        db.session.commit()
+        
+        message = f"Delivery location removed from {updated_count} invoice lines."
+        print(f"✅ Remove location completed: {message}")
+        
+        return {'message': message, 'updated_count': updated_count}, 200
+        
+    except Exception as e:
+        print(f"❌ Error in remove location: {str(e)}")
+        db.session.rollback()
+        return {'error': f'Failed to remove location: {str(e)}'}, 500
+
 @invoices_bp.route('/assign-tax-invoice', methods=['POST'])
 def assign_tax_invoice_number():
     """Assign tax invoice number to selected invoices (like old Qt app)"""

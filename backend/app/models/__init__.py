@@ -1,6 +1,8 @@
 from .customer import Customer
 from .customer_id_mapping import CustomerIdMapping
 from .delivery_location import DeliveryLocation
+from .stitching_cost import StitchingCost
+from .stitching_price import StitchingPrice
 from .invoice import Invoice, InvoiceLine
 from .commission_sale import CommissionSale
 from .stitching import StitchingInvoice, GarmentFabric, LiningFabric
