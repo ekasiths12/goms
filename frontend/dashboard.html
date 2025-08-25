@@ -646,9 +646,11 @@
                 </div>
             </div>
 
+
+
             <!-- Fabric Consumption -->
             <div class="chart-card">
-                <h3 class="chart-title">🧵 Fabric Consumption</h3>
+                <h3 class="chart-title">🧵 Fabric Consumption by Garment</h3>
                 <div class="chart-container" data-chart="fabricChart">
                     <canvas id="fabricChart"></canvas>
                 </div>
@@ -736,6 +738,7 @@
         function getThemeColors() {
             const isLight = document.documentElement.getAttribute('data-theme') === 'light';
             return {
+                isLight: isLight,
                 text: isLight ? '#212121' : '#eceff1',
                 grid: isLight ? '#e0e0e0' : '#37474f',
                 background: isLight ? '#ffffff' : '#2c2c2c'
@@ -747,10 +750,8 @@
             console.log('DOM loaded, checking canvas elements...');
             
             // Test if chart containers exist
-            const fabricContainer = document.querySelector('[data-chart="fabricChart"]');
             const profitMarginContainer = document.querySelector('[data-chart="profitMarginChart"]');
             console.log('Chart containers found:', {
-                fabricContainer: !!fabricContainer,
                 profitMarginContainer: !!profitMarginContainer
             });
             
@@ -780,7 +781,7 @@
             setTimeout(() => {
                 console.log('revenueChart:', document.getElementById('revenueChart'));
                 console.log('customersChart:', document.getElementById('customersChart'));
-                console.log('fabricChart:', document.getElementById('fabricChart'));
+    
                 console.log('productionChart:', document.getElementById('productionChart'));
                 console.log('earningsBreakdownChart:', document.getElementById('earningsBreakdownChart'));
                 console.log('earningsByCustomerChart:', document.getElementById('earningsByCustomerChart'));
@@ -858,10 +859,10 @@
                     customerProfitabilityData
                 ] = await Promise.all([
                     fetchDashboardData('summary', filters),
-                    fetchDashboardData('revenue-trends', filters),
-                    fetchDashboardData('top-customers', filters),
-                    fetchDashboardData('fabric-consumption', filters),
-                    fetchDashboardData('production-overview', filters),
+                                fetchDashboardData('revenue-trends', filters),
+            fetchDashboardData('top-customers', filters),
+            fetchDashboardData('fabric-consumption', filters),
+            fetchDashboardData('production-overview', filters),
                     fetchDashboardData('earnings-breakdown', filters),
                     fetchDashboardData('earnings-by-customer', filters),
                     fetchDashboardData('stock-status', filters),
@@ -889,7 +890,7 @@
                     profitabilityTrendData,
                     customerProfitabilityData
                 });
-                updateProfitChart(revenueData);
+                                updateProfitChart(revenueData);
                 updateCustomersChart(customersData);
                 updateFabricChart(fabricData);
                 updateProductionChart(productionData);
@@ -1205,98 +1206,132 @@
             });
         }
 
+
+
         function updateFabricChart(data) {
-            console.log('updateFabricChart called with data:', data);
+            console.log('🔄 Updating fabric consumption chart with data:', data);
+            
             let canvas = document.getElementById('fabricChart');
             if (!canvas) {
                 const container = document.querySelector('[data-chart="fabricChart"]');
                 if (container) {
                     canvas = document.createElement('canvas');
                     canvas.id = 'fabricChart';
-                    canvas.width = 400;
-                    canvas.height = 280;
                     container.appendChild(canvas);
-                    console.log('Created new fabric chart canvas');
+                    console.log('✅ Created new fabric chart canvas');
                 } else {
-                    console.error('Fabric chart container not found');
+                    console.error('❌ Fabric chart container not found');
+                    return;
                 }
             }
             
+            // Ensure canvas is visible
             canvas.style.display = 'block';
             canvas.style.visibility = 'visible';
             canvas.style.opacity = '1';
-            canvas.style.position = 'relative';
-            canvas.style.zIndex = '1';
             
             const ctx = canvas.getContext('2d');
             
+            // Destroy existing chart if it exists
             if (charts.fabric) {
                 charts.fabric.destroy();
             }
             
-            // Color palette for different bars
+            // Modern color palette
             const colors = [
-                '#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0',
-                '#00bcd4', '#ff5722', '#795548', '#607d8b', '#e91e63',
-                '#3f51b5', '#009688', '#ffc107', '#8bc34a', '#ff4081'
+                '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6366F1'
             ];
             
-            console.log('Creating fabric chart with data:', data.labels, data.values);
+            // Prepare data
+            const labels = data.labels || [];
+            const values = data.values || [];
+            
+            console.log('📊 Creating fabric chart with:', { labels, values });
+            
             charts.fabric = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: data.labels || [],
+                    labels: labels,
                     datasets: [{
-                        label: 'Fabric Consumption (Yards)',
-                        data: data.values || [],
+                        label: 'Yards per Piece',
+                        data: values,
                         backgroundColor: (context) => {
                             const index = context.dataIndex;
                             return colors[index % colors.length];
                         },
-                        borderColor: '#37474f',
-                        borderWidth: 2
+                        borderColor: (context) => {
+                            const index = context.dataIndex;
+                            return colors[index % colors.length];
+                        },
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: getThemeColors().text
-                            },
-                            grid: {
-                                color: getThemeColors().grid
-                            }
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        y: {
-                            ticks: {
-                                color: getThemeColors().text,
-                                callback: function(value) {
-                                    return value.toFixed(1) + ' yards';
+                        tooltip: {
+                            backgroundColor: getThemeColors().isLight ? '#ffffff' : '#2c2c2c',
+                            titleColor: getThemeColors().text,
+                            bodyColor: getThemeColors().text,
+                            borderColor: getThemeColors().isLight ? '#e0e0e0' : '#555',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    return `${context.parsed.y.toFixed(2)} yards per piece`;
                                 }
-                            },
-                            grid: {
-                                color: getThemeColors().grid
                             }
                         }
                     },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: getThemeColors().text
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: getThemeColors().text,
+                                maxRotation: 45,
+                                minRotation: 0,
+                                font: {
+                                    size: 11
+                                }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return formatNumber(context.parsed.y) + ' yards';
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: getThemeColors().grid,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: getThemeColors().text,
+                                callback: function(value) {
+                                    return value.toFixed(1) + ' yd';
+                                },
+                                font: {
+                                    size: 11
                                 }
                             }
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
+            
+            console.log('✅ Fabric consumption chart updated successfully');
         }
 
         function updateProductionChart(data) {

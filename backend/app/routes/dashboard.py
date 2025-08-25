@@ -733,9 +733,11 @@ def get_top_customers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+
 @dashboard_bp.route('/fabric-consumption', methods=['GET'])
 def get_fabric_consumption():
-    """Get fabric consumption by garment type (total yards / total quantity)"""
+    """Get fabric consumption by garment type (yards per piece)"""
     try:
         # Get filter parameters
         date_from = request.args.get('dateFrom')
@@ -748,119 +750,64 @@ def get_fabric_consumption():
         where_conditions = []
         params = {}
         
-        add_filter_condition(where_conditions, params, "si.created_at", date_from, "date_from", ">=")
-        add_filter_condition(where_conditions, params, "si.created_at", date_to, "date_to", "<=")
-        add_filter_condition(where_conditions, params, "c.short_name", customer, "customer")
-        add_filter_condition(where_conditions, params, "si.stitched_item", garment, "garment")
-        add_filter_condition(where_conditions, params, "il.delivered_location", location, "location")
+        if date_from:
+            where_conditions.append("pl.delivery_date >= :date_from")
+            params['date_from'] = date_from
+        if date_to:
+            where_conditions.append("pl.delivery_date <= :date_to")
+            params['date_to'] = date_to
+        if customer:
+            where_conditions.append("c.short_name = :customer")
+            params['customer'] = customer
+        if garment:
+            where_conditions.append("si.stitched_item = :garment")
+            params['garment'] = garment
+        if location:
+            where_conditions.append("il.delivered_location = :location")
+            params['location'] = location
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
         
+        # Query for delivered stitching records using packing list delivery dates
         query = text(f"""
             SELECT 
                 si.stitched_item,
                 SUM(COALESCE(si.yard_consumed, 0)) as total_yards,
                 SUM(
-                    CASE 
-                        WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
-                        AND JSON_VALID(si.size_qty_json) = 1
-                        THEN (
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
-                            COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
-                        )
-                        ELSE 0 
-                    END
-                ) as total_quantity,
-                CASE 
-                    WHEN SUM(
-                        CASE 
-                            WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
-                            AND JSON_VALID(si.size_qty_json) = 1
-                            THEN (
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
-                            )
-                            ELSE 0 
-                        END
-                    ) > 0 
-                    THEN SUM(COALESCE(si.yard_consumed, 0)) / SUM(
-                        CASE 
-                            WHEN si.size_qty_json IS NOT NULL AND si.size_qty_json != '' 
-                            AND JSON_VALID(si.size_qty_json) = 1
-                            THEN (
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XS'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."2XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."3XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."4XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."5XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."6XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."7XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."8XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."9XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$."10XL"'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.ONE_SIZE'), 0) + 
-                                COALESCE(JSON_EXTRACT(si.size_qty_json, '$.UNISEX'), 0)
-                            )
-                            ELSE 0 
-                        END
-                    )
-                    ELSE 0 
-                END as yards_per_item
-            FROM packing_lists pl
-            JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
-            JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
-            JOIN invoice_lines il ON si.invoice_line_id = il.id
-            JOIN customers c ON pl.customer_id = c.id
-            WHERE COALESCE(si.yard_consumed, 0) > 0
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.S'), 0) + 
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.M'), 0) + 
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.L'), 0) + 
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XL'), 0) + 
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXL'), 0) + 
+                    COALESCE(JSON_EXTRACT(si.size_qty_json, '$.XXXL'), 0)
+                ) as total_quantity
+            FROM stitching_invoices si
+            JOIN packing_list_lines pll ON si.id = pll.stitching_invoice_id
+            JOIN packing_lists pl ON pll.packing_list_id = pl.id
+            LEFT JOIN invoice_lines il ON si.invoice_line_id = il.id
+            LEFT JOIN customers c ON pl.customer_id = c.id
+            WHERE si.yard_consumed > 0
+            AND si.size_qty_json IS NOT NULL
+            AND si.size_qty_json != ''
+            AND JSON_VALID(si.size_qty_json) = 1
+            AND pl.delivery_date IS NOT NULL
             AND {where_clause}
             GROUP BY si.stitched_item
             HAVING total_quantity > 0
-            ORDER BY yards_per_item DESC
+            ORDER BY (total_yards / total_quantity) DESC
             LIMIT 10
         """)
         
         results = db.session.execute(query, params).fetchall()
         
-        labels = [row.stitched_item for row in results]
-        values = [float(row.yards_per_item) for row in results]
+        labels = []
+        values = []
+        
+        for row in results:
+            if row.total_quantity > 0:
+                yards_per_piece = float(row.total_yards) / float(row.total_quantity)
+                labels.append(row.stitched_item)
+                values.append(round(yards_per_piece, 2))
         
         return jsonify({
             'labels': labels,
@@ -868,6 +815,7 @@ def get_fabric_consumption():
         }), 200
         
     except Exception as e:
+        print(f"Error in fabric consumption API: {e}")
         return jsonify({'error': str(e)}), 500
 
 @dashboard_bp.route('/production-overview', methods=['GET'])
