@@ -3372,6 +3372,7 @@
             // Validate inputs
             const stitchedItem = document.getElementById('stitchedItemSelect').value.trim();
             const price = parseFloat(document.getElementById('price').value) || 0;
+            const stitchingCost = parseFloat(document.getElementById('stitchingCost').value) || 0;
             
             if (!stitchedItem) {
                 alert('Please select a stitched item.');
@@ -3380,6 +3381,11 @@
             
             if (price <= 0) {
                 alert('Please enter a valid price.');
+                return;
+            }
+            
+            if (stitchingCost <= 0) {
+                alert('Please enter a valid cost.');
                 return;
             }
             
@@ -3458,8 +3464,6 @@
             };
             
             const addVat = document.getElementById('addVat').checked;
-            
-            const stitchingCost = parseFloat(document.getElementById('stitchingCost').value) || 0;
             
             const data = {
                 selected_lines: stitchingSelectedLines,

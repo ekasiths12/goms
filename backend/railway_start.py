@@ -249,6 +249,26 @@ def main():
         # Fix serial counters
         fix_serial_counters()
         
+        # Run stitching cost migration
+        try:
+            print("🔍 Checking stitching_cost column in stitching_invoices table...")
+            result = db.session.execute(text("DESCRIBE stitching_invoices"))
+            columns = [row[0] for row in result.fetchall()]
+            
+            if 'stitching_cost' not in columns:
+                print("📝 Adding stitching_cost column to stitching_invoices table...")
+                db.session.execute(text("""
+                    ALTER TABLE stitching_invoices 
+                    ADD COLUMN stitching_cost DECIMAL(10,2) DEFAULT 0.00
+                """))
+                db.session.commit()
+                print("✅ Successfully added stitching_cost column")
+            else:
+                print("✅ stitching_cost column already exists")
+        except Exception as e:
+            print(f"⚠️ Error adding stitching_cost column: {e}")
+            print("   Continuing without stitching_cost column fix...")
+        
         print("✅ Railway startup completed successfully!")
 
 if __name__ == '__main__':
