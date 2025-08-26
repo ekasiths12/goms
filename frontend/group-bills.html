@@ -859,18 +859,18 @@
         }
 
         .data-table th:nth-child(24),
-        .data-table td:nth-child(24) { /* Sew Cost */
-            width: 90px;
-            min-width: 90px;
-            max-width: 90px;
+        .data-table td:nth-child(24) { /* Sew Value */
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
             text-align: right;
         }
 
         .data-table th:nth-child(25),
-        .data-table td:nth-child(25) { /* Sew Value */
-            width: 100px;
-            min-width: 100px;
-            max-width: 100px;
+        .data-table td:nth-child(25) { /* Sew Price */
+            width: 70px;
+            min-width: 70px;
+            max-width: 70px;
             text-align: right;
         }
 
@@ -1032,8 +1032,8 @@
                         <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
                         <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
                         <th class="sortable-header" data-sort="total_qty" style="width: 70px;">Total Qty</th>
-                        <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Cost</th>
                         <th class="sortable-header" data-sort="sewing_value" style="width: 80px;">Sew Value</th>
+                        <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Price</th>
 
                     </tr>
                 </thead>
@@ -1321,8 +1321,8 @@
                 <th class="sortable-header" data-sort="size_xxl" style="width: 45px;">2XL</th>
                 <th class="sortable-header" data-sort="size_xxxl" style="width: 45px;">3XL</th>
                 <th class="sortable-header" data-sort="total_qty" style="width: 70px;">Total Qty</th>
-                <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Cost</th>
                 <th class="sortable-header" data-sort="sewing_value" style="width: 80px;">Sew Value</th>
+                <th class="sortable-header" data-sort="sewing_cost" style="width: 70px;">Sew Price</th>
             `;
         }
         
@@ -1639,15 +1639,26 @@
                                 <td>${formatInteger(sizeQty.XXL || 0)}</td>
                                 <td>${formatInteger(sizeQty.XXXL || 0)}</td>
                                 <td>${formatInteger(totalQty)}</td>
-                                <td>${formatCurrency(record.stitching_cost || 0)}</td>
                                 <td>${formatCurrency(record.total_value || 0)}</td>
-                                <td></td>
+                                <td>${formatCurrency(record.price || 0)}</td>
                             `;
                             tbody.appendChild(stitchingDetailRow);
                         });
                         
                         // Add lining fabric rows for each record
                         groupBill.details.individual_records.filter(record => record.stitching_invoice_number && record.lining_fabrics && record.lining_fabrics.length > 0).forEach(record => {
+                            // Calculate totalQty for this record
+                            let sizeQty = {};
+                            if (record.size_qty_json) {
+                                try {
+                                    sizeQty = JSON.parse(record.size_qty_json.replace(/'/g, '"'));
+                                } catch (e) {
+                                    console.error('Error parsing size_qty_json:', e, record.size_qty_json);
+                                    sizeQty = {};
+                                }
+                            }
+                            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+                            
                             record.lining_fabrics.forEach(lining => {
                                 const liningValue = parseFloat(lining.total_cost || 0);
                                 const liningFabricRow = document.createElement('tr');
@@ -1682,6 +1693,9 @@
                                     <td></td>
                                     <td></td>
                                     <td></td>
+                                    <td></td>
+                                    <td>${formatCurrency(record.total_value || 0)}</td>
+                                    <td>${formatCurrency(record.price || 0)}</td>
                                 `;
                                 tbody.appendChild(liningFabricRow);
                             });
