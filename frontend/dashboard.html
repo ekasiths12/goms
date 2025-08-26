@@ -1025,6 +1025,15 @@
                 charts.revenue.destroy();
             }
             
+            // Process data to skip 0 values and connect lines directly
+            const processDataForTrendLines = (dataArray) => {
+                if (!dataArray || !Array.isArray(dataArray)) return [];
+                return dataArray.map(value => {
+                    // Replace 0 or null/undefined values with null to skip them in the chart
+                    return (value === 0 || value === null || value === undefined) ? null : value;
+                });
+            };
+            
             charts.revenue = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1032,27 +1041,30 @@
                     datasets: [
                         {
                             label: 'Direct Commission',
-                            data: data.directCommission || [],
+                            data: processDataForTrendLines(data.directCommission),
                             borderColor: '#2E7D32',
                             backgroundColor: 'rgba(46, 125, 50, 0.1)',
                             borderWidth: 2,
-                            fill: false
+                            fill: false,
+                            spanGaps: true // This ensures lines connect across null values
                         },
                         {
                             label: 'Fabric Commission',
-                            data: data.fabricCommission || [],
+                            data: processDataForTrendLines(data.fabricCommission),
                             borderColor: '#81C784',
                             backgroundColor: 'rgba(129, 199, 132, 0.1)',
                             borderWidth: 2,
-                            fill: false
+                            fill: false,
+                            spanGaps: true // This ensures lines connect across null values
                         },
                         {
                             label: 'Stitching Profit',
-                            data: data.stitchingProfit || [],
+                            data: processDataForTrendLines(data.stitchingProfit),
                             borderColor: '#F44336',
                             backgroundColor: 'rgba(244, 67, 54, 0.1)',
                             borderWidth: 2,
-                            fill: false
+                            fill: false,
+                            spanGaps: true // This ensures lines connect across null values
                         }
                     ]
                 },
@@ -2237,6 +2249,15 @@
                 charts.profitabilityTrend.destroy();
             }
             
+            // Process data to skip 0 values and connect lines directly
+            const processDataForTrendLines = (dataArray) => {
+                if (!dataArray || !Array.isArray(dataArray)) return [];
+                return dataArray.map(value => {
+                    // Replace 0 or null/undefined values with null to skip them in the chart
+                    return (value === 0 || value === null || value === undefined) ? null : value;
+                });
+            };
+            
             charts.profitabilityTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -2244,27 +2265,30 @@
                     datasets: [
                         {
                             label: 'Revenue',
-                            data: data.revenue || [],
+                            data: processDataForTrendLines(data.revenue),
                             borderColor: '#4caf50',
                             backgroundColor: 'rgba(76, 175, 80, 0.1)',
                             borderWidth: 3,
-                            fill: true
+                            fill: true,
+                            spanGaps: true // This ensures lines connect across null values
                         },
                         {
                             label: 'Cost',
-                            data: data.cost || [],
+                            data: processDataForTrendLines(data.cost),
                             borderColor: '#f44336',
                             backgroundColor: 'rgba(244, 67, 54, 0.1)',
                             borderWidth: 3,
-                            fill: true
+                            fill: true,
+                            spanGaps: true // This ensures lines connect across null values
                         },
                         {
                             label: 'Profit',
-                            data: data.profit || [],
+                            data: processDataForTrendLines(data.profit),
                             borderColor: '#2196f3',
                             backgroundColor: 'rgba(33, 150, 243, 0.1)',
                             borderWidth: 3,
-                            fill: true
+                            fill: true,
+                            spanGaps: true // This ensures lines connect across null values
                         }
                     ]
                 },
