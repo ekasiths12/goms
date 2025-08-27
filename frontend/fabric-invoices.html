@@ -990,6 +990,9 @@
 
     </style>
     <script src="js/table-sorting.js"></script>
+    <script src="js/common/table-manager.js"></script>
+    <script src="js/common/action-manager.js"></script>
+    <script src="js/common/fabric-invoice-template.js"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -1449,11 +1452,15 @@
     </main>
 
     <script>
-        // Fabric Invoice Functions
-        let invoiceData = [];
+        // Fabric Invoice Functions - Using new modular system
         let selectedRows = [];
         let currentPage = 1;
         const itemsPerPage = 50;
+        
+        // Initialize modular components
+        let tableManager = null;
+        let actionManager = null;
+        let rowTemplate = null;
         
         // Cost and Price List Data
         let costListData = [];
@@ -1574,6 +1581,9 @@
             const username = localStorage.getItem('gms_username');
             document.getElementById('currentUser').textContent = `Welcome, ${username}`;
             
+            // Initialize table manager first
+            initializeTableManager();
+            
             await loadInvoiceData();
             
             // Initialize enhanced filter dropdowns
@@ -1621,22 +1631,15 @@
 
         async function loadInvoiceData() {
             console.log('🔄 loadInvoiceData called');
-            console.log('🔄 Current URL:', window.location.href);
             
-            const tbody = document.getElementById('invoiceTableBody');
-            if (!tbody) {
-                console.error('❌ Invoice table body not found');
-                return;
+            // Initialize components if not already done
+            if (!tableManager) {
+                initializeTableManager();
             }
-            
-            console.log('✅ Found invoice table body, showing loading state');
             
             // Clear selected rows when refreshing data
             selectedRows = [];
             console.log('🧹 Cleared selectedRows due to data refresh');
-            
-            // Show loading state
-            tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading invoice data...</td></tr>';
             
             try {
                 // Build query parameters from filters
@@ -1651,9 +1654,6 @@
                 const dateFrom = document.getElementById('filterDateFrom')?.value;
                 const dateTo = document.getElementById('filterDateTo')?.value;
                 const stockStatus = document.querySelector('input[name="stockStatus"]:checked')?.value;
-                console.log('🔍 Stock status from radio buttons:', stockStatus);
-                
-
                 
                 if (customerFilter) params.append('customer', customerFilter);
                 if (invoiceFilter) params.append('invoice_number', invoiceFilter);
@@ -1666,10 +1666,10 @@
                 if (stockStatus) params.append('stock_status', stockStatus);
                 
                 console.log('🌐 Fetching /api/invoices with filters...');
-                // Use dynamic API base URL for local development vs Railway
                 const apiBaseUrl = getApiBaseUrl();
                 const apiUrl = `${apiBaseUrl}/api/invoices?${params.toString()}`;
                 console.log('🌐 Full API URL:', apiUrl);
+                
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -1677,202 +1677,74 @@
                         'Content-Type': 'application/json'
                     }
                 });
-                console.log('📡 Response status:', response.status);
-                console.log('📡 Response headers:', response.headers);
                 
                 if (response.ok) {
                     const responseText = await response.text();
-                    console.log('📡 Raw response:', responseText);
                     try {
-                        invoiceData = JSON.parse(responseText);
-                        console.log('📊 Parsed invoice data:', invoiceData);
-                        console.log('📊 Received invoice data:', invoiceData.length, 'records');
-                        currentPage = 1; // Reset to first page when new data is loaded
-                        populateInvoiceTable();
+                        const data = JSON.parse(responseText);
+                        console.log('📊 Received invoice data:', data.length, 'records');
+                        
+                        // Use table manager to set data
+                        tableManager.setData(data);
+                        
+                        // Update filter data for enhanced dropdowns
+                        // Add a small delay to ensure table manager is fully ready
+                        setTimeout(() => {
+                            updateFilterData();
+                        }, 100);
+                        
                     } catch (parseError) {
                         console.error('❌ JSON parse error:', parseError);
-                        tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
+                        tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
                     }
                 } else {
                     console.error('❌ Failed to load invoice data, status:', response.status);
                     const errorText = await response.text();
                     console.error('❌ Error response:', errorText);
-                    tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
+                    tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
                 console.error('❌ Error loading invoice data:', error);
-                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
+                tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
             }
         }
-
-        function populateInvoiceTable() {
-            console.log('🔄 populateInvoiceTable called with', invoiceData.length, 'records');
-            const tbody = document.getElementById('invoiceTableBody');
-            tbody.innerHTML = '';
-
-            if (invoiceData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: var(--text-secondary);">No invoice data found. Try importing some .DAT files or adding invoice lines manually.</td></tr>';
-                updatePaginationControls();
-                return;
-            }
-
-            // Calculate pagination
-            const totalPages = getTotalPages();
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
-            }
+        
+        function initializeTableManager() {
+            console.log('🔄 Initializing TableManager...');
             
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, invoiceData.length);
-            const pageData = invoiceData.slice(startIndex, endIndex);
-
-            pageData.forEach((invoice, pageIndex) => {
-                const actualIndex = startIndex + pageIndex; // Use actual index for selection
-                const row = document.createElement('tr');
-                
-                // Use yards_sent and yards_consumed like the old Qt app
-                const yardsSent = invoice.yards_sent || invoice.quantity || 0;
-                const yardsConsumed = invoice.yards_consumed || 0;
-                const commissionYards = invoice.total_commission_yards || 0;
-                // Calculate pending using the same logic as backend
-                const totalUsed = (yardsConsumed + commissionYards);
-                const pending = yardsSent - totalUsed;
-                // Use backend's total_used if available, otherwise calculate it
-                const displayTotalUsed = invoice.total_used || totalUsed;
-                
-
-                
-                // Create status display and action buttons
-                let statusDisplay = '';
-                let actionButtons = '';
-                
-                // Build status display
-                const statusParts = [];
-                
-                if (invoice.commission_sales_count > 0) {
-                    statusParts.push(`✓ Commission (${formatNumber(invoice.total_commission_yards || 0)} yards)`);
+            // Create row template
+            rowTemplate = new FabricInvoiceRowTemplate();
+            
+            // Initialize table manager
+            tableManager = new TableManager('invoiceTable', {
+                itemsPerPage: 50,
+                rowTemplate: rowTemplate.template,
+                rowIdentifier: 'id',
+                optimisticUpdates: true,
+                onDataUpdate: (data) => {
+                    console.log('📊 Table data updated:', data.length, 'records');
+                },
+                onRowUpdate: (rowElement, updates) => {
+                    // Custom row update handler
+                    if (rowTemplate) {
+                        rowTemplate.updateRowInUI(rowElement, updates);
+                    }
                 }
-                
-                if (yardsConsumed > 0) {
-                    statusParts.push(`✓ Stitched (${formatNumber(yardsConsumed)} yards)`);
-                }
-                
-                if (statusParts.length > 0) {
-                    // Use different colors for commission vs stitched
-                    const formattedParts = statusParts.map(part => {
-                        if (part.includes('Commission')) {
-                            return `<span style="color: #f57c00;">${part}</span>`;
-                        } else {
-                            return `<span style="color: #2E7D32;">${part}</span>`;
-                        }
-                    });
-                    
-                    statusDisplay = `<div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">
-                        ${formattedParts.join(' | ')}
-                    </div>`;
-                }
-                
-                // Show action buttons if there are pending yards (same logic as backend filter)
-                if (yardsSent > totalUsed) {
-                    const commissionButton = `
-                        <button onclick="openCommissionSaleDialog(${invoice.id}, ${pending}, '${invoice.item_name}', '${invoice.color || ''}')" 
-                                class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; margin-right: 5px;">
-                            Commission
-                        </button>
-                    `;
-                    
-                    const stitchingButton = `
-                        <button onclick="createStitchingRecordFromTable(${invoice.id})" 
-                                class="btn btn-success" style="padding: 4px 8px; font-size: 11px;">
-                            Stitching
-                        </button>
-                    `;
-                    
-                    actionButtons = commissionButton + stitchingButton;
-                }
-                
-                // Combine status and action buttons (only show status once)
-                const finalActionButtons = statusDisplay + actionButtons;
-                
-                row.innerHTML = `
-                    <td class="checkbox-wrapper">
-                        <input type="checkbox" class="invoice-checkbox" data-invoice-id="${invoice.id}" onclick="toggleInvoiceSelection(event, ${invoice.id})">
-                    </td>
-                    <td>${formatDate(invoice.invoice_date)}</td>
-                    <td>${invoice.customer?.short_name || ''}</td>
-                    <td>${invoice.invoice_number || ''}</td>
-                    <td>${invoice.tax_invoice_number || ''}</td>
-                    <td>${invoice.item_name || ''}</td>
-                    <td>${invoice.color || ''}</td>
-                    <td>${invoice.delivery_note || ''}</td>
-                    <td>${formatNumber(yardsSent)}</td>
-                    <td>${formatNumber(displayTotalUsed)}</td>
-                    <td>${formatNumber(pending)}</td>
-                    <td>${formatNumber(invoice.unit_price || 0)}</td>
-                    <td>${formatNumber(yardsSent * (invoice.unit_price || 0))}</td>
-                    <td>${invoice.delivered_location || ''}</td>
-                    <td>${finalActionButtons}</td>
-                    <td style="display: none;">${invoice.id || ''}</td>
-                `;
-                tbody.appendChild(row);
             });
             
-            updatePaginationControls();
+            // Initialize action manager
+            actionManager = new ActionManager(tableManager, {
+                apiBaseUrl: getApiBaseUrl(),
+                showNotifications: true,
+                optimisticUpdates: true
+            });
             
-            // Update filter data for enhanced dropdowns
-            updateFilterData();
-            
-            console.log('✅ Invoice table populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
+            console.log('✅ TableManager and ActionManager initialized');
         }
 
-        function getTotalPages() {
-            return Math.ceil(invoiceData.length / itemsPerPage);
-        }
 
-        function updatePaginationControls() {
-            const totalPages = getTotalPages();
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, invoiceData.length);
-            
-            // Update pagination info
-            document.getElementById('paginationStart').textContent = invoiceData.length > 0 ? startIndex + 1 : 0;
-            document.getElementById('paginationEnd').textContent = endIndex;
-            document.getElementById('paginationTotal').textContent = invoiceData.length;
-            
-            // Update button states
-            document.getElementById('firstPage').disabled = currentPage <= 1;
-            document.getElementById('prevPage').disabled = currentPage <= 1;
-            document.getElementById('nextPage').disabled = currentPage >= totalPages;
-            document.getElementById('lastPage').disabled = currentPage >= totalPages;
-            
-            // Update page numbers
-            const pageNumbersSpan = document.getElementById('pageNumbers');
-            pageNumbersSpan.innerHTML = '';
-            
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            
-            if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                pageBtn.textContent = i;
-                pageBtn.onclick = () => goToPage(i);
-                pageNumbersSpan.appendChild(pageBtn);
-            }
-        }
 
-        function goToPage(page) {
-            const totalPages = getTotalPages();
-            if (page >= 1 && page <= totalPages) {
-                currentPage = page;
-                populateInvoiceTable();
-            }
-        }
+
 
 
 
@@ -1882,65 +1754,41 @@
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
             const isChecked = selectAllCheckbox.checked;
             
-            // Clear selectedRows array
-            selectedRows = [];
+            // Use table manager to select all
+            tableManager.selectAll(isChecked);
             
-            // Select/deselect all invoice checkboxes and update selectedRows
-            document.querySelectorAll('.invoice-checkbox').forEach(checkbox => {
-                checkbox.checked = isChecked;
-                
-                if (isChecked) {
-                    // Add to selectedRows
-                    const invoiceId = checkbox.getAttribute('data-invoice-id');
-                    const actualIndex = invoiceData.findIndex(invoice => invoice.id == invoiceId);
-                    if (actualIndex !== -1) {
-                        selectedRows.push(actualIndex);
-                    }
-                }
-            });
-            
-            console.log('📋 Select all - Selected rows:', selectedRows);
+            console.log('📋 Select all - Selected rows:', tableManager.getSelectedRowIds());
         }
 
         function toggleInvoiceSelection(event, invoiceId) {
             event.stopPropagation(); // Prevent row selection when clicking checkbox
             
-            const checkbox = document.querySelector(`input[data-invoice-id="${invoiceId}"].invoice-checkbox`);
+            const checkbox = event.target;
             const isChecked = checkbox.checked;
             
-            // Find the actual index of this invoice in the invoiceData array
-            const actualIndex = invoiceData.findIndex(invoice => invoice.id == invoiceId);
+            // Let the table manager handle the selection state
+            // The checkbox state is already updated by the user interaction
+            // We just need to update the select all checkbox state
             
-            if (isChecked) {
-                // Add to selectedRows if not already there
-                if (!selectedRows.includes(actualIndex)) {
-                    selectedRows.push(actualIndex);
-                }
-            } else {
-                // Remove from selectedRows
-                const indexToRemove = selectedRows.indexOf(actualIndex);
-                if (indexToRemove > -1) {
-                    selectedRows.splice(indexToRemove, 1);
-                }
-            }
-            
-            console.log('📋 Selected rows:', selectedRows);
+            console.log('📋 Row selection toggled:', invoiceId, 'checked:', isChecked);
+            console.log('📋 Current selected rows:', tableManager.getSelectedRowIds());
             updateSelectAllCheckbox();
         }
 
         function updateSelectAllCheckbox() {
-            const allCheckboxes = document.querySelectorAll('.invoice-checkbox');
+            const allCheckboxes = tableManager.tableBody.querySelectorAll('.row-checkbox');
             const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
             const anyChecked = Array.from(allCheckboxes).some(cb => cb.checked);
             
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-            selectAllCheckbox.checked = allChecked;
-            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+            }
         }
 
         function getSelectedInvoiceIds() {
-            const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
-            return Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-invoice-id'));
+            return tableManager.getSelectedRowIds();
         }
 
         function formatDate(dateString) {
@@ -2153,24 +2001,40 @@
         }
 
         function updateFilterData() {
-            console.log('🔄 Updating filter data from invoice data');
+            console.log('🔄 Updating filter data from table manager data');
+            
+            // Safety check - ensure tableManager is initialized
+            if (!tableManager) {
+                console.warn('⚠️ TableManager not initialized yet, skipping filter data update');
+                return;
+            }
+            
+            // Get data from table manager instead of old invoiceData
+            const data = tableManager.getData();
+            
+            // Safety check - ensure data exists
+            if (!data || !Array.isArray(data)) {
+                console.warn('⚠️ No data available for filter update');
+                return;
+            }
             
             // Extract unique values from invoice data
-            filterData.customers = [...new Set(invoiceData.map(inv => inv.customer?.short_name).filter(Boolean))];
-            filterData.invoiceNumbers = [...new Set(invoiceData.map(inv => inv.invoice_number).filter(Boolean))];
-            filterData.taxInvoices = [...new Set(invoiceData.map(inv => inv.tax_invoice_number).filter(Boolean))];
+            filterData.customers = [...new Set(data.map(inv => inv.customer?.short_name).filter(Boolean))];
+            filterData.invoiceNumbers = [...new Set(data.map(inv => inv.invoice_number).filter(Boolean))];
+            filterData.taxInvoices = [...new Set(data.map(inv => inv.tax_invoice_number).filter(Boolean))];
 
-            filterData.itemCodes = [...new Set(invoiceData.map(inv => inv.item_name).filter(Boolean))];
-            filterData.deliveryNotes = [...new Set(invoiceData.map(inv => inv.delivery_note).filter(Boolean))];
-            filterData.locations = [...new Set(invoiceData.map(inv => inv.delivered_location).filter(Boolean))];
+            filterData.itemCodes = [...new Set(data.map(inv => inv.item_name).filter(Boolean))];
+            filterData.deliveryNotes = [...new Set(data.map(inv => inv.delivery_note).filter(Boolean))];
+            filterData.locations = [...new Set(data.map(inv => inv.delivered_location).filter(Boolean))];
             
             console.log('✅ Filter data updated:', filterData);
         }
 
-        // Action button functions
-        function assignDeliveredLocation() {
-            if (selectedRows.length === 0) {
-                alert('Please select one or more invoice lines.');
+        // Action button functions - Using new modular system
+        async function assignDeliveredLocation() {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
+                showNotification('Please select one or more invoice lines.', 'warning');
                 return;
             }
             
@@ -2289,45 +2153,21 @@
             });
         }
         
-        function confirmLocationSelection() {
+        async function confirmLocationSelection() {
             const locationSelect = document.getElementById('locationSelect');
             const selectedLocation = locationSelect.value;
             
             if (!selectedLocation) {
-                alert('Please select a location.');
+                showNotification('Please select a location.', 'warning');
                 return;
             }
             
-            // Get the selected lines data (like old Qt app)
-            const selectedLines = selectedRows.map(index => ({
-                invoice_number: invoiceData[index].invoice_number,
-                item_name: invoiceData[index].item_name,
-                color: invoiceData[index].color
-            }));
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            const success = await actionManager.assignDeliveryLocation(selectedRowIds, selectedLocation);
             
-            fetch(`${getApiBaseUrl()}/api/invoices/assign-location`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    lines: selectedLines,
-                    location: selectedLocation
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message);
-                    loadInvoiceData(); // Refresh the table
-                    closeLocationDialog();
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                alert('Error assigning location: ' + error.message);
-            });
+            if (success) {
+                closeLocationDialog();
+            }
         }
         
         function closeLocationDialog() {
@@ -2378,9 +2218,10 @@
             });
         }
         
-        function removeLocationFromSelected() {
-            if (selectedRows.length === 0) {
-                alert('Please select one or more invoice lines.');
+        async function removeLocationFromSelected() {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
+                showNotification('Please select one or more invoice lines.', 'warning');
                 return;
             }
             
@@ -2388,50 +2229,40 @@
                 return;
             }
             
-            // Get the selected line IDs
-            const lineIds = selectedRows.map(index => invoiceData[index].id);
-            
-            console.log('🗑️ Removing location from line IDs:', lineIds);
-            
-            // Simple fetch request
-            fetch(`${getApiBaseUrl()}/api/invoices/remove-location`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    line_ids: lineIds
-                })
-            })
-            .then(response => {
-                console.log('📡 Response status:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('📡 Response data:', data);
-                if (data.message) {
-                    alert(data.message);
-                    loadInvoiceData(); // Refresh the table
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error:', error);
-                alert('Error removing location: ' + error.message);
-            });
+            await actionManager.removeDeliveryLocation(selectedRowIds);
         }
         
         function populateSelectedLinesInfo() {
             const selectedLinesInfo = document.getElementById('selectedLinesInfo');
             if (!selectedLinesInfo) return;
             
+            // Safety check - ensure tableManager is initialized
+            if (!tableManager) {
+                console.warn('⚠️ TableManager not initialized yet, skipping selected lines info');
+                return;
+            }
+            
+            const data = tableManager.getData();
+            if (!data || !Array.isArray(data)) {
+                console.warn('⚠️ No data available for selected lines info');
+                return;
+            }
+            
             let infoHtml = '';
             let linesWithLocation = 0;
             let linesWithoutLocation = 0;
             
-            selectedRows.forEach(index => {
-                const line = invoiceData[index];
+            // Get selected row IDs from table manager
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            console.log('🔍 Selected row IDs:', selectedRowIds);
+            
+            selectedRowIds.forEach(rowId => {
+                const line = tableManager.getRowById(rowId);
+                if (!line) {
+                    console.warn(`⚠️ Line with ID ${rowId} not found`);
+                    return;
+                }
+                
                 const hasLocation = line.delivered_location && line.delivered_location.trim() !== '';
                 const locationText = hasLocation ? `📍 ${line.delivered_location}` : '❌ No location';
                 const statusColor = hasLocation ? 'color: #4CAF50;' : 'color: #f44336;';
@@ -2570,99 +2401,17 @@
             });
         }
 
-        function assignTaxInvoiceNumber() {
-            if (selectedRows.length === 0) {
-                alert('Please select one or more fabric invoice lines to assign tax invoice numbers.');
+        async function assignTaxInvoiceNumber() {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
+                showNotification('Please select one or more fabric invoice lines to assign tax invoice numbers.', 'warning');
                 return;
             }
             
-            // Get unique base invoice numbers from selected rows (like old Qt app)
-            const baseInvoiceNumbers = new Set();
-            selectedRows.forEach(index => {
-                const invoiceNumber = invoiceData[index].invoice_number;
-                // Extract base invoice number (remove line number suffix like -01, -02, etc.)
-                let baseInvoiceNumber = invoiceNumber;
-                if (invoiceNumber.includes('-')) {
-                    baseInvoiceNumber = invoiceNumber.split('-')[0];
-                }
-                baseInvoiceNumbers.add(baseInvoiceNumber);
-            });
+            const taxInvoiceNumber = prompt('Enter tax invoice number (enter "0" to clear/remove):');
+            if (taxInvoiceNumber === null) return;
             
-            // If multiple base invoice numbers, ask user which one to use
-            let baseInvoiceNumber;
-            if (baseInvoiceNumbers.size > 1) {
-                const baseNumbersArray = Array.from(baseInvoiceNumbers);
-                
-                // Create a simple dropdown selection instead of typing
-                let selectionHtml = `<div style="margin-bottom: 10px;">Multiple base invoice numbers detected. Please select one:</div>`;
-                selectionHtml += `<select id="baseInvoiceSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">`;
-                baseNumbersArray.forEach(baseNum => {
-                    selectionHtml += `<option value="${baseNum}">${baseNum}</option>`;
-                });
-                selectionHtml += `</select>`;
-                
-                // Create a custom dialog
-                const dialog = document.createElement('div');
-                dialog.style.cssText = `
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                    background: rgba(0,0,0,0.7); z-index: 10000; display: flex; 
-                    align-items: center; justify-content: center;
-                `;
-                dialog.innerHTML = `
-                    <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; min-width: 300px; border: 1px solid var(--border-color);">
-                        <h3 style="margin-top: 0; color: var(--text-primary);">Select Base Invoice Number</h3>
-                        ${selectionHtml}
-                        <div style="text-align: right; margin-top: 15px;">
-                                            <button onclick="this.closest('.base-invoice-dialog').remove()" style="margin-right: 10px; padding: 8px 16px; background: var(--bg-secondary); color: #fff; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Cancel</button>
-                <button onclick="confirmBaseInvoiceSelection()" style="padding: 8px 16px; background: var(--focus-color); color: #fff; border: none; border-radius: 4px; cursor: pointer;">OK</button>
-                        </div>
-                    </div>
-                `;
-                dialog.className = 'base-invoice-dialog';
-                document.body.appendChild(dialog);
-                
-                // Store the base numbers for the confirmation function
-                window.tempBaseNumbers = baseNumbersArray;
-                window.tempBaseInvoiceCallback = (selectedBase) => {
-                    baseInvoiceNumber = selectedBase;
-                    continueWithTaxInvoiceAssignment();
-                };
-                return; // Exit early, will continue in callback
-            } else {
-                baseInvoiceNumber = Array.from(baseInvoiceNumbers)[0];
-                // Call the function directly for single base invoice number
-                continueWithTaxInvoiceAssignment();
-                return;
-            }
-            
-            // Function to continue with tax invoice assignment
-            function continueWithTaxInvoiceAssignment() {
-                const taxInvoiceNumber = prompt(`Enter tax invoice number for base invoice ${baseInvoiceNumber} (will apply to all invoices starting with ${baseInvoiceNumber}):\n\nEnter '0' to clear/remove the tax invoice number.`);
-                if (taxInvoiceNumber === null) return;
-            
-            fetch(`${getApiBaseUrl()}/api/invoices/assign-tax-invoice`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    base_invoice_number: baseInvoiceNumber,
-                    tax_invoice_number: taxInvoiceNumber.trim()
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message);
-                    loadInvoiceData(); // Refresh the table
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                alert('Error assigning tax invoice number: ' + error.message);
-            });
-        }
+            await actionManager.assignTaxInvoiceNumber(selectedRowIds, taxInvoiceNumber);
         }
         
         // Helper function for base invoice selection
@@ -2893,7 +2642,7 @@
                 // Trigger auto-population when stitched item changes
                 if (selectedLines.length > 0) {
                     const firstLine = selectedLines[0];
-                    const invoiceLine = invoiceData.find(inv => inv.id === firstLine.id);
+                    const invoiceLine = tableManager.getRowById(firstLine.id);
                     console.log('🔍 Auto-population triggered:', {
                         firstLine: firstLine,
                         invoiceLine: invoiceLine,
@@ -3526,7 +3275,7 @@
                 // Use directly provided line IDs
                 console.log('📋 Using provided line IDs:', selectedLineIds);
                 selectedLines = selectedLineIds.map(lineId => {
-                    const line = invoiceData.find(inv => inv.id === lineId);
+                    const line = tableManager.getRowById(lineId);
                     if (!line) {
                         console.error('❌ Line not found for ID:', lineId);
                         return null;
@@ -3558,7 +3307,7 @@
                 }
                 
                 selectedLines = selectedRows.map(index => {
-                    const line = invoiceData[index];
+                    const line = tableManager.getData()[index];
                     const yardsSent = line.yards_sent || line.quantity || 0;
                     const yardsConsumed = line.yards_consumed || 0;
                     const commissionYards = line.total_commission_yards || 0;
@@ -3585,7 +3334,7 @@
             if (selectedLines.length === 0) {
                 // Check if any lines were filtered out due to missing delivery location
                 const linesWithoutLocation = selectedRows.map(index => {
-                    const line = invoiceData[index];
+                    const line = tableManager.getData()[index];
                     return (!line.delivered_location || line.delivered_location.trim() === '') ? line : null;
                 }).filter(line => line !== null);
                 
@@ -3609,38 +3358,15 @@
             openModal('addInvoiceLineModal', 'Add Invoice Line');
         }
 
-        function deleteSelectedInvoice() {
-            const selectedInvoiceIds = getSelectedInvoiceIds();
-            if (selectedInvoiceIds.length === 0) {
-                alert('Please select at least one invoice to delete.');
+        async function deleteSelectedInvoice() {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
+                showNotification('Please select at least one invoice to delete.', 'warning');
                 return;
             }
-            if (confirm(`Are you sure you want to delete ${selectedInvoiceIds.length} selected invoice line(s)?`)) {
-                // Get the selected invoice line IDs
-                const lineIds = selectedInvoiceIds;
-                
-                fetch(`${getApiBaseUrl()}/api/invoices/delete-multiple`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        line_ids: lineIds
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) {
-                        alert(data.message);
-                        selectedRows = []; // Clear selection
-                        loadInvoiceData(); // Refresh the table
-                    } else {
-                        alert('Error: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    alert('Error deleting invoice lines: ' + error.message);
-                });
+            
+            if (confirm(`Are you sure you want to delete ${selectedRowIds.length} selected invoice line(s)?`)) {
+                await actionManager.deleteInvoiceLines(selectedRowIds);
             }
         }
 
@@ -3906,24 +3632,10 @@
                 delivery_note: document.getElementById('deliveryNote').value
             };
 
-            try {
-                const response = await fetch(`${getApiBaseUrl()}/api/invoices`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (response.ok) {
-                    alert('Invoice line added successfully!');
-                    closeModal('addInvoiceLineModal');
-                    loadInvoiceData(); // Refresh the table
-                } else {
-                    alert('Failed to add invoice line. Please check the data and try again.');
-                }
-            } catch (error) {
-                alert('Error adding invoice line: ' + error.message);
+            const success = await actionManager.addInvoiceLine(formData);
+            
+            if (success) {
+                closeModal('addInvoiceLineModal');
             }
         }
 
@@ -4081,7 +3793,7 @@
             }
             
             const selectedIndex = selectedRows[0];
-            const invoice = invoiceData[selectedIndex];
+            const invoice = tableManager.getData()[selectedIndex];
             
             if (!invoice) {
                 alert('Selected invoice not found');
@@ -4123,7 +3835,7 @@
             }
             
             const selectedIndex = selectedRows[0];
-            const invoice = invoiceData[selectedIndex];
+            const invoice = tableManager.getData()[selectedIndex];
             
             if (!invoice) {
                 alert('Selected invoice line not found');
@@ -4168,68 +3880,46 @@
 
         async function saveEditInvoice() {
             if (!currentEditInvoiceId) {
-                alert('No invoice selected for editing');
+                showNotification('No invoice selected for editing', 'warning');
                 return;
             }
             
             // Get form values
-            const itemName = document.getElementById('editItemName').value.trim();
-            const color = document.getElementById('editColor').value.trim();
-            const deliveryNote = document.getElementById('editDeliveryNote').value.trim();
-            const yardsSent = parseFloat(document.getElementById('editYardsSent').value) || 0;
-            const yardsConsumed = parseFloat(document.getElementById('editYardsConsumed').value) || 0;
-            const unitPrice = parseFloat(document.getElementById('editUnitPrice').value) || 0;
-            const deliveredLocation = document.getElementById('editDeliveredLocation').value.trim();
+            const updates = {
+                item_name: document.getElementById('editItemName').value.trim(),
+                color: document.getElementById('editColor').value.trim(),
+                delivery_note: document.getElementById('editDeliveryNote').value.trim(),
+                yards_sent: parseFloat(document.getElementById('editYardsSent').value) || 0,
+                yards_consumed: parseFloat(document.getElementById('editYardsConsumed').value) || 0,
+                unit_price: parseFloat(document.getElementById('editUnitPrice').value) || 0,
+                delivered_location: document.getElementById('editDeliveredLocation').value.trim()
+            };
             
             // Validate required fields
-            if (!itemName) {
-                alert('Item Name is required');
+            if (!updates.item_name) {
+                showNotification('Item Name is required', 'warning');
                 return;
             }
             
-            if (yardsSent < 0) {
-                alert('Yards Sent cannot be negative');
+            if (updates.yards_sent < 0) {
+                showNotification('Yards Sent cannot be negative', 'warning');
                 return;
             }
             
-            if (yardsConsumed < 0) {
-                alert('Yards Consumed cannot be negative');
+            if (updates.yards_consumed < 0) {
+                showNotification('Yards Consumed cannot be negative', 'warning');
                 return;
             }
             
-            if (yardsConsumed > yardsSent) {
-                alert('Yards Consumed cannot be greater than Yards Sent');
+            if (updates.yards_consumed > updates.yards_sent) {
+                showNotification('Yards Consumed cannot be greater than Yards Sent', 'warning');
                 return;
             }
             
-            try {
-                const response = await fetch(`${getApiBaseUrl()}/api/invoices/${currentEditInvoiceId}/update`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        item_name: itemName,
-                        color: color,
-                        delivery_note: deliveryNote,
-                        yards_sent: yardsSent,
-                        yards_consumed: yardsConsumed,
-                        unit_price: unitPrice,
-                        delivered_location: deliveredLocation
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    alert('Invoice line updated successfully');
-                    closeEditInvoiceDialog();
-                    await loadInvoiceData(); // Refresh the table
-                } else {
-                    const error = await response.json();
-                    alert('Error updating invoice line: ' + (error.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert('Error updating invoice line: ' + error.message);
+            const success = await actionManager.updateInvoiceLine(currentEditInvoiceId, updates);
+            
+            if (success) {
+                closeEditInvoiceDialog();
             }
         }
 
@@ -4256,7 +3946,7 @@
         
         function openCommissionSaleDialog(lineId, availableYards, itemName, itemColor) {
             // Find the invoice line data
-            const invoiceLine = invoiceData.find(inv => inv.id === lineId);
+            const invoiceLine = tableManager.getRowById(lineId);
             if (!invoiceLine) {
                 alert('Invoice line not found');
                 return;
@@ -4319,56 +4009,34 @@
             const saleDate = document.getElementById('commissionSaleDate').value;
             
             if (yardsSold <= 0) {
-                alert('Please enter a valid number of yards to sell');
+                showNotification('Please enter a valid number of yards to sell', 'warning');
                 return;
             }
             
             if (yardsSold > currentCommissionSaleData.availableYards) {
-                alert(`Cannot sell ${yardsSold} yards, only ${currentCommissionSaleData.availableYards} yards available`);
+                showNotification(`Cannot sell ${yardsSold} yards, only ${currentCommissionSaleData.availableYards} yards available`, 'error');
                 return;
             }
             
             if (!saleDate) {
-                alert('Please select a sale date');
+                showNotification('Please select a sale date', 'warning');
                 return;
             }
             
-            try {
-                const apiBaseUrl = getApiBaseUrl();
-                const response = await fetch(`${apiBaseUrl}/api/invoices/mark-commission-sale`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        line_id: currentCommissionSaleData.lineId,
-                        yards_sold: yardsSold,
-                        sale_date: saleDate
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    alert(`Successfully marked ${yardsSold} yards as commission sale. Commission: ฿${formatNumber(result.commission_amount)}`);
-                    
-                    // Refresh the invoice data
-                    await loadInvoiceData();
-                    
-                    // Close dialog
-                    closeCommissionSaleDialog();
-                } else {
-                    const error = await response.json();
-                    alert(`Error: ${error.error}`);
-                }
-            } catch (error) {
-                console.error('Error marking commission sale:', error);
-                alert('Error marking commission sale. Please try again.');
+            const success = await actionManager.createCommissionSale(
+                currentCommissionSaleData.lineId, 
+                yardsSold, 
+                saleDate
+            );
+            
+            if (success) {
+                closeCommissionSaleDialog();
             }
         }
         
         function createStitchingRecordFromTable(lineId) {
             // Find the invoice line data
-            const invoiceLine = invoiceData.find(inv => inv.id === lineId);
+            const invoiceLine = tableManager.getRowById(lineId);
             if (!invoiceLine) {
                 alert('Invoice line not found');
                 return;
@@ -4404,96 +4072,13 @@
             }
         });
 
-        // ===== TABLE SORTING FUNCTIONALITY =====
-        
-        // Initialize table sorter
-        let tableSorter = null;
 
-        // Custom data getter for invoice data
-        function getInvoiceValueForSorting(item, column) {
-            switch (column) {
-                case 'date':
-                    return item.invoice?.invoice_date || item.invoice_date;
-                case 'short_name':
-                    return item.customer?.short_name || item.short_name;
-                case 'invoice_number':
-                    return item.invoice?.invoice_number || item.invoice_number;
-                case 'tax_invoice_number':
-                    return item.invoice?.tax_invoice_number || item.tax_invoice_number;
-                case 'item_name':
-                    return item.item_name;
-                case 'color':
-                    return item.color;
-                case 'delivery_note':
-                    return item.delivery_note;
-                case 'yards_sent':
-                    return item.yards_sent || item.quantity;
-                case 'yards_consumed':
-                    return item.yards_consumed;
-                case 'total_used':
-                    return item.total_used || ((item.yards_consumed || 0) + (item.total_commission_yards || 0));
-                case 'pending':
-                    return item.pending_yards || 0;
-                case 'unit_price':
-                    return item.unit_price;
-                case 'total':
-                    return (item.yards_sent || item.quantity) * (item.unit_price || 0);
-                case 'delivered_location':
-                    return item.delivered_location;
-                default:
-                    return '';
-            }
-        }
 
-        // Initialize table sorter when page loads
+        // Initialize theme when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Load theme immediately to prevent flashing
             loadTheme();
-            
-            // Initialize table sorter
-            tableSorter = createTableSorter('invoiceTable', {
-                dataGetter: getInvoiceValueForSorting
-            });
-            
-            // Listen for sort events
-            document.getElementById('invoiceTable').addEventListener('tableSorted', function(event) {
-                const { data } = event.detail;
-                invoiceData = data;
-                populateInvoiceTable();
-            });
-            
-            console.log('✅ Table sorter initialized and ready');
         });
-
-        // Override the loadInvoiceData function to update table sorter
-        const originalLoadInvoiceData = loadInvoiceData;
-        loadInvoiceData = async function() {
-            await originalLoadInvoiceData();
-            
-            // Initialize table sorter if not already done
-            if (!tableSorter) {
-                tableSorter = createTableSorter('invoiceTable', {
-                    dataGetter: getInvoiceValueForSorting
-                });
-                
-                // Listen for sort events
-                document.getElementById('invoiceTable').addEventListener('tableSorted', function(event) {
-                    const { data } = event.detail;
-                    invoiceData = data;
-                    populateInvoiceTable();
-                });
-                
-                console.log('✅ Table sorter initialized after data load');
-            }
-            
-            // Update table sorter with new data
-            if (tableSorter && invoiceData && invoiceData.length > 0) {
-                tableSorter.setData(invoiceData, getInvoiceValueForSorting);
-                console.log(`💾 Updated table sorter with ${invoiceData.length} records`);
-            } else {
-                console.log('⚠️ No data available for table sorter');
-            }
-        }
 
         // ===== COST LIST AND PRICE LIST FUNCTIONALITY =====
 
