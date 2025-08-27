@@ -118,31 +118,39 @@ class LocalStorageService:
         
         return self.upload_image(image_data, filename, mime_type)
     
-    def generate_filename(self, garment_name, fabric_name, fabric_color, stitching_serial_number=None):
+    def generate_filename(self, garment_name, fabric_name, fabric_color, stitching_serial_number=None, original_filename=None):
         """
-        Generate filename according to the specified format:
-        Garmentname-fabricname-fabriccolor-stitching_serial
+        Generate a filename for image upload
         
         Args:
             garment_name: Name of the garment
             fabric_name: Name of the fabric
             fabric_color: Color of the fabric
-            stitching_serial_number: Stitching record serial number (optional)
+            stitching_serial_number: Optional stitching serial number
+            original_filename: Original filename to extract extension
         
         Returns:
-            str: Formatted filename
+            str: Generated filename with proper extension
         """
-        # Clean and format the components
         garment_clean = self._clean_filename(garment_name)
         fabric_clean = self._clean_filename(fabric_name)
         color_clean = self._clean_filename(fabric_color)
         
+        # Determine file extension from original filename or default to .jpg
+        file_extension = '.jpg'  # Default
+        if original_filename:
+            # Extract extension from original filename
+            if '.' in original_filename:
+                ext = original_filename.rsplit('.', 1)[1].lower()
+                if ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
+                    file_extension = f'.{ext}'
+        
         # Build filename
         if stitching_serial_number:
             serial_clean = self._clean_filename(stitching_serial_number)
-            return f"{garment_clean}-{fabric_clean}-{color_clean}-{serial_clean}.jpg"
+            return f"{garment_clean}-{fabric_clean}-{color_clean}-{serial_clean}{file_extension}"
         else:
-            return f"{garment_clean}-{fabric_clean}-{color_clean}.jpg"
+            return f"{garment_clean}-{fabric_clean}-{color_clean}{file_extension}"
     
     def _clean_filename(self, text):
         """

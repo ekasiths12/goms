@@ -35,7 +35,7 @@ class StitchingInvoiceGroup(db.Model):
         }
     
     def calculate_totals(self):
-        """Calculate totals for the group"""
+        """Calculate totals for the group - FIXED: Now includes secondary fabrics"""
         total_stitching_value = 0
         total_fabric_value = 0
         total_items = 0
@@ -45,8 +45,17 @@ class StitchingInvoiceGroup(db.Model):
             if stitching_invoice:
                 total_stitching_value += float(stitching_invoice.total_value or 0)
                 
-                # Calculate fabric value
-                fabric_value = float(stitching_invoice.invoice_line.unit_price * stitching_invoice.yard_consumed) if stitching_invoice.invoice_line and stitching_invoice.yard_consumed else 0
+                # Calculate fabric value - FIXED: Include both main and secondary fabrics
+                fabric_value = 0
+                
+                # Main fabric value
+                if stitching_invoice.invoice_line and stitching_invoice.yard_consumed:
+                    fabric_value += float(stitching_invoice.invoice_line.unit_price * stitching_invoice.yard_consumed)
+                
+                # Secondary fabrics value from garment_fabrics table
+                for garment_fabric in stitching_invoice.garment_fabrics:
+                    fabric_value += float(garment_fabric.total_fabric_cost or 0)
+                
                 total_fabric_value += fabric_value
                 
                 # Calculate total items
@@ -80,22 +89,27 @@ class StitchingInvoiceGroupLine(db.Model):
         return f'<StitchingInvoiceGroupLine {self.id}>'
     
     def to_dict(self):
-        """Convert group bill line to dictionary"""
+        """Convert group bill line to dictionary - FIXED: Now includes secondary fabrics"""
+        fabric_value = 0
+        
+        # Main fabric value
+        if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.yard_consumed:
+            fabric_value += float(self.stitching_invoice.invoice_line.unit_price * self.stitching_invoice.yard_consumed)
+        
+        # Secondary fabrics value
+        if self.stitching_invoice:
+            for garment_fabric in self.stitching_invoice.garment_fabrics:
+                fabric_value += float(garment_fabric.total_fabric_cost or 0)
+        
         return {
             'group_id': self.group_id,
             'stitching_invoice_id': self.stitching_invoice_id,
-            'group_number': self.group.group_number if self.group else None,
             'stitching_invoice_number': self.stitching_invoice.stitching_invoice_number if self.stitching_invoice else None,
+            'item_name': self.stitching_invoice.item_name if self.stitching_invoice else None,
             'stitched_item': self.stitching_invoice.stitched_item if self.stitching_invoice else None,
-            'fabric_name': self.stitching_invoice.item_name if self.stitching_invoice else None,
-            'color': self.stitching_invoice.invoice_line.color if self.stitching_invoice and self.stitching_invoice.invoice_line else None,
-            'customer_name': self.group.customer.short_name if self.group and self.group.customer else None,
-            'tax_invoice_number': self.stitching_invoice.invoice_line.invoice.tax_invoice_number if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.invoice_line.invoice else None,
-            'fabric_invoice_number': self.stitching_invoice.invoice_line.invoice.invoice_number if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.invoice_line.invoice else None,
-            'delivery_note': self.stitching_invoice.invoice_line.delivery_note if self.stitching_invoice and self.stitching_invoice.invoice_line else None,
-            'yards_consumed': float(self.stitching_invoice.yard_consumed) if self.stitching_invoice else 0,
+            'yard_consumed': float(self.stitching_invoice.yard_consumed) if self.stitching_invoice else 0,
             'fabric_unit_price': float(self.stitching_invoice.invoice_line.unit_price) if self.stitching_invoice and self.stitching_invoice.invoice_line else 0,
-            'fabric_value': float(self.stitching_invoice.invoice_line.unit_price * self.stitching_invoice.yard_consumed) if self.stitching_invoice and self.stitching_invoice.invoice_line and self.stitching_invoice.yard_consumed else 0,
+            'fabric_value': fabric_value,  # FIXED: Now includes secondary fabrics
             'size_qty': self.stitching_invoice.get_size_qty() if self.stitching_invoice else {},
             'total_qty': sum(self.stitching_invoice.get_size_qty().values()) if self.stitching_invoice else 0,
             'price': float(self.stitching_invoice.price) if self.stitching_invoice else 0,

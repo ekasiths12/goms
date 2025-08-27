@@ -54,13 +54,14 @@ def get_group_bills():
         for group_bill in group_bills:
             group_dict = group_bill.to_dict()
             
-            # Calculate totals
-            totals = group_bill.calculate_totals()
-            group_dict.update(totals)
-            
             # Add detailed structure for multi-level display
             details = get_group_bill_details(group_bill.id)
             group_dict['details'] = details
+            
+            # FIXED: Use details totals instead of model totals to include secondary fabrics
+            group_dict['total_fabric_value'] = details.get('total_fabric_value', 0)
+            group_dict['total_stitching_value'] = details.get('total_stitching_value', 0)
+            group_dict['total_items'] = details.get('total_items', 0)
             
             result.append(group_dict)
         
@@ -1173,14 +1174,23 @@ def get_group_bill_details(group_id):
             yards_consumed = rec.get('yard_consumed') or 0
             fabric_cost = rec.get('fabric_unit_price') or 0
             fabric_value = fabric_cost * yards_consumed
+            
+            # FIXED: Add secondary fabric values
+            secondary_fabric_value = 0
+            for garment_fabric in rec.get('garment_fabrics', []):
+                secondary_fabric_value += float(garment_fabric.get('total_fabric_cost', 0))
+            
+            record_fabric_value = fabric_value + secondary_fabric_value
+            print(f"DEBUG: Main fabric value: {fabric_value}, Secondary fabric value: {secondary_fabric_value}, Total: {record_fabric_value}")
+            print(f"DEBUG: garment_fabrics count: {len(rec.get('garment_fabrics', []))}")
             stitching_value = rec.get('total_value') or 0
             
             total_fabric_used += yards_consumed
-            total_fabric_value += fabric_value
+            total_fabric_value += record_fabric_value
             total_stitching_value += stitching_value
             
             packing_lists[pl_serial]['fabric_used'] += yards_consumed
-            packing_lists[pl_serial]['fabric_value'] += fabric_value
+            packing_lists[pl_serial]['fabric_value'] += record_fabric_value
             packing_lists[pl_serial]['stitching_value'] += stitching_value
             
             try:

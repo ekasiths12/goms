@@ -79,17 +79,19 @@ def get_dashboard_summary():
         print(f"DEBUG: Where clause: {where_clause}")
         print(f"DEBUG: Params: {params}")
         
-        # Calculate fabric commission (based on packing list delivery dates)
+        # Calculate fabric commission (based on packing list delivery dates) - FIXED: Now includes secondary fabrics and uses actual yards consumed
         fabric_query = text(f"""
             SELECT 
                 COALESCE(SUM(il.yards_sent * il.unit_price), 0) as fabric_sales_total,
-                COALESCE(SUM(il.yards_sent * il.unit_price * {FABRIC_COMMISSION_RATE}), 0) as fabric_commission
+                COALESCE(SUM(si.yard_consumed * il.unit_price * {FABRIC_COMMISSION_RATE}), 0) as fabric_commission,
+                COALESCE(SUM(gf.total_fabric_cost * {FABRIC_COMMISSION_RATE}), 0) as secondary_fabric_commission
             FROM packing_lists pl
             JOIN packing_list_lines pll ON pl.id = pll.packing_list_id
             JOIN stitching_invoices si ON pll.stitching_invoice_id = si.id
             JOIN invoice_lines il ON si.invoice_line_id = il.id
             JOIN invoices i ON il.invoice_id = i.id
             JOIN customers c ON pl.customer_id = c.id
+            LEFT JOIN garment_fabrics gf ON si.id = gf.stitching_invoice_id
             WHERE {where_clause}
         """)
         
@@ -97,7 +99,11 @@ def get_dashboard_summary():
         fabric_result = db.session.execute(fabric_query, params).fetchone()
         fabric_sales_total = float(fabric_result.fabric_sales_total or 0)
         fabric_commission = float(fabric_result.fabric_commission or 0)
-        print(f"DEBUG: Fabric commission: {fabric_commission}")
+        secondary_fabric_commission = float(fabric_result.secondary_fabric_commission or 0)
+        total_fabric_commission = fabric_commission + secondary_fabric_commission
+        print(f"DEBUG: Main fabric commission: {fabric_commission}")
+        print(f"DEBUG: Secondary fabric commission: {secondary_fabric_commission}")
+        print(f"DEBUG: Total fabric commission: {total_fabric_commission}")
         
         # Calculate direct commission sales (commission sales not from stitching)
         commission_conditions = ["1=1"]
@@ -202,8 +208,8 @@ def get_dashboard_summary():
         stitching_profit = stitching_revenue - stitching_cost
         print(f"DEBUG: Stitching revenue: {stitching_revenue}, cost: {stitching_cost}, profit: {stitching_profit}")
         
-        # Total profit (including direct commission sales)
-        total_profit = fabric_commission + stitching_profit + direct_commission
+        # Total profit (including direct commission sales) - FIXED: Use total fabric commission
+        total_profit = total_fabric_commission + stitching_profit + direct_commission
         
         # Active orders (count of all stitching records based on packing list delivery date)
         active_orders_conditions = ["1=1"]  # Always true, so we count all records
@@ -353,7 +359,7 @@ def get_dashboard_summary():
             'totalProfit': float(total_profit),
             'totalRevenue': float(total_revenue),  # Total revenue for frontend
             'directCommission': float(direct_commission),  # Direct commission sales
-            'fabricCommission': float(fabric_commission),  # Fabric commission from stitching
+            'fabricCommission': float(total_fabric_commission),  # FIXED: Total fabric commission (main + secondary)
             'fabricSalesTotal': float(fabric_sales_total),  # Show total fabric sales for reference
             'stitchingProfit': float(stitching_profit),
             'stitchingRevenue': float(stitching_revenue),  # Keep for reference

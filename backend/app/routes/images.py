@@ -47,8 +47,8 @@ def upload_image():
             print(f"⚠️  Storage service error: {str(e)}")
             return jsonify({'error': f'Storage service not available: {str(e)}'}), 500
         
-        # Generate filename using the storage service
-        storage_filename = storage_service.generate_filename(garment_name, fabric_name, fabric_color, stitching_serial_number)
+        # Generate filename using the storage service - FIXED: Pass original filename to preserve extension
+        storage_filename = storage_service.generate_filename(garment_name, fabric_name, fabric_color, stitching_serial_number, file.filename)
         
         # Upload to S3
         try:

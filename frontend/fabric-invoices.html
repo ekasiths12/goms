@@ -652,6 +652,11 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
         }
+        
+        /* FIXED: Edit dialogs should appear on top of list dialogs */
+        #costDialog, #priceDialog {
+            z-index: 10002;
+        }
 
         .modal-content {
             background: var(--card-bg);

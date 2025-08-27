@@ -687,7 +687,7 @@ def get_available_fabrics():
     """Get available fabrics for multi-fabric selection"""
     try:
         
-        # Get fabrics with pending yardage
+        # Get fabrics with pending yardage - FIXED: Now accounts for commission sales
         query = """
             SELECT 
                 l.id,
@@ -698,11 +698,19 @@ def get_available_fabrics():
                 l.delivered_location,
                 i.invoice_number,
                 c.short_name as customer_name,
-                (l.yards_sent - COALESCE(l.yards_consumed, 0)) as pending_yards
+                (l.yards_sent - COALESCE(l.yards_consumed, 0) - COALESCE(commission_yards, 0)) as pending_yards
             FROM invoice_lines l
             JOIN invoices i ON l.invoice_id = i.id
             JOIN customers c ON i.customer_id = c.id
-            WHERE (l.yards_sent - COALESCE(l.yards_consumed, 0)) > 0
+            LEFT JOIN (
+                SELECT 
+                    invoice_line_id,
+                    SUM(yards_sold) as commission_yards
+                FROM commission_sales
+                GROUP BY invoice_line_id
+            ) cs ON l.id = cs.invoice_line_id
+            WHERE (l.yards_sent - COALESCE(l.yards_consumed, 0) - COALESCE(commission_yards, 0)) > 0
+            HAVING pending_yards > 0
             ORDER BY l.item_name, l.color
         """
         
