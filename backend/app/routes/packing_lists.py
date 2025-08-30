@@ -741,22 +741,22 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
             # Determine which column this line goes in
             if line_idx < lines_per_column:
                 col_x = left_column_x
-                row_y = table_start_y + 4 + (line_idx * 20)  # Increased row height for larger images
+                row_y = table_start_y + 4 + (line_idx * 28)  # Increased spacing to accommodate cost breakdown (20->28)
             else:
                 col_x = right_column_x
-                row_y = table_start_y + 4 + ((line_idx - lines_per_column) * 20)  # Increased row height for larger images
-            
+                row_y = table_start_y + 4 + ((line_idx - lines_per_column) * 28)  # Increased spacing to accommodate cost breakdown (20->28)
+
             # Minimal alternating row colors
             if line_idx % 2 == 0:
                 pdf.set_fill_color(*white)
             else:
                 pdf.set_fill_color(*light_gray)
-            
-            pdf.rect(col_x, row_y, column_width, 22, 'F')  # Increased height for 2-line cost breakdown
-            
+
+            pdf.rect(col_x, row_y, column_width, 26, 'F')  # Increased height to accommodate cost breakdown (22->26)
+
             # Add minimal border
             pdf.set_draw_color(200, 200, 200)
-            pdf.rect(col_x, row_y, column_width, 22, 'D')  # Increased height for 2-line cost breakdown
+            pdf.rect(col_x, row_y, column_width, 26, 'D')  # Increased height to accommodate cost breakdown (22->26)
             
             x_pos = col_x
             
@@ -835,7 +835,7 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
                 add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, column_width)
         
         # Minimal footer
-        footer_y = table_start_y + 4 + (max(lines_per_column, len(lines) - lines_per_column) * 22) + (12 if show_garment_cost else 4)  # Increased row height to 22px
+        footer_y = table_start_y + 4 + (max(lines_per_column, len(lines) - lines_per_column) * 28) + (12 if show_garment_cost else 4)  # Updated to match new row spacing (28px)
         pdf.set_fill_color(*black)
         pdf.rect(0, footer_y, 297, 6, 'F')
         pdf.set_text_color(*white)
@@ -1239,29 +1239,29 @@ def add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, co
         light_gray = (245, 245, 245)
         dark_gray = (64, 64, 64)
         
-        # Create a subtle background for the cost breakdown - properly aligned
+        # Create a subtle background for the cost breakdown - properly aligned within row
         pdf.set_fill_color(*light_gray)
-        pdf.rect(col_x, row_y + 18, column_width, 6, 'F')  # Increased height to accommodate both lines within box
+        pdf.rect(col_x, row_y + 20, column_width, 6, 'F')  # Positioned to fit within 26px row height
         pdf.set_draw_color(200, 200, 200)
-        pdf.rect(col_x, row_y + 18, column_width, 6, 'D')  # Increased height to accommodate both lines within box
+        pdf.rect(col_x, row_y + 20, column_width, 6, 'D')  # Positioned to fit within 26px row height
         
         pdf.set_text_color(*dark_gray)
         pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
-        pdf.set_xy(col_x + 2, row_y + 19)
+        pdf.set_xy(col_x + 2, row_y + 21)
         pdf.cell(column_width - 4, 1, "COST:", ln=0)
-        
+
         pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
-        
+
         # Enhanced cost breakdown with detailed explanations - 2 lines
         line1_details = []
         line2_details = []
-        
+
         # Line 1: Main fabric and consumption calculation
         if main_fabric_used > 0 and main_fabric_price > 0:
             yards_per_piece = main_fabric_used/total_qty
             main_fabric_cost_per_piece = main_fabric_cost/total_qty
             line1_details.append(f"Main: {yards_per_piece:.2f}yd/pc×{main_fabric_price:.1f}={main_fabric_cost_per_piece:.1f}")
-        
+
         # Add secondary fabrics to line 1
         if multi_fabrics_list:
             for fabric in multi_fabrics_list:
@@ -1271,7 +1271,7 @@ def add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, co
                     yards_per_piece = consumption/total_qty
                     cost_per_piece = (consumption * unit_price)/total_qty
                     line1_details.append(f"Sec: {yards_per_piece:.2f}yd/pc×{unit_price:.1f}={cost_per_piece:.1f}")
-        
+
         # Add lining fabrics to line 1
         if lining_fabrics_list:
             for lining in lining_fabrics_list:
@@ -1281,25 +1281,25 @@ def add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, co
                     yards_per_piece = consumption/total_qty
                     cost_per_piece = (consumption * unit_price)/total_qty
                     line1_details.append(f"Lining: {yards_per_piece:.2f}yd/pc×{unit_price:.1f}={cost_per_piece:.1f}")
-        
+
         # Line 2: Sewing cost and total
         if line.get('add_vat'):
             vat_amount = sewing_price * 0.07
             line2_details.append(f"Sew: {sewing_price:.1f}+{vat_amount:.1f}VAT={sewing_cost_per_garment:.1f}")
         else:
             line2_details.append(f"Sew: {sewing_cost_per_garment:.1f}")
-        
+
         line2_details.append(f"Total: {total_cost_per_garment:.1f} THB")
-        
+
         # Join lines with separators
         line1_text = " | ".join(line1_details) if line1_details else f"Fabric: {fabric_cost_per_garment:.1f}"
         line2_text = " | ".join(line2_details)
-        
+
         # Display on 2 lines with proper spacing within the cost breakdown box
-        pdf.set_xy(col_x + 15, row_y + 19)  # Line 1: Start right after "COST:" label
+        pdf.set_xy(col_x + 15, row_y + 21)  # Line 1: Start right after "COST:" label (updated to match box position)
         pdf.cell(column_width - 15, 1, line1_text, ln=0)  # ln=0 to not advance to next line
-        
-        pdf.set_xy(col_x + 15, row_y + 22)  # Line 2: 3px below line 1, 2px from bottom of cost box
+
+        pdf.set_xy(col_x + 15, row_y + 24)  # Line 2: 3px below line 1, within the 6px cost box (updated positioning)
         pdf.cell(column_width - 15, 1, line2_text, ln=1)
         
     except Exception as e:
