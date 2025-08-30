@@ -2549,6 +2549,7 @@
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Customer</th>
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Delivery Note</th>
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Location</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Pending Yards</th>
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Consumption (yards)</th>
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Unit Price (THB)</th>
                                     <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-primary);">Action</th>
@@ -3050,7 +3051,7 @@
             if (stitchingMultiFabrics.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td colspan="9" style="padding: 20px; text-align: center; color: var(--text-secondary);">No additional fabrics</td>
+                    <td colspan="10" style="padding: 20px; text-align: center; color: var(--text-secondary);">No additional fabrics</td>
                 `;
                 tbody.appendChild(row);
                 return;
@@ -3066,8 +3067,9 @@
                     <td style="padding: 8px; color: var(--text-primary);">${fabric.customer_name}</td>
                     <td style="padding: 8px; color: var(--text-primary);">${fabric.delivery_note}</td>
                     <td style="padding: 8px; color: var(--text-primary);">${fabric.delivered_location}</td>
+                    <td style="padding: 8px; color: var(--text-primary);">${fabric.pending_yards.toFixed(2)}</td>
                     <td style="padding: 8px;">
-                        <input type="number" step="0.01" min="0" max="${fabric.pending_yards}" value="${fabric.consumption}" 
+                        <input type="number" step="0.01" min="0" max="${fabric.pending_yards}" value="${fabric.consumption}"
                                style="padding: 4px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; width: 80px;"
                                onchange="updateMultiFabricConsumption(${index}, this.value)">
                     </td>
