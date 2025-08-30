@@ -458,18 +458,62 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             if len(fabric_text) > 30:
                 fabric_text = fabric_text[:27] + "..."
             pdf.cell(col_widths[3] - 2, 8, fabric_text, 0, 0, 'C')
-            
-            pdf.set_xy(x_pos + 1, row_y + 9)
+
+            # Add secondary fabrics below primary fabric but above serial (10% smaller, italic)
+            stitching = StitchingInvoice.query.get(group_line['id'])
+            secondary_fabrics = []
+            if stitching and stitching.garment_fabrics:
+                for garment_fabric in stitching.garment_fabrics:
+                    if garment_fabric.invoice_line:
+                        fabric_name = garment_fabric.invoice_line.item_name or ''
+                        if fabric_name:
+                            secondary_fabrics.append(fabric_name)
+
+            # Serial number below secondary fabrics
+            serial_y = row_y + 9
+            if secondary_fabrics:
+                # Display secondary fabrics below primary fabric
+                pdf.set_font("Arial", 'I', 6.3)  # 10% smaller than 7, italic
+                for i, secondary_fabric in enumerate(secondary_fabrics):
+                    pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
+                    if len(secondary_fabric) > 30:
+                        secondary_fabric = secondary_fabric[:27] + "..."
+                    pdf.cell(col_widths[3] - 2, 3, secondary_fabric, 0, 0, 'C')
+                serial_y = row_y + 9 + (len(secondary_fabrics) * 3) + 1  # Position serial after secondary fabrics
+
+            # Reset font and display serial number
+            pdf.set_font("Arial", '', 7)
             serial_text = str(group_line['stitching_invoice_number'] or '')
+            pdf.set_xy(x_pos + 1, serial_y)
             pdf.cell(col_widths[3] - 2, 8, serial_text, 0, 0, 'C')
             x_pos += col_widths[3]
             
-            # Color
+            # Primary color - positioned at top of cell to align with primary fabric
             pdf.set_xy(x_pos + 1, row_y + 1)
             color_text = str(group_line['color'] or '')
             if len(color_text) > 12:
                 color_text = color_text[:9] + "..."
-            pdf.cell(col_widths[4] - 2, 16, color_text, 0, 0, 'C')
+            pdf.cell(col_widths[4] - 2, 8, color_text, 0, 0, 'C')
+
+            # Add secondary fabric colors aligned with secondary fabric names
+            if stitching and stitching.garment_fabrics:
+                secondary_colors = []
+                for garment_fabric in stitching.garment_fabrics:
+                    if garment_fabric.invoice_line:
+                        color = garment_fabric.invoice_line.color or ''
+                        if color:
+                            secondary_colors.append(color)
+
+                if secondary_colors:
+                    pdf.set_font("Arial", 'I', 6.3)  # 10% smaller than 7, italic
+                    for i, secondary_color in enumerate(secondary_colors):
+                        # Align with secondary fabric name positioning
+                        pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
+                        if len(secondary_color) > 12:
+                            secondary_color = secondary_color[:9] + "..."
+                        pdf.cell(col_widths[4] - 2, 3, secondary_color, 0, 0, 'C')
+                    pdf.set_font("Arial", '', 7)  # Reset font
+
             x_pos += col_widths[4]
             
             # Size quantities
@@ -477,18 +521,18 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             for sz in ["S", "M", "L", "XL", "XXL", "XXXL"]:
                 qty = size_qty.get(sz, 0)
                 pdf.set_xy(x_pos + 1, row_y + 1)
-                pdf.cell(col_widths[5 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 16, str(qty), 0, 0, 'C')
+                pdf.cell(col_widths[5 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 8, str(qty), 0, 0, 'C')
                 x_pos += col_widths[5 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)]
-            
-            # Total quantity
+
+            # Total quantity - align with primary fabric at top
             total_qty = sum(size_qty.get(sz, 0) for sz in ["S", "M", "L", "XL", "XXL", "XXXL"])
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.set_font("Arial", 'B', 7)
-            pdf.cell(col_widths[11] - 2, 16, str(total_qty), 0, 0, 'C')
+            pdf.cell(col_widths[11] - 2, 8, str(total_qty), 0, 0, 'C')
             pdf.set_font("Arial", '', 7)
             x_pos += col_widths[11]
-            
-            # Price
+
+            # Price - align with primary fabric at top
             base_price = group_line['price']
             if group_line.get('add_vat'):
                 vat_amount = base_price * 0.07
@@ -496,12 +540,12 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             else:
                 vat_inclusive_price = base_price
             pdf.set_xy(x_pos + 1, row_y + 1)
-            pdf.cell(col_widths[12] - 2, 16, f"{vat_inclusive_price:,.2f}", 0, 0, 'C')
+            pdf.cell(col_widths[12] - 2, 8, f"{vat_inclusive_price:,.2f}", 0, 0, 'C')
             x_pos += col_widths[12]
-            
-            # Value
+
+            # Value - align with primary fabric at top
             pdf.set_xy(x_pos + 1, row_y + 1)
-            pdf.cell(col_widths[13] - 2, 16, f"{group_line['total_value']:,.2f}", 0, 0, 'C')
+            pdf.cell(col_widths[13] - 2, 8, f"{group_line['total_value']:,.2f}", 0, 0, 'C')
             
             # Add to tax group total
             tax_group_total += float(group_line['total_value'] or 0)

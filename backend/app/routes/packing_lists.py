@@ -786,19 +786,62 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
             if len(fabric_text) > 25:
                 fabric_text = fabric_text[:22] + "..."
             pdf.cell(col_widths[2] - 2, 8, fabric_text, 0, 0, 'C')
-            
-            # Serial number below fabric name
+
+            # Add secondary fabrics below primary fabric but above serial (10% smaller, italic)
+            stitching = StitchingInvoice.query.get(line['id'])
+            secondary_fabrics = []
+            if stitching and stitching.garment_fabrics:
+                for garment_fabric in stitching.garment_fabrics:
+                    if garment_fabric.invoice_line:
+                        fabric_name = garment_fabric.invoice_line.item_name or ''
+                        if fabric_name:
+                            secondary_fabrics.append(fabric_name)
+
+            # Serial number below secondary fabrics
+            serial_y = row_y + 9
+            if secondary_fabrics:
+                # Display secondary fabrics below primary fabric
+                pdf.set_font("Arial", 'I', 6.3)  # 10% smaller than 7, italic
+                for i, secondary_fabric in enumerate(secondary_fabrics):
+                    pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
+                    if len(secondary_fabric) > 25:
+                        secondary_fabric = secondary_fabric[:22] + "..."
+                    pdf.cell(col_widths[2] - 2, 3, secondary_fabric, 0, 0, 'C')
+                serial_y = row_y + 9 + (len(secondary_fabrics) * 3) + 1  # Position serial after secondary fabrics
+
+            # Reset font and display serial number
+            pdf.set_font("Arial", '', 7)
             serial_text = str(line['stitching_invoice_number'] or '')
-            pdf.set_xy(x_pos + 1, row_y + 9)
+            pdf.set_xy(x_pos + 1, serial_y)
             pdf.cell(col_widths[2] - 2, 8, serial_text, 0, 0, 'C')
             x_pos += col_widths[2]
             
-            # Color - INCREASED WIDTH, MORE TEXT VISIBLE
+            # Primary color - positioned at top of cell to align with primary fabric
             pdf.set_xy(x_pos + 1, row_y + 1)
             color_text = str(line['color'] or '')
             if len(color_text) > 10:
                 color_text = color_text[:7] + "..."
-            pdf.cell(col_widths[3] - 2, 16, color_text, 0, 0, 'C')
+            pdf.cell(col_widths[3] - 2, 8, color_text, 0, 0, 'C')
+
+            # Add secondary fabric colors aligned with secondary fabric names
+            if stitching and stitching.garment_fabrics:
+                secondary_colors = []
+                for garment_fabric in stitching.garment_fabrics:
+                    if garment_fabric.invoice_line:
+                        color = garment_fabric.invoice_line.color or ''
+                        if color:
+                            secondary_colors.append(color)
+
+                if secondary_colors:
+                    pdf.set_font("Arial", 'I', 6.3)  # 10% smaller than 7, italic
+                    for i, secondary_color in enumerate(secondary_colors):
+                        # Align with secondary fabric name positioning
+                        pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
+                        if len(secondary_color) > 10:
+                            secondary_color = secondary_color[:7] + "..."
+                        pdf.cell(col_widths[3] - 2, 3, secondary_color, 0, 0, 'C')
+                    pdf.set_font("Arial", '', 7)  # Reset font
+
             x_pos += col_widths[3]
             
             # Size quantities - ALL VISIBLE in separate columns
@@ -807,27 +850,27 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
             except Exception:
                 size_qty = {}
             
-            # Individual size columns for complete visibility
+            # Individual size columns for complete visibility - align with primary fabric at top
             for sz in ["S", "M", "L", "XL", "XXL", "XXXL"]:
                 qty = size_qty.get(sz, 0)
                 pdf.set_xy(x_pos + 1, row_y + 1)
-                pdf.cell(col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 16, str(qty), 0, 0, 'C')
+                pdf.cell(col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 8, str(qty), 0, 0, 'C')
                 x_pos += col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)]
-            
-            # Total quantity - SAME FONT SIZE
+
+            # Total quantity - SAME FONT SIZE - align with primary fabric at top
             total_qty = sum(size_qty.get(sz, 0) for sz in ["S", "M", "L", "XL", "XXL", "XXXL"])  # Size names unchanged in data, only display names changed
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.set_font("Arial", 'B', 7)  # Bold but same size (increased from 6 to 7)
-            pdf.cell(col_widths[10] - 2, 16, str(total_qty), 0, 0, 'C')
+            pdf.cell(col_widths[10] - 2, 8, str(total_qty), 0, 0, 'C')
             pdf.set_font("Arial", '', 7)  # Reset to normal weight but same size (increased from 6 to 7)
             x_pos += col_widths[10]
             
-            # Cost column (if enabled)
+            # Cost column (if enabled) - align with primary fabric at top
             if show_garment_cost and total_qty > 0:
                 cost_per_garment = calculate_garment_cost_per_piece(line, total_qty)
                 cost_text = f"{cost_per_garment:.2f}"
                 pdf.set_xy(x_pos + 1, row_y + 1)
-                pdf.cell(col_widths[11] - 2, 16, cost_text, 0, 0, 'C')
+                pdf.cell(col_widths[11] - 2, 8, cost_text, 0, 0, 'C')
                 x_pos += col_widths[11]
             
             # Add horizontal cost breakdown if enabled (below the row)
