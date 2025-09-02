@@ -399,10 +399,12 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             tax_groups[tax_inv] = []
         tax_groups[tax_inv].append(line)
     
-    # Table content
+    # Table content with proper pagination
     current_y = table_start_y + 4
     line_idx = 0
     tax_group_totals = {}
+    max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
+    page_row_count = 0  # Track rows on current page
     
     for tax_inv, group_lines in tax_groups.items():
         # Process each line in this tax group - no header above data
@@ -410,7 +412,52 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         group_line_idx = 0  # Reset line index for each group
         
         for group_line in group_lines:
-            row_y = current_y + (group_line_idx * 18)
+            # Calculate row position based on current page row count
+            row_y = current_y + (page_row_count * 18)
+            
+            # Check if we need a new page
+            if row_y + 18 > max_y:
+                pdf.add_page()
+                
+                # Add minimal header on continuation page
+                pdf.set_fill_color(*white)
+                pdf.rect(0, 0, page_width, 12, 'F')
+                pdf.set_text_color(*black)
+                pdf.set_font("Arial", 'B', 12)
+                pdf.set_xy(0, 2)
+                pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
+                pdf.set_font("Arial", '', 6)
+                pdf.set_xy(0, 7)
+                pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
+                
+                # Document title
+                pdf.set_fill_color(*black)
+                pdf.rect(margin, 15, content_width, 6, 'F')
+                pdf.set_text_color(*white)
+                pdf.set_font("Arial", 'B', 7)
+                pdf.set_xy(margin, 17)
+                pdf.cell(content_width, 3, "STITCHING INVOICE (CONTINUED)", ln=0, align='C')
+                
+                # Table headers
+                continuation_table_start_y = 25
+                pdf.set_fill_color(*dark_gray)
+                pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
+                pdf.set_text_color(*white)
+                pdf.set_font("Arial", 'B', 7)
+                x_pos = margin
+                for i, header in enumerate(headers):
+                    pdf.set_xy(x_pos, continuation_table_start_y + 1)
+                    pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
+                    x_pos += col_widths[i]
+                
+                # Reset for new page
+                current_y = continuation_table_start_y + 4
+                page_row_count = 0  # Reset row count for new page
+                row_y = current_y  # First row on new page
+                
+                # Reset text formatting for content rendering
+                pdf.set_text_color(*black)
+                pdf.set_font("Arial", '', 7)
             
             # Row background
             if group_line_idx % 2 == 0:
@@ -550,12 +597,13 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             # Add to tax group total
             tax_group_total += float(group_line['total_value'] or 0)
             group_line_idx += 1
+            page_row_count += 1  # Increment page row counter
         
         # Tax group subtotal (minimal) - shows tax invoice number here
         tax_group_totals[tax_inv] = tax_group_total
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        tax_total_y = current_y + (group_line_idx * 18) + 1
+        tax_total_y = current_y + (page_row_count * 18) + 1
         pdf.set_xy(margin + 5, tax_total_y)
         
         # Get packing list number for this group
@@ -568,7 +616,8 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         pdf.cell(content_width - 10, 3, f"Total for Tax Invoice {tax_inv if tax_inv else '(None)'}: {tax_group_total:,.2f} THB - PL: {packing_list_number}", ln=0)
         
         # Move current_y to after this group for next group
-        current_y = current_y + (group_line_idx * 18) + 6  # After group total + 6mm gap between groups
+        current_y = tax_total_y + 6  # After group total + 6mm gap between groups
+        page_row_count += 1  # Account for the group total row
     
     # Calculate totals
     stitching_vat_total = 0
@@ -953,9 +1002,11 @@ def generate_fabric_used_pdf(group_id):
             fabric_tax_groups[fabric_tax_inv] = []
         fabric_tax_groups[fabric_tax_inv].append(line)
     
-    # Table content
+    # Table content with proper pagination
     current_y = table_start_y + 4
     fabric_tax_group_totals = {}
+    max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
+    page_row_count = 0  # Track rows on current page
     
     for fabric_tax_inv, group_lines in fabric_tax_groups.items():
         # Process each line in this fabric tax group - no header above data
@@ -963,7 +1014,52 @@ def generate_fabric_used_pdf(group_id):
         group_line_idx = 0  # Reset line index for each group
         
         for group_line in group_lines:
-            row_y = current_y + (group_line_idx * 18)
+            # Calculate row position based on current page row count
+            row_y = current_y + (page_row_count * 18)
+            
+            # Check if we need a new page
+            if row_y + 18 > max_y:
+                pdf.add_page()
+                
+                # Add minimal header on continuation page
+                pdf.set_fill_color(*white)
+                pdf.rect(0, 0, page_width, 12, 'F')
+                pdf.set_text_color(*black)
+                pdf.set_font("Arial", 'B', 12)
+                pdf.set_xy(0, 2)
+                pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
+                pdf.set_font("Arial", '', 6)
+                pdf.set_xy(0, 7)
+                pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
+                
+                # Document title
+                pdf.set_fill_color(*black)
+                pdf.rect(margin, 15, content_width, 6, 'F')
+                pdf.set_text_color(*white)
+                pdf.set_font("Arial", 'B', 7)
+                pdf.set_xy(margin, 17)
+                pdf.cell(content_width, 3, "FABRIC USED (CONTINUED)", ln=0, align='C')
+                
+                # Table headers
+                continuation_table_start_y = 25
+                pdf.set_fill_color(*dark_gray)
+                pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
+                pdf.set_text_color(*white)
+                pdf.set_font("Arial", 'B', 7)
+                x_pos = margin
+                for i, header in enumerate(headers):
+                    pdf.set_xy(x_pos, continuation_table_start_y + 1)
+                    pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
+                    x_pos += col_widths[i]
+                
+                # Reset for new page
+                current_y = continuation_table_start_y + 4
+                page_row_count = 0  # Reset row count for new page
+                row_y = current_y  # First row on new page
+                
+                # Reset text formatting for content rendering
+                pdf.set_text_color(*black)
+                pdf.set_font("Arial", '', 7)
             
             # Row background
             if group_line_idx % 2 == 0:
@@ -1040,17 +1136,19 @@ def generate_fabric_used_pdf(group_id):
             # Add to fabric tax group total
             fabric_tax_group_total += float(group_line['total_value'] or 0)
             group_line_idx += 1
+            page_row_count += 1  # Increment page row counter
         
         # Fabric tax group subtotal (minimal) - shows fabric tax invoice number here
         fabric_tax_group_totals[fabric_tax_inv] = fabric_tax_group_total
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        fabric_tax_total_y = current_y + (group_line_idx * 18) + 1
+        fabric_tax_total_y = current_y + (page_row_count * 18) + 1
         pdf.set_xy(margin + 5, fabric_tax_total_y)
         pdf.cell(content_width - 10, 3, f"Total for Fabric Tax Invoice {fabric_tax_inv if fabric_tax_inv else '(None)'}: {fabric_tax_group_total:,.2f} THB", ln=0)
         
         # Move current_y to after this group for next group
-        current_y = current_y + (group_line_idx * 18) + 6  # After group total + 6mm gap between groups
+        current_y = fabric_tax_total_y + 6  # After group total + 6mm gap between groups
+        page_row_count += 1  # Account for the group total row
     
     # Calculate totals
     total_fabric_used = sum(line['yards_consumed'] for line in lines)
