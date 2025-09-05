@@ -654,11 +654,7 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
         pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
         pdf.cell(25, 2, packing_list.packing_list_serial, 0)
         
-        pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
-        pdf.cell(12, 2, "Date:", 0)
-        pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
-        display_date = packing_list.delivery_date or packing_list.created_at.date()
-        pdf.cell(20, 2, format_ddmmyy(display_date), 0)
+        # Date column removed as requested
         
         pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
         pdf.cell(15, 2, "Customer:", 0)
@@ -681,7 +677,7 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
                 pass
         
         pdf.set_font("Arial", 'B', 7)  # Increased font size by 10% (6->7)
-        pdf.cell(12, 2, "Total:", 0)
+        pdf.cell(18, 2, "Total Pieces:", 0)
         pdf.set_font("Arial", '', 7)  # Increased font size by 10% (6->7)
         pdf.cell(12, 2, str(total_qty_delivered), 0)
         
@@ -703,10 +699,10 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
         column_width = 141  # (297 - 15) / 2 = 141, more space for content
         
         # Column headers for both sides - optimized size column names to save space
-        headers = ["Image", "Garment", "Fabric / Serial", "Color", "S", "M", "L", "XL", "2XL", "3XL", "Total"]
+        headers = ["Image", "Garment", "Fabric / Serial", "Color", "S", "M", "L", "XL", "2XL", "3XL", "Total Pieces"]
         
         # Column widths for compact layout - increased image size, reduced gaps, optimized size column names
-        col_widths = [18, 22, 34, 12, 5, 5, 5, 5, 5, 5, 8]  # Removed serial column, increased fabric/serial column (22->34), optimized other columns
+        col_widths = [18, 20, 32, 12, 5, 5, 5, 5, 5, 5, 14]  # Increased Total Pieces column width to 14, reduced Garment from 22 to 20
         if show_garment_cost:
             col_widths.append(15)  # Add cost column
             headers.append("Cost")
@@ -921,29 +917,7 @@ def generate_packing_list_pdf(packing_list_id, show_garment_cost=False):
                 if show_garment_cost and total_qty > 0:
                     add_cost_breakdown_minimal_horizontal(pdf, line, total_qty, row_y, col_x, column_width)
             
-            # Add footer only on the last page
-            if page_num == total_pages - 1:
-                # Minimal footer - ensure it fits within page boundaries
-                # A4 landscape: 297mm x 210mm, leave safe margin from bottom
-                max_footer_y = 182  # 210mm - 28mm margin (very conservative to ensure text fits)
-                
-                # Calculate footer position more accurately
-                max_rows_in_any_column = max(lines_per_column, len(page_lines) - lines_per_column) if len(page_lines) > 0 else 0
-                calculated_footer_y = continuation_table_start_y + 4 + (max_rows_in_any_column * row_spacing) + (12 if show_garment_cost else 4)
-                
-                # Ensure footer is always visible - force it to fit on page
-                footer_y = min(calculated_footer_y, max_footer_y)
-                
-                # If content overflows, adjust footer position to fit on page
-                if calculated_footer_y > max_footer_y:
-                    footer_y = max_footer_y
-                
-                pdf.set_fill_color(*black)
-                pdf.rect(0, footer_y, 297, 8, 'F')  # Footer rectangle
-                pdf.set_text_color(*white)
-                pdf.set_font("Arial", 'B', 7)  # Readable font size
-                pdf.set_xy(0, footer_y + 1.5)  # Position text within the rectangle
-                pdf.cell(297, 5, f"PACKING LIST COMPLETED - TOTAL: {total_qty_delivered} PIECES", ln=0, align='C')
+            # Footer removed as requested
         
         # Save PDF
         safe_serial = packing_list.packing_list_serial.replace('/', '_')

@@ -255,6 +255,7 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                 'image_id': stitching_invoice.image_id,
                 'packing_list_serial': None,
                 'pl_created_at': None,
+                'pl_delivery_date': None,
                 'pl_tax_invoice_number': None
             }
             
@@ -263,6 +264,7 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             if packing_list_line and packing_list_line.packing_list:
                 line_data['packing_list_serial'] = packing_list_line.packing_list.packing_list_serial
                 line_data['pl_created_at'] = packing_list_line.packing_list.created_at
+                line_data['pl_delivery_date'] = packing_list_line.packing_list.delivery_date
                 line_data['pl_tax_invoice_number'] = packing_list_line.packing_list.tax_invoice_number
             
             lines.append(line_data)
@@ -372,11 +374,11 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     # SINGLE COLUMN LAYOUT DESIGN
     table_start_y = 37 if group_bill.stitching_comments else 35
     
-    # Column headers - optimized for single column
-    headers = ["Date", "Image", "Garment", "Fabric/Serial", "Color", "S", "M", "L", "XL", "2XL", "3XL", "Total", "Price", "Value"]
+    # Column headers - optimized for single column (date column removed)
+    headers = ["Image", "Garment", "Fabric/Serial", "Color", "S", "M", "L", "XL", "2XL", "3XL", "Total", "Price", "Value"]
     
-    # Column widths for compact single column layout
-    col_widths = [15, 18, 25, 35, 15, 8, 8, 8, 8, 8, 8, 12, 15, 20]
+    # Column widths for compact single column layout (date column removed)
+    col_widths = [18, 25, 35, 15, 8, 8, 8, 8, 8, 8, 12, 15, 20]
     
     # Header background
     pdf.set_fill_color(*dark_gray)
@@ -391,13 +393,27 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
         x_pos += col_widths[i]
     
-    # Group lines by tax invoice number
-    tax_groups = {}
+    # Group lines by packing list serial number
+    packing_list_groups = {}
     for line in lines:
-        tax_inv = line.get('pl_tax_invoice_number', None)
-        if tax_inv not in tax_groups:
-            tax_groups[tax_inv] = []
-        tax_groups[tax_inv].append(line)
+        packing_list_serial = line.get('packing_list_serial', None)
+        if packing_list_serial not in packing_list_groups:
+            packing_list_groups[packing_list_serial] = []
+        packing_list_groups[packing_list_serial].append(line)
+    
+    # Sort groups numerically from lowest to highest
+    def sort_key(serial):
+        if serial is None:
+            return float('inf')  # Put None values at the end
+        try:
+            # Extract numeric part for sorting (e.g., "PL25010501" -> 25010501)
+            if isinstance(serial, str) and serial.startswith('PL'):
+                return int(serial[2:])  # Remove 'PL' prefix and convert to int
+            return int(serial) if serial.isdigit() else float('inf')
+        except (ValueError, TypeError):
+            return float('inf')  # Put non-numeric values at the end
+    
+    sorted_packing_list_groups = dict(sorted(packing_list_groups.items(), key=lambda x: sort_key(x[0])))
     
     # Table content with proper pagination
     current_y = table_start_y + 4
@@ -406,17 +422,17 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
     page_row_count = 0  # Track rows on current page
     
-    for tax_inv, group_lines in tax_groups.items():
-        # Process each line in this tax group - no header above data
-        tax_group_total = 0
+    for packing_list_serial, group_lines in sorted_packing_list_groups.items():
+        # Process each line in this packing list group - no header above data
+        packing_list_group_total = 0
         group_line_idx = 0  # Reset line index for each group
         
         for group_line in group_lines:
             # Calculate row position based on current page row count
-            row_y = current_y + (page_row_count * 18)
+            row_y = current_y + (page_row_count * 19)
             
             # Check if we need a new page
-            if row_y + 18 > max_y:
+            if row_y + 19 > max_y:
                 pdf.add_page()
                 
                 # Add minimal header on continuation page
@@ -464,47 +480,43 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                 pdf.set_fill_color(*white)
             else:
                 pdf.set_fill_color(*light_gray)
-            pdf.rect(margin, row_y, content_width, 18, 'F')
+            pdf.rect(margin, row_y, content_width, 19, 'F')
             
             # Row border
             pdf.set_draw_color(200, 200, 200)
-            pdf.rect(margin, row_y, content_width, 18, 'D')
+            pdf.rect(margin, row_y, content_width, 19, 'D')
             
             x_pos = margin
             
-            # Date
+            # Set text color to black for all text rendering
             pdf.set_text_color(*black)
             pdf.set_font("Arial", '', 7)
-            pdf.set_xy(x_pos + 1, row_y + 1)
-            pl_date = format_ddmmyy(group_line.get('pl_created_at')) if group_line.get('pl_created_at') else ''
-            pdf.cell(col_widths[0] - 2, 16, pl_date, 0, 0, 'C')
-            x_pos += col_widths[0]
             
             # Image
             img_path = image_map.get(group_line.get('image_id'))
             if img_path and os.path.exists(img_path):
                 try:
-                    img_width = min(16, col_widths[1] - 2)
+                    img_width = min(16, col_widths[0] - 2)
                     img_height = min(16, 16)
                     pdf.image(img_path, x_pos + 1, row_y + 1, img_width, img_height)
                 except:
                     pass
-            x_pos += col_widths[1]
+            x_pos += col_widths[0]
             
             # Garment name
             pdf.set_xy(x_pos + 1, row_y + 1)
             garment_text = str(group_line['stitched_item'] or '')
             if len(garment_text) > 20:
                 garment_text = garment_text[:17] + "..."
-            pdf.cell(col_widths[2] - 2, 16, garment_text, 0, 0, 'C')
-            x_pos += col_widths[2]
+            pdf.cell(col_widths[1] - 2, 16, garment_text, 0, 0, 'C')
+            x_pos += col_widths[1]
             
             # Fabric/Serial - Two lines
             pdf.set_xy(x_pos + 1, row_y + 1)
             fabric_text = str(group_line['fabric_name'] or '')
             if len(fabric_text) > 30:
                 fabric_text = fabric_text[:27] + "..."
-            pdf.cell(col_widths[3] - 2, 8, fabric_text, 0, 0, 'C')
+            pdf.cell(col_widths[2] - 2, 8, fabric_text, 0, 0, 'C')
 
             # Add secondary fabrics below primary fabric but above serial (10% smaller, italic)
             stitching = StitchingInvoice.query.get(group_line['id'])
@@ -525,22 +537,22 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                     pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
                     if len(secondary_fabric) > 30:
                         secondary_fabric = secondary_fabric[:27] + "..."
-                    pdf.cell(col_widths[3] - 2, 3, secondary_fabric, 0, 0, 'C')
+                    pdf.cell(col_widths[2] - 2, 3, secondary_fabric, 0, 0, 'C')
                 serial_y = row_y + 9 + (len(secondary_fabrics) * 3) + 1  # Position serial after secondary fabrics
 
             # Reset font and display serial number
             pdf.set_font("Arial", '', 7)
             serial_text = str(group_line['stitching_invoice_number'] or '')
             pdf.set_xy(x_pos + 1, serial_y)
-            pdf.cell(col_widths[3] - 2, 8, serial_text, 0, 0, 'C')
-            x_pos += col_widths[3]
+            pdf.cell(col_widths[2] - 2, 8, serial_text, 0, 0, 'C')
+            x_pos += col_widths[2]
             
             # Primary color - positioned at top of cell to align with primary fabric
             pdf.set_xy(x_pos + 1, row_y + 1)
             color_text = str(group_line['color'] or '')
             if len(color_text) > 12:
                 color_text = color_text[:9] + "..."
-            pdf.cell(col_widths[4] - 2, 8, color_text, 0, 0, 'C')
+            pdf.cell(col_widths[3] - 2, 8, color_text, 0, 0, 'C')
 
             # Add secondary fabric colors aligned with secondary fabric names
             if stitching and stitching.garment_fabrics:
@@ -558,26 +570,26 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
                         pdf.set_xy(x_pos + 1, row_y + 9 + (i * 3))
                         if len(secondary_color) > 12:
                             secondary_color = secondary_color[:9] + "..."
-                        pdf.cell(col_widths[4] - 2, 3, secondary_color, 0, 0, 'C')
+                        pdf.cell(col_widths[3] - 2, 3, secondary_color, 0, 0, 'C')
                     pdf.set_font("Arial", '', 7)  # Reset font
 
-            x_pos += col_widths[4]
+            x_pos += col_widths[3]
             
             # Size quantities
             size_qty = group_line['size_qty']
             for sz in ["S", "M", "L", "XL", "XXL", "XXXL"]:
                 qty = size_qty.get(sz, 0)
                 pdf.set_xy(x_pos + 1, row_y + 1)
-                pdf.cell(col_widths[5 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 8, str(qty), 0, 0, 'C')
-                x_pos += col_widths[5 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)]
+                pdf.cell(col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)] - 2, 8, str(qty), 0, 0, 'C')
+                x_pos += col_widths[4 + ["S", "M", "L", "XL", "XXL", "XXXL"].index(sz)]
 
             # Total quantity - align with primary fabric at top
             total_qty = sum(size_qty.get(sz, 0) for sz in ["S", "M", "L", "XL", "XXL", "XXXL"])
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.set_font("Arial", 'B', 7)
-            pdf.cell(col_widths[11] - 2, 8, str(total_qty), 0, 0, 'C')
+            pdf.cell(col_widths[10] - 2, 8, str(total_qty), 0, 0, 'C')
             pdf.set_font("Arial", '', 7)
-            x_pos += col_widths[11]
+            x_pos += col_widths[10]
 
             # Price - align with primary fabric at top
             base_price = group_line['price']
@@ -587,37 +599,62 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             else:
                 vat_inclusive_price = base_price
             pdf.set_xy(x_pos + 1, row_y + 1)
-            pdf.cell(col_widths[12] - 2, 8, f"{vat_inclusive_price:,.2f}", 0, 0, 'C')
-            x_pos += col_widths[12]
+            pdf.cell(col_widths[11] - 2, 8, f"{vat_inclusive_price:,.2f}", 0, 0, 'C')
+            x_pos += col_widths[11]
 
             # Value - align with primary fabric at top
             pdf.set_xy(x_pos + 1, row_y + 1)
-            pdf.cell(col_widths[13] - 2, 8, f"{group_line['total_value']:,.2f}", 0, 0, 'C')
+            pdf.cell(col_widths[12] - 2, 8, f"{group_line['total_value']:,.2f}", 0, 0, 'C')
             
-            # Add to tax group total
-            tax_group_total += float(group_line['total_value'] or 0)
+            # Add to packing list group total
+            packing_list_group_total += float(group_line['total_value'] or 0)
             group_line_idx += 1
             page_row_count += 1  # Increment page row counter
         
-        # Tax group subtotal (minimal) - shows tax invoice number here
-        tax_group_totals[tax_inv] = tax_group_total
+        # Packing list group subtotal (minimal) - shows packing list and stitching invoice tax numbers
+        tax_group_totals[packing_list_serial] = packing_list_group_total
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        tax_total_y = current_y + (page_row_count * 18) + 1
-        pdf.set_xy(margin + 5, tax_total_y)
+        packing_list_total_y = current_y + (page_row_count * 19) + 2
+        pdf.set_xy(margin + 5, packing_list_total_y)
         
-        # Get packing list number for this group
-        packing_list_number = ""
-        for group_line in group_lines:
-            if group_line.get('packing_list_serial'):
-                packing_list_number = group_line['packing_list_serial']
-                break
+        # Get stitching invoice tax numbers for this packing list group
+        stitching_tax_numbers = []
+        for line in group_lines:
+            tax_inv = line.get('pl_tax_invoice_number')
+            if tax_inv and tax_inv not in stitching_tax_numbers:
+                stitching_tax_numbers.append(tax_inv)
         
-        pdf.cell(content_width - 10, 3, f"Total for Tax Invoice {tax_inv if tax_inv else '(None)'}: {tax_group_total:,.2f} THB - PL: {packing_list_number}", ln=0)
+        tax_numbers_text = ", ".join(stitching_tax_numbers) if stitching_tax_numbers else "None"
         
-        # Move current_y to after this group for next group
-        current_y = tax_total_y + 6  # After group total + 6mm gap between groups
-        page_row_count += 1  # Account for the group total row
+        # Get packing list delivery date from first line in group
+        pl_date = ""
+        if group_lines:
+            first_line_date = group_lines[0].get('pl_delivery_date')
+            if first_line_date:
+                # Format date as DD/MM/YY
+                if hasattr(first_line_date, 'strftime'):
+                    pl_date = f" ({first_line_date.strftime('%d/%m/%y')})"
+                else:
+                    # Handle string dates
+                    try:
+                        from datetime import datetime
+                        # Try different date formats
+                        for date_format in ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S']:
+                            try:
+                                parsed_date = datetime.strptime(str(first_line_date), date_format)
+                                pl_date = f" ({parsed_date.strftime('%d/%m/%y')})"
+                                break
+                            except:
+                                continue
+                    except:
+                        pl_date = ""
+        
+        pdf.cell(content_width - 10, 3, f"Total for Packing List {packing_list_serial if packing_list_serial else '(None)'}{pl_date} (Stitching Tax: {tax_numbers_text}): {packing_list_group_total:,.2f} THB", ln=0)
+        
+        # Move current_y to after this group for next group (increased spacing)
+        current_y = packing_list_total_y + 6  # After group total + 6mm gap between groups
+        page_row_count = 0  # Reset page row count for next group
     
     # Calculate totals
     stitching_vat_total = 0
@@ -795,14 +832,7 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     pdf.set_xy(margin + 5, final_start_y + 2)
     pdf.cell(content_width - 10, 4, f"TOTAL PAYMENT DUE: {total_payment_due:,.2f} THB", ln=0, align='C')
     
-    # Minimal footer
-    footer_y = final_start_y + 12
-    pdf.set_fill_color(*black)
-    pdf.rect(0, footer_y, page_width, 6, 'F')
-    pdf.set_text_color(*white)
-    pdf.set_font("Arial", 'B', 7)
-    pdf.set_xy(0, footer_y + 2)
-    pdf.cell(page_width, 3, "STITCHING INVOICE COMPLETED", ln=0, align='C')
+    # Footer removed as requested
     
     # Save PDF
     safe_group_number = group_bill.group_number.replace('/', '_').replace('\\', '_')
@@ -837,8 +867,10 @@ def generate_fabric_used_pdf(group_id):
                     'total_value': float(stitching_invoice.yard_consumed or 0) * float(stitching_invoice.invoice_line.unit_price or 0),
                     'fabric_tax_invoice_number': stitching_invoice.invoice_line.invoice.tax_invoice_number if stitching_invoice.invoice_line.invoice else None,
                     'fabric_invoice_number': stitching_invoice.invoice_line.invoice.invoice_number if stitching_invoice.invoice_line.invoice else None,
+                    'delivery_note': stitching_invoice.invoice_line.delivery_note if stitching_invoice.invoice_line else None,
                     'packing_list_serial': None,
                     'pl_created_at': None,
+                    'pl_delivery_date': None,
                     'pl_tax_invoice_number': None,
                     'image_id': stitching_invoice.image_id,
                     'is_primary': True
@@ -849,6 +881,7 @@ def generate_fabric_used_pdf(group_id):
                 if packing_list_line and packing_list_line.packing_list:
                     primary_fabric['packing_list_serial'] = packing_list_line.packing_list.packing_list_serial
                     primary_fabric['pl_created_at'] = packing_list_line.packing_list.created_at
+                    primary_fabric['pl_delivery_date'] = packing_list_line.packing_list.delivery_date
                     primary_fabric['pl_tax_invoice_number'] = packing_list_line.packing_list.tax_invoice_number
                 
                 lines.append(primary_fabric)
@@ -866,8 +899,10 @@ def generate_fabric_used_pdf(group_id):
                         'total_value': float(garment_fabric.total_fabric_cost or 0),
                         'fabric_tax_invoice_number': garment_fabric.invoice_line.invoice.tax_invoice_number if garment_fabric.invoice_line.invoice else None,
                         'fabric_invoice_number': garment_fabric.invoice_line.invoice.invoice_number if garment_fabric.invoice_line.invoice else None,
+                        'delivery_note': garment_fabric.invoice_line.delivery_note if garment_fabric.invoice_line else None,
                         'packing_list_serial': None,
                         'pl_created_at': None,
+                        'pl_delivery_date': None,
                         'pl_tax_invoice_number': None,
                         'image_id': stitching_invoice.image_id,
                         'is_primary': False
@@ -878,6 +913,7 @@ def generate_fabric_used_pdf(group_id):
                     if packing_list_line and packing_list_line.packing_list:
                         secondary_fabric['packing_list_serial'] = packing_list_line.packing_list.packing_list_serial
                         secondary_fabric['pl_created_at'] = packing_list_line.packing_list.created_at
+                        secondary_fabric['pl_delivery_date'] = packing_list_line.packing_list.delivery_date
                         secondary_fabric['pl_tax_invoice_number'] = packing_list_line.packing_list.tax_invoice_number
                     
                     lines.append(secondary_fabric)
@@ -975,11 +1011,11 @@ def generate_fabric_used_pdf(group_id):
     # SINGLE COLUMN LAYOUT DESIGN
     table_start_y = 37 if group_bill.fabric_comments else 35
     
-    # Column headers - optimized for single column
-    headers = ["Date", "Image", "Fabric/Serial", "Color", "Type", "Yards", "Unit Price", "Value"]
+    # Column headers - optimized for single column with line number (Date column removed)
+    headers = ["Line#", "Image", "Fabric/Serial", "Color", "Type", "Yards", "Unit Price", "Value"]
     
-    # Column widths for compact single column layout
-    col_widths = [15, 16, 35, 15, 12, 15, 20, 25]
+    # Column widths for compact single column layout with line number (Date column removed)
+    col_widths = [8, 16, 35, 15, 12, 15, 20, 25]
     
     # Header background
     pdf.set_fill_color(*dark_gray)
@@ -994,13 +1030,33 @@ def generate_fabric_used_pdf(group_id):
         pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
         x_pos += col_widths[i]
     
-    # Group lines by fabric tax invoice number
-    fabric_tax_groups = {}
+    # Group lines by fabric invoice number (without line number) and extract line number
+    fabric_invoice_groups = {}
     for line in lines:
-        fabric_tax_inv = line.get('fabric_tax_invoice_number', None)
-        if fabric_tax_inv not in fabric_tax_groups:
-            fabric_tax_groups[fabric_tax_inv] = []
-        fabric_tax_groups[fabric_tax_inv].append(line)
+        fabric_invoice_number = line.get('fabric_invoice_number', '')
+        if fabric_invoice_number:
+            # Extract base invoice number (without line number like -01, -02, etc.)
+            if '-' in fabric_invoice_number:
+                base_invoice = fabric_invoice_number.rsplit('-', 1)[0]
+                line_number = fabric_invoice_number.rsplit('-', 1)[1]
+            else:
+                base_invoice = fabric_invoice_number
+                line_number = ''
+            
+            # Add line number to the line data
+            line['line_number'] = line_number
+            line['base_fabric_invoice'] = base_invoice
+            
+            if base_invoice not in fabric_invoice_groups:
+                fabric_invoice_groups[base_invoice] = []
+            fabric_invoice_groups[base_invoice].append(line)
+        else:
+            # Handle cases where fabric_invoice_number is None or empty
+            line['line_number'] = ''
+            line['base_fabric_invoice'] = 'Unknown'
+            if 'Unknown' not in fabric_invoice_groups:
+                fabric_invoice_groups['Unknown'] = []
+            fabric_invoice_groups['Unknown'].append(line)
     
     # Table content with proper pagination
     current_y = table_start_y + 4
@@ -1008,17 +1064,39 @@ def generate_fabric_used_pdf(group_id):
     max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
     page_row_count = 0  # Track rows on current page
     
-    for fabric_tax_inv, group_lines in fabric_tax_groups.items():
-        # Process each line in this fabric tax group - no header above data
-        fabric_tax_group_total = 0
+    # Sort fabric invoice groups by invoice number (lowest to highest)
+    def sort_fabric_invoice_key(invoice):
+        if invoice == 'Unknown':
+            return float('inf')
+        try:
+            return int(invoice)
+        except (ValueError, TypeError):
+            return float('inf')
+    
+    sorted_fabric_invoice_groups = dict(sorted(fabric_invoice_groups.items(), key=lambda x: sort_fabric_invoice_key(x[0])))
+    
+    for base_fabric_invoice, group_lines in sorted_fabric_invoice_groups.items():
+        # Sort items within each group by line number (lowest to highest)
+        def sort_line_key(line):
+            line_num = line.get('line_number', '')
+            if not line_num:
+                return float('inf')
+            try:
+                return int(line_num)
+            except (ValueError, TypeError):
+                return float('inf')
+        
+        group_lines.sort(key=sort_line_key)
+        # Process each line in this fabric invoice group
+        fabric_invoice_group_total = 0
         group_line_idx = 0  # Reset line index for each group
         
         for group_line in group_lines:
             # Calculate row position based on current page row count
-            row_y = current_y + (page_row_count * 18)
+            row_y = current_y + (page_row_count * 19)
             
             # Check if we need a new page
-            if row_y + 18 > max_y:
+            if row_y + 19 > max_y:
                 pdf.add_page()
                 
                 # Add minimal header on continuation page
@@ -1066,23 +1144,23 @@ def generate_fabric_used_pdf(group_id):
                 pdf.set_fill_color(*white)
             else:
                 pdf.set_fill_color(*light_gray)
-            pdf.rect(margin, row_y, content_width, 18, 'F')
+            pdf.rect(margin, row_y, content_width, 19, 'F')
             
             # Row border
             pdf.set_draw_color(200, 200, 200)
-            pdf.rect(margin, row_y, content_width, 18, 'D')
+            pdf.rect(margin, row_y, content_width, 19, 'D')
             
             x_pos = margin
             
-            # Date
+            # Line Number (now at col_widths[0])
             pdf.set_text_color(*black)
             pdf.set_font("Arial", '', 7)
             pdf.set_xy(x_pos + 1, row_y + 1)
-            pl_date = format_ddmmyy(group_line.get('pl_created_at')) if group_line.get('pl_created_at') else ''
-            pdf.cell(col_widths[0] - 2, 16, pl_date, 0, 0, 'C')
+            line_number = group_line.get('line_number', '')
+            pdf.cell(col_widths[0] - 2, 16, line_number, 0, 0, 'C')
             x_pos += col_widths[0]
             
-            # Image
+            # Image (now at col_widths[1])
             img_path = image_map.get(group_line.get('image_id'))
             if img_path and os.path.exists(img_path):
                 try:
@@ -1093,7 +1171,7 @@ def generate_fabric_used_pdf(group_id):
                     pass
             x_pos += col_widths[1]
             
-            # Fabric/Serial - Two lines
+            # Fabric/Serial - Two lines (now at col_widths[2])
             pdf.set_xy(x_pos + 1, row_y + 1)
             fabric_text = str(group_line['fabric_name'] or '')
             if len(fabric_text) > 30:
@@ -1105,7 +1183,7 @@ def generate_fabric_used_pdf(group_id):
             pdf.cell(col_widths[2] - 2, 8, serial_text, 0, 0, 'C')
             x_pos += col_widths[2]
             
-            # Color
+            # Color (now at col_widths[3])
             pdf.set_xy(x_pos + 1, row_y + 1)
             color_text = str(group_line['color'] or '')
             if len(color_text) > 12:
@@ -1113,42 +1191,58 @@ def generate_fabric_used_pdf(group_id):
             pdf.cell(col_widths[3] - 2, 16, color_text, 0, 0, 'C')
             x_pos += col_widths[3]
             
-            # Type (Primary/Secondary)
+            # Type (Primary/Secondary) (now at col_widths[4])
             pdf.set_xy(x_pos + 1, row_y + 1)
             type_text = "Primary" if group_line.get('is_primary', True) else "Secondary"
             pdf.cell(col_widths[4] - 2, 16, type_text, 0, 0, 'C')
             x_pos += col_widths[4]
             
-            # Yards consumed
+            # Yards consumed (now at col_widths[5])
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.cell(col_widths[5] - 2, 16, f"{group_line['yards_consumed']:.2f}", 0, 0, 'C')
             x_pos += col_widths[5]
             
-            # Unit price
+            # Unit price (now at col_widths[6])
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.cell(col_widths[6] - 2, 16, f"{group_line['unit_price']:,.2f}", 0, 0, 'C')
             x_pos += col_widths[6]
             
-            # Value
+            # Value (now at col_widths[7])
             pdf.set_xy(x_pos + 1, row_y + 1)
             pdf.cell(col_widths[7] - 2, 16, f"{group_line['total_value']:,.2f}", 0, 0, 'C')
             
-            # Add to fabric tax group total
-            fabric_tax_group_total += float(group_line['total_value'] or 0)
+            # Add to fabric invoice group total
+            fabric_invoice_group_total += float(group_line['total_value'] or 0)
             group_line_idx += 1
             page_row_count += 1  # Increment page row counter
         
-        # Fabric tax group subtotal (minimal) - shows fabric tax invoice number here
-        fabric_tax_group_totals[fabric_tax_inv] = fabric_tax_group_total
+        # Display group total at the bottom of this group
+        fabric_tax_group_totals[base_fabric_invoice] = fabric_invoice_group_total
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        fabric_tax_total_y = current_y + (page_row_count * 18) + 1
-        pdf.set_xy(margin + 5, fabric_tax_total_y)
-        pdf.cell(content_width - 10, 3, f"Total for Fabric Tax Invoice {fabric_tax_inv if fabric_tax_inv else '(None)'}: {fabric_tax_group_total:,.2f} THB", ln=0)
+        fabric_invoice_total_y = current_y + (page_row_count * 19) + 2
+        pdf.set_xy(margin + 5, fabric_invoice_total_y)
         
-        # Move current_y to after this group for next group
-        current_y = fabric_tax_total_y + 6  # After group total + 6mm gap between groups
-        page_row_count += 1  # Account for the group total row
+        # Get fabric tax invoice numbers and DN numbers for this group
+        fabric_tax_numbers = []
+        fabric_dn_numbers = []
+        for line in group_lines:
+            tax_inv = line.get('fabric_tax_invoice_number')
+            if tax_inv and tax_inv not in fabric_tax_numbers:
+                fabric_tax_numbers.append(tax_inv)
+            
+            dn_num = line.get('delivery_note')
+            # Debug: Check if delivery_note exists and is not empty
+            if dn_num and str(dn_num).strip() and dn_num not in fabric_dn_numbers:
+                fabric_dn_numbers.append(dn_num)
+        
+        tax_numbers_text = ", ".join(fabric_tax_numbers) if fabric_tax_numbers else "None"
+        dn_numbers_text = ", ".join(fabric_dn_numbers) if fabric_dn_numbers else "None"
+        pdf.cell(content_width - 10, 3, f"Total for Fabric Invoice {base_fabric_invoice}: {fabric_invoice_group_total:,.2f} THB (Fabric Tax Invoice: {tax_numbers_text}) (Fabric DN: {dn_numbers_text})", ln=0)
+        
+        # Move current_y to after this group for next group (increased spacing)
+        current_y = fabric_invoice_total_y + 6  # Reduced gap between groups (6mm)
+        page_row_count = 0  # Reset page row count for next group
     
     # Calculate totals
     total_fabric_used = sum(line['yards_consumed'] for line in lines)
@@ -1189,14 +1283,7 @@ def generate_fabric_used_pdf(group_id):
     pdf.set_xy(margin + 5, final_start_y + 2)
     pdf.cell(content_width - 10, 4, f"TOTAL FABRIC PAYMENT DUE: {fabric_grand_total:,.2f} THB", ln=0, align='C')
     
-    # Minimal footer
-    footer_y = final_start_y + 12
-    pdf.set_fill_color(*black)
-    pdf.rect(0, footer_y, page_width, 6, 'F')
-    pdf.set_text_color(*white)
-    pdf.set_font("Arial", 'B', 7)
-    pdf.set_xy(0, footer_y + 2)
-    pdf.cell(page_width, 3, "FABRIC USED INVOICE COMPLETED", ln=0, align='C')
+    # Footer removed as requested
     
     # Save PDF
     safe_group_number = group_bill.group_number.replace('/', '_').replace('\\', '_')
@@ -1285,6 +1372,7 @@ def get_group_bill_details(group_id):
                     'created_at': stitching_invoice.created_at,
                     'packing_list_serial': packing_list.packing_list_serial if packing_list else None,
                     'pl_created_at': packing_list.created_at if packing_list else None,
+                    'pl_delivery_date': packing_list.delivery_date if packing_list else None,
                     'tax_invoice_number': packing_list.tax_invoice_number if packing_list else None,
                     'garment_fabrics': [fabric.to_dict() for fabric in stitching_invoice.garment_fabrics],
                     'lining_fabrics': [lining.to_dict() for lining in stitching_invoice.lining_fabrics]
