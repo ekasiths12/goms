@@ -1593,6 +1593,9 @@
             await loadCostList();
             await loadPriceList();
             
+            // Load customers for dropdowns
+            await loadCustomers();
+            
             // Add date input formatting
             const dateFromInput = document.getElementById('filterDateFrom');
             const dateToInput = document.getElementById('filterDateTo');
@@ -3361,6 +3364,8 @@
 
         function openAddInvoiceLineDialog() {
             openModal('addInvoiceLineModal', 'Add Invoice Line');
+            // Populate customer select dropdown
+            populateAddInvoiceCustomerSelect();
         }
 
         async function deleteSelectedInvoice() {
@@ -4200,6 +4205,20 @@
 
         function populateCustomerSelect() {
             const select = document.getElementById('priceCustomerId');
+            select.innerHTML = '<option value="">Select Customer</option>';
+            
+            customersList.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.short_name;
+                select.appendChild(option);
+            });
+        }
+
+        function populateAddInvoiceCustomerSelect() {
+            const select = document.getElementById('customerSelect');
+            if (!select) return; // Modal might not be created yet
+            
             select.innerHTML = '<option value="">Select Customer</option>';
             
             customersList.forEach(customer => {
