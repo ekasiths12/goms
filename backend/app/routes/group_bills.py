@@ -422,6 +422,51 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
     page_row_count = 0  # Track rows on current page
     
+    def add_new_page_with_headers_stitching():
+        """Helper function to add a new page with proper headers for stitching PDF"""
+        pdf.add_page()
+        
+        # Add minimal header on continuation page
+        pdf.set_fill_color(*white)
+        pdf.rect(0, 0, page_width, 12, 'F')
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_xy(0, 2)
+        pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
+        pdf.set_font("Arial", '', 6)
+        pdf.set_xy(0, 7)
+        pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
+        
+        # Document title
+        pdf.set_fill_color(*black)
+        pdf.rect(margin, 15, content_width, 6, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)
+        pdf.set_xy(margin, 17)
+        pdf.cell(content_width, 3, "STITCHING INVOICE (CONTINUED)", ln=0, align='C')
+        
+        # Table headers
+        continuation_table_start_y = 25
+        pdf.set_fill_color(*dark_gray)
+        pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)
+        x_pos = margin
+        for i, header in enumerate(headers):
+            pdf.set_xy(x_pos, continuation_table_start_y + 1)
+            pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
+            x_pos += col_widths[i]
+        
+        # Reset for new page
+        current_y = continuation_table_start_y + 4
+        page_row_count = 0  # Reset row count for new page
+        
+        # Reset text formatting for content rendering
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", '', 7)
+        
+        return current_y, page_row_count
+    
     for packing_list_serial, group_lines in sorted_packing_list_groups.items():
         # Process each line in this packing list group - no header above data
         packing_list_group_total = 0
@@ -433,47 +478,8 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             
             # Check if we need a new page
             if row_y + 19 > max_y:
-                pdf.add_page()
-                
-                # Add minimal header on continuation page
-                pdf.set_fill_color(*white)
-                pdf.rect(0, 0, page_width, 12, 'F')
-                pdf.set_text_color(*black)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.set_xy(0, 2)
-                pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
-                pdf.set_font("Arial", '', 6)
-                pdf.set_xy(0, 7)
-                pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
-                
-                # Document title
-                pdf.set_fill_color(*black)
-                pdf.rect(margin, 15, content_width, 6, 'F')
-                pdf.set_text_color(*white)
-                pdf.set_font("Arial", 'B', 7)
-                pdf.set_xy(margin, 17)
-                pdf.cell(content_width, 3, "STITCHING INVOICE (CONTINUED)", ln=0, align='C')
-                
-                # Table headers
-                continuation_table_start_y = 25
-                pdf.set_fill_color(*dark_gray)
-                pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
-                pdf.set_text_color(*white)
-                pdf.set_font("Arial", 'B', 7)
-                x_pos = margin
-                for i, header in enumerate(headers):
-                    pdf.set_xy(x_pos, continuation_table_start_y + 1)
-                    pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
-                    x_pos += col_widths[i]
-                
-                # Reset for new page
-                current_y = continuation_table_start_y + 4
-                page_row_count = 0  # Reset row count for new page
+                current_y, page_row_count = add_new_page_with_headers_stitching()
                 row_y = current_y  # First row on new page
-                
-                # Reset text formatting for content rendering
-                pdf.set_text_color(*black)
-                pdf.set_font("Arial", '', 7)
             
             # Row background
             if group_line_idx % 2 == 0:
@@ -613,9 +619,17 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         
         # Packing list group subtotal (minimal) - shows packing list and stitching invoice tax numbers
         tax_group_totals[packing_list_serial] = packing_list_group_total
+        
+        # Calculate where the group total should be placed
+        packing_list_total_y = current_y + (page_row_count * 19) + 2
+        
+        # Check if group total fits on current page, if not move to new page
+        if packing_list_total_y + 6 > max_y:  # 6mm for the total text + gap
+            current_y, page_row_count = add_new_page_with_headers_stitching()
+            packing_list_total_y = current_y + 2
+        
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        packing_list_total_y = current_y + (page_row_count * 19) + 2
         pdf.set_xy(margin + 5, packing_list_total_y)
         
         # Get stitching invoice tax numbers for this packing list group
@@ -686,6 +700,11 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     data_height = 10  # 2 lines of data (2 * 3mm + 4mm gap)
     summary_box_height = title_height + data_height  # 15mm total
     
+    # Check if summary fits on current page, if not move to new page
+    if summary_start_y + summary_box_height > max_y:
+        current_y, page_row_count = add_new_page_with_headers_stitching()
+        summary_start_y = current_y + 3
+    
     # Summary box (minimal) - calculated height
     summary_height = summary_box_height
     pdf.set_fill_color(*light_gray)
@@ -745,6 +764,11 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         # Position lining box after stitching summary content ends + 5mm gap
         stitching_summary_end = summary_start_y + 15  # summary_start_y + 15mm box height
         lining_start_y = stitching_summary_end + 5  # 5mm gap after stitching summary box
+        
+        # Check if lining section fits on current page, if not move to new page
+        if lining_start_y + total_lining_height > max_y:
+            current_y, page_row_count = add_new_page_with_headers_stitching()
+            lining_start_y = current_y + 3
         
         # Lining section box - truly dynamic sizing
         pdf.set_fill_color(*light_gray)
@@ -822,6 +846,12 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     else:
         # Position after stitching summary box + 5mm gap
         final_start_y = summary_start_y + summary_height + 5  # 5mm gap after stitching summary
+    
+    # Check if final total fits on current page, if not move to new page
+    final_total_height = 8
+    if final_start_y + final_total_height > max_y:
+        current_y, page_row_count = add_new_page_with_headers_stitching()
+        final_start_y = current_y + 3
     
     pdf.set_fill_color(*light_gray)
     pdf.rect(margin, final_start_y, content_width, 8, 'F')
@@ -1075,6 +1105,51 @@ def generate_fabric_used_pdf(group_id):
     
     sorted_fabric_invoice_groups = dict(sorted(fabric_invoice_groups.items(), key=lambda x: sort_fabric_invoice_key(x[0])))
     
+    def add_new_page_with_headers():
+        """Helper function to add a new page with proper headers"""
+        pdf.add_page()
+        
+        # Add minimal header on continuation page
+        pdf.set_fill_color(*white)
+        pdf.rect(0, 0, page_width, 12, 'F')
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_xy(0, 2)
+        pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
+        pdf.set_font("Arial", '', 6)
+        pdf.set_xy(0, 7)
+        pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
+        
+        # Document title
+        pdf.set_fill_color(*black)
+        pdf.rect(margin, 15, content_width, 6, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)
+        pdf.set_xy(margin, 17)
+        pdf.cell(content_width, 3, "FABRIC USED (CONTINUED)", ln=0, align='C')
+        
+        # Table headers
+        continuation_table_start_y = 25
+        pdf.set_fill_color(*dark_gray)
+        pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
+        pdf.set_text_color(*white)
+        pdf.set_font("Arial", 'B', 7)
+        x_pos = margin
+        for i, header in enumerate(headers):
+            pdf.set_xy(x_pos, continuation_table_start_y + 1)
+            pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
+            x_pos += col_widths[i]
+        
+        # Reset for new page
+        current_y = continuation_table_start_y + 4
+        page_row_count = 0  # Reset row count for new page
+        
+        # Reset text formatting for content rendering
+        pdf.set_text_color(*black)
+        pdf.set_font("Arial", '', 7)
+        
+        return current_y, page_row_count
+    
     for base_fabric_invoice, group_lines in sorted_fabric_invoice_groups.items():
         # Sort items within each group by line number (lowest to highest)
         def sort_line_key(line):
@@ -1097,47 +1172,8 @@ def generate_fabric_used_pdf(group_id):
             
             # Check if we need a new page
             if row_y + 19 > max_y:
-                pdf.add_page()
-                
-                # Add minimal header on continuation page
-                pdf.set_fill_color(*white)
-                pdf.rect(0, 0, page_width, 12, 'F')
-                pdf.set_text_color(*black)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.set_xy(0, 2)
-                pdf.cell(page_width, 4, "M.S.K TEXTILE TRADING", ln=0, align='C')
-                pdf.set_font("Arial", '', 6)
-                pdf.set_xy(0, 7)
-                pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
-                
-                # Document title
-                pdf.set_fill_color(*black)
-                pdf.rect(margin, 15, content_width, 6, 'F')
-                pdf.set_text_color(*white)
-                pdf.set_font("Arial", 'B', 7)
-                pdf.set_xy(margin, 17)
-                pdf.cell(content_width, 3, "FABRIC USED (CONTINUED)", ln=0, align='C')
-                
-                # Table headers
-                continuation_table_start_y = 25
-                pdf.set_fill_color(*dark_gray)
-                pdf.rect(margin, continuation_table_start_y, content_width, 4, 'F')
-                pdf.set_text_color(*white)
-                pdf.set_font("Arial", 'B', 7)
-                x_pos = margin
-                for i, header in enumerate(headers):
-                    pdf.set_xy(x_pos, continuation_table_start_y + 1)
-                    pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
-                    x_pos += col_widths[i]
-                
-                # Reset for new page
-                current_y = continuation_table_start_y + 4
-                page_row_count = 0  # Reset row count for new page
+                current_y, page_row_count = add_new_page_with_headers()
                 row_y = current_y  # First row on new page
-                
-                # Reset text formatting for content rendering
-                pdf.set_text_color(*black)
-                pdf.set_font("Arial", '', 7)
             
             # Row background
             if group_line_idx % 2 == 0:
@@ -1218,9 +1254,17 @@ def generate_fabric_used_pdf(group_id):
         
         # Display group total at the bottom of this group
         fabric_tax_group_totals[base_fabric_invoice] = fabric_invoice_group_total
+        
+        # Calculate where the group total should be placed
+        fabric_invoice_total_y = current_y + (page_row_count * 19) + 2
+        
+        # Check if group total fits on current page, if not move to new page
+        if fabric_invoice_total_y + 6 > max_y:  # 6mm for the total text + gap
+            current_y, page_row_count = add_new_page_with_headers()
+            fabric_invoice_total_y = current_y + 2
+        
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
-        fabric_invoice_total_y = current_y + (page_row_count * 19) + 2
         pdf.set_xy(margin + 5, fabric_invoice_total_y)
         
         # Get fabric tax invoice numbers and DN numbers for this group
@@ -1251,8 +1295,16 @@ def generate_fabric_used_pdf(group_id):
     # Summary section (minimal) - positioned after all groups with small gap
     summary_start_y = current_y + 3  # Small gap after last group total
     
+    # Check if summary fits on current page, if not move to new page
+    summary_height = 15  # Summary box height
+    final_total_height = 8  # Final total box height
+    total_summary_height = summary_height + final_total_height + 10  # Total space needed (summary + final + gaps)
+    
+    if summary_start_y + total_summary_height > max_y:
+        current_y, page_row_count = add_new_page_with_headers()
+        summary_start_y = current_y + 3
+    
     # Summary box (minimal) - reduced height like fabric invoice
-    summary_height = 15  # Reduced from 20 to 15
     pdf.set_draw_color(*black)
     pdf.rect(margin, summary_start_y, content_width, summary_height, 'D')
     
@@ -1273,6 +1325,11 @@ def generate_fabric_used_pdf(group_id):
     
     # Final total (minimal) - light grey background with black border
     final_start_y = summary_start_y + summary_height + 5  # Use summary_height instead of fixed 25
+    
+    # Double-check that final total fits on current page
+    if final_start_y + final_total_height > max_y:
+        current_y, page_row_count = add_new_page_with_headers()
+        final_start_y = current_y + 3
     
     pdf.set_fill_color(*light_gray)
     pdf.rect(margin, final_start_y, content_width, 8, 'F')
