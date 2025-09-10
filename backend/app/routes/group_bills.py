@@ -620,8 +620,10 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         # Packing list group subtotal (minimal) - shows packing list and stitching invoice tax numbers
         tax_group_totals[packing_list_serial] = packing_list_group_total
         
-        # Calculate where the group total should be placed
-        packing_list_total_y = current_y + (page_row_count * 19) + 2
+        # Calculate where the group total should be placed - use actual current position
+        # After processing all lines in the group, calculate the actual Y position
+        actual_current_y = current_y + (page_row_count * 19)
+        packing_list_total_y = actual_current_y + 2
         
         # Check if group total fits on current page, if not move to new page
         if packing_list_total_y + 6 > max_y:  # 6mm for the total text + gap
@@ -693,7 +695,9 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     stitching_grand_total = sum(line['total_value'] for line in lines) - stitching_withholding_tax
     
     # Summary section (minimal) - positioned after all groups with small gap
-    summary_start_y = current_y + 3  # Small gap after last group total
+    # Use actual current position after all groups are processed
+    actual_current_y = current_y + (page_row_count * 19)
+    summary_start_y = actual_current_y + 3  # Small gap after last group total
     
     # Calculate actual height needed for stitching summary box
     title_height = 5  # "STITCHING SUMMARY" title (3mm text + 2mm gap)
@@ -1255,8 +1259,10 @@ def generate_fabric_used_pdf(group_id):
         # Display group total at the bottom of this group
         fabric_tax_group_totals[base_fabric_invoice] = fabric_invoice_group_total
         
-        # Calculate where the group total should be placed
-        fabric_invoice_total_y = current_y + (page_row_count * 19) + 2
+        # Calculate where the group total should be placed - use actual current position
+        # After processing all lines in the group, calculate the actual Y position
+        actual_current_y = current_y + (page_row_count * 19)
+        fabric_invoice_total_y = actual_current_y + 2
         
         # Check if group total fits on current page, if not move to new page
         if fabric_invoice_total_y + 6 > max_y:  # 6mm for the total text + gap
@@ -1293,7 +1299,9 @@ def generate_fabric_used_pdf(group_id):
     total_fabric_value = sum(line['total_value'] for line in lines)
     
     # Summary section (minimal) - positioned after all groups with small gap
-    summary_start_y = current_y + 3  # Small gap after last group total
+    # Use actual current position after all groups are processed
+    actual_current_y = current_y + (page_row_count * 19)
+    summary_start_y = actual_current_y + 3  # Small gap after last group total
     
     # Check if summary fits on current page, if not move to new page
     summary_height = 15  # Summary box height
