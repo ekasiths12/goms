@@ -422,8 +422,8 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     max_y = 280  # Maximum Y position before new page (A4 height ~297mm, leave margin)
     page_row_count = 0  # Track rows on current page
     
-    def add_new_page_with_headers_stitching():
-        """Helper function to add a new page with proper headers for stitching PDF"""
+    def add_continuation_page_stitching():
+        """Add a new page with headers for stitching invoice and return the new starting Y position"""
         pdf.add_page()
         
         # Add minimal header on continuation page
@@ -457,15 +457,11 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
             x_pos += col_widths[i]
         
-        # Reset for new page
-        current_y = continuation_table_start_y + 4
-        page_row_count = 0  # Reset row count for new page
-        
         # Reset text formatting for content rendering
         pdf.set_text_color(*black)
         pdf.set_font("Arial", '', 7)
         
-        return current_y, page_row_count
+        return continuation_table_start_y + 4
     
     for packing_list_serial, group_lines in sorted_packing_list_groups.items():
         # Process each line in this packing list group - no header above data
@@ -476,9 +472,14 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
             # Calculate row position based on current page row count
             row_y = current_y + (page_row_count * 19)
             
-            # Check if we need a new page
-            if row_y + 19 > max_y:
-                current_y, page_row_count = add_new_page_with_headers_stitching()
+            # Check if we need a new page (including space for group total if this is the last line)
+            space_needed = 19  # Row height
+            if group_line_idx == len(group_lines) - 1:  # Last line in group
+                space_needed += 8  # Space for group total
+            
+            if row_y + space_needed > max_y:
+                current_y = add_continuation_page_stitching()
+                page_row_count = 0  # Reset row count for new page
                 row_y = current_y  # First row on new page
             
             # Row background
@@ -619,19 +620,9 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         
         # Packing list group subtotal (minimal) - shows packing list and stitching invoice tax numbers
         tax_group_totals[packing_list_serial] = packing_list_group_total
-        
-        # Calculate where the group total should be placed - use actual current position
-        # After processing all lines in the group, calculate the actual Y position
-        actual_current_y = current_y + (page_row_count * 19)
-        packing_list_total_y = actual_current_y + 2
-        
-        # Check if group total fits on current page, if not move to new page
-        if packing_list_total_y + 6 > max_y:  # 6mm for the total text + gap
-            current_y, page_row_count = add_new_page_with_headers_stitching()
-            packing_list_total_y = current_y + 2
-        
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
+        packing_list_total_y = current_y + (page_row_count * 19) + 2
         pdf.set_xy(margin + 5, packing_list_total_y)
         
         # Get stitching invoice tax numbers for this packing list group
@@ -671,6 +662,11 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         # Move current_y to after this group for next group (increased spacing)
         current_y = packing_list_total_y + 6  # After group total + 6mm gap between groups
         page_row_count = 0  # Reset page row count for next group
+        
+        # FIXED: Check if group total would exceed page boundary and add new page if needed
+        if current_y > max_y:
+            current_y = add_continuation_page_stitching()
+            page_row_count = 0
     
     # Calculate totals
     stitching_vat_total = 0
@@ -695,19 +691,12 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     stitching_grand_total = sum(line['total_value'] for line in lines) - stitching_withholding_tax
     
     # Summary section (minimal) - positioned after all groups with small gap
-    # Use actual current position after all groups are processed
-    actual_current_y = current_y + (page_row_count * 19)
-    summary_start_y = actual_current_y + 3  # Small gap after last group total
+    summary_start_y = current_y + 3  # Small gap after last group total
     
     # Calculate actual height needed for stitching summary box
     title_height = 5  # "STITCHING SUMMARY" title (3mm text + 2mm gap)
     data_height = 10  # 2 lines of data (2 * 3mm + 4mm gap)
     summary_box_height = title_height + data_height  # 15mm total
-    
-    # Check if summary fits on current page, if not move to new page
-    if summary_start_y + summary_box_height > max_y:
-        current_y, page_row_count = add_new_page_with_headers_stitching()
-        summary_start_y = current_y + 3
     
     # Summary box (minimal) - calculated height
     summary_height = summary_box_height
@@ -768,11 +757,6 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
         # Position lining box after stitching summary content ends + 5mm gap
         stitching_summary_end = summary_start_y + 15  # summary_start_y + 15mm box height
         lining_start_y = stitching_summary_end + 5  # 5mm gap after stitching summary box
-        
-        # Check if lining section fits on current page, if not move to new page
-        if lining_start_y + total_lining_height > max_y:
-            current_y, page_row_count = add_new_page_with_headers_stitching()
-            lining_start_y = current_y + 3
         
         # Lining section box - truly dynamic sizing
         pdf.set_fill_color(*light_gray)
@@ -850,12 +834,6 @@ def generate_stitching_fee_pdf(group_id, apply_withholding_tax=False):
     else:
         # Position after stitching summary box + 5mm gap
         final_start_y = summary_start_y + summary_height + 5  # 5mm gap after stitching summary
-    
-    # Check if final total fits on current page, if not move to new page
-    final_total_height = 8
-    if final_start_y + final_total_height > max_y:
-        current_y, page_row_count = add_new_page_with_headers_stitching()
-        final_start_y = current_y + 3
     
     pdf.set_fill_color(*light_gray)
     pdf.rect(margin, final_start_y, content_width, 8, 'F')
@@ -1109,8 +1087,8 @@ def generate_fabric_used_pdf(group_id):
     
     sorted_fabric_invoice_groups = dict(sorted(fabric_invoice_groups.items(), key=lambda x: sort_fabric_invoice_key(x[0])))
     
-    def add_new_page_with_headers():
-        """Helper function to add a new page with proper headers"""
+    def add_continuation_page():
+        """Add a new page with headers and return the new starting Y position"""
         pdf.add_page()
         
         # Add minimal header on continuation page
@@ -1144,15 +1122,11 @@ def generate_fabric_used_pdf(group_id):
             pdf.cell(col_widths[i], 2, header, 0, 0, 'C')
             x_pos += col_widths[i]
         
-        # Reset for new page
-        current_y = continuation_table_start_y + 4
-        page_row_count = 0  # Reset row count for new page
-        
         # Reset text formatting for content rendering
         pdf.set_text_color(*black)
         pdf.set_font("Arial", '', 7)
         
-        return current_y, page_row_count
+        return continuation_table_start_y + 4
     
     for base_fabric_invoice, group_lines in sorted_fabric_invoice_groups.items():
         # Sort items within each group by line number (lowest to highest)
@@ -1174,9 +1148,14 @@ def generate_fabric_used_pdf(group_id):
             # Calculate row position based on current page row count
             row_y = current_y + (page_row_count * 19)
             
-            # Check if we need a new page
-            if row_y + 19 > max_y:
-                current_y, page_row_count = add_new_page_with_headers()
+            # Check if we need a new page (including space for group total if this is the last line)
+            space_needed = 19  # Row height
+            if group_line_idx == len(group_lines) - 1:  # Last line in group
+                space_needed += 8  # Space for group total
+            
+            if row_y + space_needed > max_y:
+                current_y = add_continuation_page()
+                page_row_count = 0  # Reset row count for new page
                 row_y = current_y  # First row on new page
             
             # Row background
@@ -1258,19 +1237,11 @@ def generate_fabric_used_pdf(group_id):
         
         # Display group total at the bottom of this group
         fabric_tax_group_totals[base_fabric_invoice] = fabric_invoice_group_total
-        
-        # Calculate where the group total should be placed - use actual current position
-        # After processing all lines in the group, calculate the actual Y position
-        actual_current_y = current_y + (page_row_count * 19)
-        fabric_invoice_total_y = actual_current_y + 2
-        
-        # Check if group total fits on current page, if not move to new page
-        if fabric_invoice_total_y + 6 > max_y:  # 6mm for the total text + gap
-            current_y, page_row_count = add_new_page_with_headers()
-            fabric_invoice_total_y = current_y + 2
-        
         pdf.set_font("Arial", 'B', 7)
         pdf.set_text_color(*black)
+        # FIXED: Calculate the correct Y position for group total
+        # Use the last row position + row height + gap
+        fabric_invoice_total_y = current_y + (page_row_count * 19) + 2
         pdf.set_xy(margin + 5, fabric_invoice_total_y)
         
         # Get fabric tax invoice numbers and DN numbers for this group
@@ -1293,26 +1264,21 @@ def generate_fabric_used_pdf(group_id):
         # Move current_y to after this group for next group (increased spacing)
         current_y = fabric_invoice_total_y + 6  # Reduced gap between groups (6mm)
         page_row_count = 0  # Reset page row count for next group
+        
+        # FIXED: Check if group total would exceed page boundary and add new page if needed
+        if current_y > max_y:
+            current_y = add_continuation_page()
+            page_row_count = 0
     
     # Calculate totals
     total_fabric_used = sum(line['yards_consumed'] for line in lines)
     total_fabric_value = sum(line['total_value'] for line in lines)
     
     # Summary section (minimal) - positioned after all groups with small gap
-    # Use actual current position after all groups are processed
-    actual_current_y = current_y + (page_row_count * 19)
-    summary_start_y = actual_current_y + 3  # Small gap after last group total
-    
-    # Check if summary fits on current page, if not move to new page
-    summary_height = 15  # Summary box height
-    final_total_height = 8  # Final total box height
-    total_summary_height = summary_height + final_total_height + 10  # Total space needed (summary + final + gaps)
-    
-    if summary_start_y + total_summary_height > max_y:
-        current_y, page_row_count = add_new_page_with_headers()
-        summary_start_y = current_y + 3
+    summary_start_y = current_y + 3  # Small gap after last group total
     
     # Summary box (minimal) - reduced height like fabric invoice
+    summary_height = 15  # Reduced from 20 to 15
     pdf.set_draw_color(*black)
     pdf.rect(margin, summary_start_y, content_width, summary_height, 'D')
     
@@ -1333,11 +1299,6 @@ def generate_fabric_used_pdf(group_id):
     
     # Final total (minimal) - light grey background with black border
     final_start_y = summary_start_y + summary_height + 5  # Use summary_height instead of fixed 25
-    
-    # Double-check that final total fits on current page
-    if final_start_y + final_total_height > max_y:
-        current_y, page_row_count = add_new_page_with_headers()
-        final_start_y = current_y + 3
     
     pdf.set_fill_color(*light_gray)
     pdf.rect(margin, final_start_y, content_width, 8, 'F')

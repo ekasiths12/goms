@@ -3300,17 +3300,18 @@
                     };
                 }).filter(line => line !== null);
             } else {
-                // Use checkbox selection (for backward compatibility)
-                console.log('📋 Current selectedRows:', selectedRows);
-                console.log('📋 selectedRows.length:', selectedRows.length);
+                // Use checkbox selection from table manager
+                const selectedRowIds = tableManager.getSelectedRowIds();
+                console.log('📋 Current selectedRowIds:', selectedRowIds);
+                console.log('📋 selectedRowIds.length:', selectedRowIds.length);
                 
-                if (selectedRows.length === 0) {
+                if (selectedRowIds.length === 0) {
                     alert('Please select one or more fabric invoice lines to create a stitching record.');
                     return;
                 }
                 
-                selectedLines = selectedRows.map(index => {
-                    const line = tableManager.getData()[index];
+                selectedLines = selectedRowIds.map(rowId => {
+                    const line = tableManager.getRowById(rowId);
                     const yardsSent = line.yards_sent || line.quantity || 0;
                     const yardsConsumed = line.yards_consumed || 0;
                     const commissionYards = line.total_commission_yards || 0;
@@ -3336,8 +3337,9 @@
             
             if (selectedLines.length === 0) {
                 // Check if any lines were filtered out due to missing delivery location
-                const linesWithoutLocation = selectedRows.map(index => {
-                    const line = tableManager.getData()[index];
+                const selectedRowIds = tableManager.getSelectedRowIds();
+                const linesWithoutLocation = selectedRowIds.map(rowId => {
+                    const line = tableManager.getRowById(rowId);
                     return (!line.delivered_location || line.delivered_location.trim() === '') ? line : null;
                 }).filter(line => line !== null);
                 
@@ -3785,18 +3787,19 @@
         let currentEditInvoiceId = null;
 
         function editSelectedInvoice() {
-            if (selectedRows.length === 0) {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
                 alert('Please select an invoice line to edit');
                 return;
             }
             
-            if (selectedRows.length > 1) {
+            if (selectedRowIds.length > 1) {
                 alert('Please select only one invoice line to edit');
                 return;
             }
             
-            const selectedIndex = selectedRows[0];
-            const invoice = tableManager.getData()[selectedIndex];
+            const selectedRowId = selectedRowIds[0];
+            const invoice = tableManager.getRowById(selectedRowId);
             
             if (!invoice) {
                 alert('Selected invoice not found');
@@ -3827,18 +3830,19 @@
         }
 
         function editSelectedInvoiceLine() {
-            if (selectedRows.length === 0) {
+            const selectedRowIds = tableManager.getSelectedRowIds();
+            if (selectedRowIds.length === 0) {
                 alert('Please select an invoice line to edit');
                 return;
             }
             
-            if (selectedRows.length > 1) {
+            if (selectedRowIds.length > 1) {
                 alert('Please select only one invoice line to edit');
                 return;
             }
             
-            const selectedIndex = selectedRows[0];
-            const invoice = tableManager.getData()[selectedIndex];
+            const selectedRowId = selectedRowIds[0];
+            const invoice = tableManager.getRowById(selectedRowId);
             
             if (!invoice) {
                 alert('Selected invoice line not found');
