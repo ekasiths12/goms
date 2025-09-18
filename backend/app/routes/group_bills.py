@@ -971,7 +971,7 @@ def generate_fabric_used_pdf(group_id):
     pdf.set_xy(0, 7)
     pdf.cell(page_width, 3, "Professional Garment Manufacturing & Trading", ln=0, align='C')
     
-    # Minimal document title
+    # Minimal document title with version indicator
     pdf.set_fill_color(*black)
     pdf.rect(margin, 15, content_width, 6, 'F')
     pdf.set_text_color(*white)
@@ -1003,13 +1003,20 @@ def generate_fabric_used_pdf(group_id):
     customer_name = group_bill.customer.short_name if group_bill.customer else 'N/A'
     pdf.cell(35, 2, customer_name, 0)
     
-    # Calculate total yards
+    # Calculate total yards and total fabric value
     total_yards = sum(line['yards_consumed'] for line in lines)
+    total_fabric_value = sum(line['total_value'] for line in lines)
     
     pdf.set_font("Arial", 'B', 7)
     pdf.cell(12, 2, "Yards:", 0)
     pdf.set_font("Arial", '', 7)
     pdf.cell(12, 2, f"{total_yards:.2f}", 0)
+    
+    # Add total payment due in header area
+    pdf.set_font("Arial", 'B', 7)
+    pdf.cell(15, 2, "Total Due:", 0)
+    pdf.set_font("Arial", '', 7)
+    pdf.cell(20, 2, f"{total_fabric_value:,.0f} THB", 0)
     
     # Comments section (if any) - minimal
     if group_bill.fabric_comments:
@@ -1270,44 +1277,8 @@ def generate_fabric_used_pdf(group_id):
             current_y = add_continuation_page()
             page_row_count = 0
     
-    # Calculate totals
-    total_fabric_used = sum(line['yards_consumed'] for line in lines)
-    total_fabric_value = sum(line['total_value'] for line in lines)
-    
-    # Summary section (minimal) - positioned after all groups with small gap
-    summary_start_y = current_y + 3  # Small gap after last group total
-    
-    # Summary box (minimal) - reduced height like fabric invoice
-    summary_height = 15  # Reduced from 20 to 15
-    pdf.set_draw_color(*black)
-    pdf.rect(margin, summary_start_y, content_width, summary_height, 'D')
-    
-    # Summary content
-    pdf.set_font("Arial", 'B', 7)
-    pdf.set_text_color(*black)
-    pdf.set_xy(margin + 5, summary_start_y + 3)
-    pdf.cell(40, 3, "FABRIC SUMMARY", ln=0)
-    
-    pdf.set_font("Arial", '', 7)
-    pdf.set_xy(margin + 5, summary_start_y + 8)
-    pdf.cell(40, 3, "Total Yards:", ln=0)
-    pdf.set_font("Arial", 'B', 7)
-    pdf.cell(60, 3, f"{total_fabric_used:.2f} yards", ln=1)
-    
-    # Calculate final total (fabric price already includes VAT)
-    fabric_grand_total = total_fabric_value
-    
-    # Final total (minimal) - light grey background with black border
-    final_start_y = summary_start_y + summary_height + 5  # Use summary_height instead of fixed 25
-    
-    pdf.set_fill_color(*light_gray)
-    pdf.rect(margin, final_start_y, content_width, 8, 'F')
-    pdf.set_draw_color(*black)
-    pdf.rect(margin, final_start_y, content_width, 8, 'D')
-    pdf.set_text_color(*black)
-    pdf.set_font("Arial", 'B', 8)
-    pdf.set_xy(margin + 5, final_start_y + 2)
-    pdf.cell(content_width - 10, 4, f"TOTAL FABRIC PAYMENT DUE: {fabric_grand_total:,.2f} THB", ln=0, align='C')
+    # Summary section removed - totals are now displayed in header area
+    # This prevents layout issues where summary appears on separate pages
     
     # Footer removed as requested
     
