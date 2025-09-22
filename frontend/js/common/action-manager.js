@@ -298,6 +298,87 @@ class ActionManager {
     }
     
     /**
+     * Create bulk commission sales
+     */
+    async createBulkCommissionSale(lines, saleDate) {
+        if (!lines || lines.length === 0) {
+            this.showNotification('No lines provided for bulk commission sale', 'warning');
+            return false;
+        }
+        
+        // Validate all lines first
+        const validatedLines = [];
+        for (const line of lines) {
+            const row = this.tableManager.getRowById(line.line_id);
+            if (!row) {
+                this.showNotification(`Invoice line ${line.line_id} not found`, 'error');
+                return false;
+            }
+            
+            const availableYards = row.pending_yards || 0;
+            if (line.yards_sold > availableYards) {
+                this.showNotification(`Line ${line.line_id}: Cannot sell ${line.yards_sold} yards, only ${availableYards} yards available`, 'error');
+                return false;
+            }
+            
+            validatedLines.push({ ...line, availableYards });
+        }
+        
+        // Optimistic updates for all lines
+        if (this.optimisticUpdates) {
+            for (const line of validatedLines) {
+                const newPending = line.availableYards - line.yards_sold;
+                this.tableManager.updateRow(line.line_id, { pending_yards: newPending });
+            }
+            this.showNotification(`Creating ${validatedLines.length} commission sales...`, 'info');
+        }
+        
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/invoices/mark-commission-sale-bulk`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sale_date: saleDate,
+                    lines: lines
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.showNotification(
+                    `Successfully created ${result.commission_sales.length} commission sales. Total commission: ฿${this.formatNumber(result.total_commission)}`, 
+                    'success'
+                );
+                
+                // Refresh table data to ensure all updates are reflected
+                await this.refreshTableData();
+                
+                return true;
+            } else {
+                // Revert optimistic updates on error
+                if (this.optimisticUpdates) {
+                    await this.refreshTableData();
+                }
+                this.showNotification(result.error || 'Failed to create bulk commission sales', 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error creating bulk commission sales:', error);
+            
+            // Revert optimistic updates on error
+            if (this.optimisticUpdates) {
+                await this.refreshTableData();
+            }
+            
+            this.showNotification('Error creating bulk commission sales: ' + error.message, 'error');
+            return false;
+        }
+    }
+    
+    /**
      * Delete selected invoice lines
      */
     async deleteInvoiceLines(selectedRowIds) {

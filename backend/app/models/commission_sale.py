@@ -56,6 +56,28 @@ class CommissionSale(db.Model):
         return serial_number
     
     @classmethod
+    def generate_bulk_serial_numbers(cls, count):
+        """Generate multiple sequential serial numbers for bulk operations"""
+        from app.models.serial_counter import SerialCounter
+        
+        if count <= 0:
+            return []
+        
+        counter = SerialCounter.get_or_create('CS')
+        base_date = datetime.now().strftime('%y%m%d')
+        
+        serial_numbers = []
+        for i in range(count):
+            serial_number = f"CS{base_date}{counter.last_value + 1 + i:04d}"
+            serial_numbers.append(serial_number)
+        
+        # Increment counter by the total count
+        counter.last_value += count
+        db.session.commit()
+        
+        return serial_numbers
+    
+    @classmethod
     def create_commission_sale(cls, invoice_line_id, yards_sold, sale_date, unit_price=None):
         """Create a new commission sale"""
         from app.models.invoice import InvoiceLine
@@ -95,3 +117,88 @@ class CommissionSale(db.Model):
         
         db.session.add(commission_sale)
         return commission_sale
+    
+    @classmethod
+    def create_bulk_commission_sales(cls, lines_data, sale_date):
+        """Create multiple commission sales in a single transaction"""
+        from app.models.invoice import InvoiceLine
+        
+        if not lines_data:
+            raise ValueError("No lines data provided")
+        
+        # Validate all lines first
+        validated_lines = []
+        errors = []
+        
+        for line_data in lines_data:
+            line_id = line_data.get('line_id')
+            yards_sold = line_data.get('yards_sold')
+            
+            if not line_id:
+                errors.append("Line ID is required for all items")
+                continue
+                
+            if not yards_sold or yards_sold <= 0:
+                errors.append(f"Line {line_id}: Yards sold must be greater than 0")
+                continue
+            
+            # Get the invoice line
+            invoice_line = InvoiceLine.query.get(line_id)
+            if not invoice_line:
+                errors.append(f"Line {line_id}: Invoice line not found")
+                continue
+            
+            # Calculate pending yards (excluding existing commission sales)
+            existing_commission_yards = sum(cs.yards_sold for cs in invoice_line.commission_sales)
+            pending_yards = (invoice_line.yards_sent or 0) - (invoice_line.yards_consumed or 0) - existing_commission_yards
+            
+            if yards_sold > pending_yards:
+                errors.append(f"Line {line_id}: Cannot sell {yards_sold} yards, only {pending_yards} yards available")
+                continue
+            
+            validated_lines.append({
+                'invoice_line': invoice_line,
+                'yards_sold': yards_sold,
+                'unit_price': invoice_line.unit_price or 0
+            })
+        
+        if errors:
+            raise ValueError("; ".join(errors))
+        
+        if not validated_lines:
+            raise ValueError("No valid lines to process")
+        
+        # Generate serial numbers for all valid lines
+        serial_numbers = cls.generate_bulk_serial_numbers(len(validated_lines))
+        
+        # Create commission sales
+        commission_sales = []
+        total_commission = Decimal('0')
+        
+        for i, line_data in enumerate(validated_lines):
+            invoice_line = line_data['invoice_line']
+            yards_sold = line_data['yards_sold']
+            unit_price = line_data['unit_price']
+            
+            # Calculate commission amount
+            commission_amount = yards_sold * unit_price * Decimal('0.051')
+            total_commission += commission_amount
+            
+            # Create commission sale
+            commission_sale = cls(
+                invoice_line_id=invoice_line.id,
+                serial_number=serial_numbers[i],
+                yards_sold=yards_sold,
+                unit_price=unit_price,
+                commission_amount=commission_amount,
+                sale_date=sale_date,
+                customer_name=invoice_line.invoice.customer.short_name if invoice_line.invoice and invoice_line.invoice.customer else None,
+                item_name=invoice_line.item_name,
+                color=invoice_line.color,
+                delivered_location=invoice_line.delivered_location
+            )
+            
+            db.session.add(commission_sale)
+            commission_sales.append(commission_sale)
+        
+        return commission_sales, total_commission

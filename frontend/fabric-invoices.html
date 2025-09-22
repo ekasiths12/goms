@@ -543,6 +543,91 @@
             gap: 10px;
             margin-bottom: 20px;
         }
+        
+        
+        /* Bulk Item List Styles */
+        .bulk-item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .bulk-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: block;
+        }
+        
+        .item-color {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .item-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        
+        .control-group input[type="number"],
+        .control-group input[type="date"] {
+            width: 100px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .available-yards {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .item-details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .available-yards {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .yards-input {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
 
         .btn {
             padding: 8px 16px;
@@ -1127,6 +1212,9 @@
             <button class="btn btn-primary" onclick="openDatImportDialog()">Import .DAT File</button>
             <button class="btn btn-success" onclick="openCostListDialog()">Cost List</button>
             <button class="btn btn-success" onclick="openPriceListDialog()">Price List</button>
+            <button class="btn btn-warning" onclick="openBulkCommissionSaleDialog()">
+                📊 Mark as Commission Sale (Bulk)
+            </button>
         </div>
 
         <!-- Invoice Table -->
@@ -1272,6 +1360,39 @@
             </div>
         </div>
         
+        <!-- Bulk Commission Sale Dialog -->
+        <div id="bulkCommissionSaleDialog" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Bulk Commission Sale</h2>
+                    <span class="close" onclick="closeBulkCommissionSaleDialog()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="bulk-summary">
+                        <h3 style="color: var(--text-primary); margin-bottom: 15px;">Selected Items (<span id="bulkItemCount">0</span>)</h3>
+                        <div id="bulkItemList" class="bulk-item-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; background: var(--bg-tertiary);">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                    
+                    <form id="bulkCommissionSaleForm" style="margin-top: 20px;">
+                        <div class="form-group">
+                            <label>Commission Rate:</label>
+                            <input type="text" value="5.1%" readonly style="background: var(--bg-secondary); width: 100px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Total Commission Amount:</label>
+                            <input type="text" id="bulkTotalCommission" readonly style="background: var(--bg-secondary); width: 200px; font-weight: bold; color: var(--success-color);">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeBulkCommissionSaleDialog()">Cancel</button>
+                    <button class="btn btn-success" onclick="confirmBulkCommissionSale()">Confirm Bulk Sale</button>
+                </div>
+            </div>
+        </div>
 
         
         <!-- Add/Edit Cost Dialog -->
@@ -1732,6 +1853,9 @@
                     if (rowTemplate) {
                         rowTemplate.updateRowInUI(rowElement, updates);
                     }
+                },
+                onSelectionChange: (selectedRows) => {
+                    // Update bulk actions bar when selection changes
                 }
             });
             
@@ -1761,6 +1885,8 @@
             tableManager.selectAll(isChecked);
             
             console.log('📋 Select all - Selected rows:', tableManager.getSelectedRowIds());
+            
+            // Update bulk actions bar
         }
 
         function toggleInvoiceSelection(event, invoiceId) {
@@ -1776,6 +1902,8 @@
             console.log('📋 Row selection toggled:', invoiceId, 'checked:', isChecked);
             console.log('📋 Current selected rows:', tableManager.getSelectedRowIds());
             updateSelectAllCheckbox();
+            
+            // Update bulk actions bar
         }
 
         function updateSelectAllCheckbox() {
@@ -4045,6 +4173,200 @@
                 closeCommissionSaleDialog();
             }
         }
+        
+        // ===== BULK COMMISSION SALE FUNCTIONALITY =====
+        
+        let bulkCommissionSaleData = null;
+        
+        function openBulkCommissionSaleDialog() {
+            // Get selected items from the table
+            const selectedIds = tableManager.getSelectedRowIds();
+            if (selectedIds.length === 0) {
+                showNotification('Please select items for bulk commission sale', 'warning');
+                return;
+            }
+            
+            // Get the selected items data
+            const selectedItems = selectedIds.map(id => tableManager.getRowById(id)).filter(row => row !== null);
+            
+            if (selectedItems.length === 0) {
+                showNotification('No valid selected items found', 'warning');
+                return;
+            }
+            
+            // Filter items that have available yards
+            const availableItems = selectedItems.filter(row => {
+                const pending = row.pending_yards || 0;
+                return pending > 0;
+            });
+            
+            if (availableItems.length === 0) {
+                showNotification('No selected items have available yards for commission sale', 'warning');
+                return;
+            }
+            
+            // Check if all selected items have the same invoice date
+            const invoiceDates = availableItems.map(item => item.invoice_date).filter(date => date);
+            const uniqueDates = [...new Set(invoiceDates)];
+            
+            let saleDate;
+            let hasMultipleDates = false;
+            
+            if (uniqueDates.length === 0) {
+                // No invoice dates available, use today's date
+                saleDate = new Date().toISOString().split('T')[0];
+            } else if (uniqueDates.length === 1) {
+                // All items have the same invoice date
+                saleDate = uniqueDates[0];
+            } else {
+                // Multiple different invoice dates - use the most recent one
+                hasMultipleDates = true;
+                saleDate = uniqueDates.sort().pop(); // Get the latest date
+            }
+            
+            bulkCommissionSaleData = {
+                items: availableItems,
+                saleDate: saleDate,
+                hasMultipleDates: hasMultipleDates,
+                allDates: uniqueDates
+            };
+            
+            populateBulkDialog();
+            document.getElementById('bulkCommissionSaleDialog').style.display = 'block';
+        }
+        
+        function closeBulkCommissionSaleDialog() {
+            document.getElementById('bulkCommissionSaleDialog').style.display = 'none';
+            bulkCommissionSaleData = null;
+        }
+        
+        function populateBulkDialog() {
+            const itemList = document.getElementById('bulkItemList');
+            const itemCount = document.getElementById('bulkItemCount');
+            
+            itemCount.textContent = bulkCommissionSaleData.items.length;
+            
+            itemList.innerHTML = bulkCommissionSaleData.items.map(item => `
+                <div class="bulk-item-row">
+                    <div class="item-info">
+                        <span class="item-name">${item.item_name}</span>
+                        <span class="item-color">${item.color || 'N/A'}</span>
+                    </div>
+                    <div class="item-details">
+                        <div class="item-controls">
+                            <div class="control-group">
+                                <label>Available Yards:</label>
+                                <span class="available-yards">${item.pending_yards} yards</span>
+                            </div>
+                            <div class="control-group">
+                                <label>Sale Yards:</label>
+                                <input type="number" 
+                                       class="yards-input" 
+                                       data-line-id="${item.id}"
+                                       max="${item.pending_yards}"
+                                       value="${item.pending_yards}"
+                                       step="0.01"
+                                       onchange="updateBulkCommissionTotal()">
+                            </div>
+                            <div class="control-group">
+                                <label>Sale Date:</label>
+                                <input type="date" 
+                                       class="sale-date-input" 
+                                       data-line-id="${item.id}"
+                                       value="${item.invoice_date || new Date().toISOString().split('T')[0]}"
+                                       onchange="updateBulkCommissionTotal()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateBulkCommissionTotal();
+        }
+        
+        function updateBulkCommissionTotal() {
+            if (!bulkCommissionSaleData) return;
+            
+            const yardsInputs = document.querySelectorAll('.yards-input');
+            let totalCommission = 0;
+            
+            for (const input of yardsInputs) {
+                const lineId = parseInt(input.dataset.lineId);
+                const yardsSold = parseFloat(input.value) || 0;
+                
+                // Find the item data
+                const item = bulkCommissionSaleData.items.find(item => item.id === lineId);
+                if (item && yardsSold > 0) {
+                    const commissionAmount = yardsSold * (item.unit_price || 0) * 0.051;
+                    totalCommission += commissionAmount;
+                }
+            }
+            
+            document.getElementById('bulkTotalCommission').value = `฿${formatNumber(totalCommission)}`;
+        }
+        
+        async function confirmBulkCommissionSale() {
+            const lines = [];
+            const yardsInputs = document.querySelectorAll('.yards-input');
+            
+            for (const input of yardsInputs) {
+                const lineId = parseInt(input.dataset.lineId);
+                const yardsSold = parseFloat(input.value) || 0;
+                
+                if (yardsSold > 0) {
+                    // Find the corresponding sale date input
+                    const saleDateInput = document.querySelector(`.sale-date-input[data-line-id="${lineId}"]`);
+                    const saleDate = saleDateInput ? saleDateInput.value : new Date().toISOString().split('T')[0];
+                    
+                    if (!saleDate) {
+                        showNotification(`Please select a sale date for ${input.closest('.bulk-item-row').querySelector('.item-name').textContent}`, 'warning');
+                        return;
+                    }
+                    
+                    lines.push({
+                        line_id: lineId,
+                        yards_sold: yardsSold,
+                        sale_date: saleDate
+                    });
+                }
+            }
+            
+            if (lines.length === 0) {
+                showNotification('Please enter yards to sell for at least one item', 'warning');
+                return;
+            }
+            
+            // Group lines by sale date for processing
+            const linesByDate = {};
+            for (const line of lines) {
+                if (!linesByDate[line.sale_date]) {
+                    linesByDate[line.sale_date] = [];
+                }
+                linesByDate[line.sale_date].push({
+                    line_id: line.line_id,
+                    yards_sold: line.yards_sold
+                });
+            }
+            
+            // Process each date group separately
+            let allSuccess = true;
+            for (const [saleDate, dateLines] of Object.entries(linesByDate)) {
+                const success = await actionManager.createBulkCommissionSale(dateLines, saleDate);
+                if (!success) {
+                    allSuccess = false;
+                }
+            }
+            
+            if (allSuccess) {
+                closeBulkCommissionSaleDialog();
+                clearBulkSelection();
+            }
+        }
+        
+        function clearBulkSelection() {
+            tableManager.clearSelection();
+        }
+        
         
         function createStitchingRecordFromTable(lineId) {
             // Find the invoice line data

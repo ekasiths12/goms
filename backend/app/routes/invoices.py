@@ -552,6 +552,55 @@ def mark_commission_sale():
         db.session.rollback()
         return {'error': str(e)}, 500
 
+@invoices_bp.route('/mark-commission-sale-bulk', methods=['POST'])
+def mark_commission_sale_bulk():
+    """Create multiple commission sales for selected invoice lines"""
+    try:
+        data = request.get_json()
+        lines_data = data.get('lines', [])
+        sale_date = data.get('sale_date')
+        
+        if not lines_data:
+            return {'error': 'No lines data provided'}, 400
+        if not sale_date:
+            return {'error': 'Sale date is required'}, 400
+        
+        # Parse sale date
+        try:
+            sale_date_obj = datetime.strptime(sale_date, '%Y-%m-%d').date()
+        except ValueError:
+            return {'error': 'Invalid sale date format. Use YYYY-MM-DD'}, 400
+        
+        # Create bulk commission sales
+        commission_sales, total_commission = CommissionSale.create_bulk_commission_sales(lines_data, sale_date_obj)
+        db.session.commit()
+        
+        # Prepare response data
+        response_data = []
+        for commission_sale in commission_sales:
+            response_data.append({
+                'line_id': commission_sale.invoice_line_id,
+                'serial_number': commission_sale.serial_number,
+                'yards_sold': float(commission_sale.yards_sold),
+                'commission_amount': float(commission_sale.commission_amount),
+                'item_name': commission_sale.item_name,
+                'color': commission_sale.color
+            })
+        
+        return {
+            'message': f'Successfully created {len(commission_sales)} commission sales',
+            'commission_sales': response_data,
+            'total_commission': float(total_commission),
+            'sale_date': sale_date
+        }, 200
+        
+    except ValueError as e:
+        db.session.rollback()
+        return {'error': str(e)}, 400
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
 @invoices_bp.route('/commission-sales', methods=['GET'])
 def get_commission_sales():
     """Get all commission sales"""

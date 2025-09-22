@@ -12,6 +12,7 @@ class TableManager {
         this.itemsPerPage = options.itemsPerPage || 50;
         this.onDataUpdate = options.onDataUpdate || (() => {});
         this.onRowUpdate = options.onRowUpdate || (() => {});
+        this.onSelectionChange = options.onSelectionChange || (() => {});
         this.rowTemplate = options.rowTemplate || this.defaultRowTemplate;
         this.rowIdentifier = options.rowIdentifier || 'id';
         this.optimisticUpdates = options.optimisticUpdates !== false;
@@ -385,6 +386,14 @@ class TableManager {
     }
     
     /**
+     * Get selected rows data
+     */
+    getSelectedRows() {
+        const selectedIds = this.getSelectedRowIds();
+        return selectedIds.map(id => this.getRowById(id)).filter(row => row !== null);
+    }
+    
+    /**
      * Select all rows
      */
     selectAll(checked) {
@@ -398,6 +407,7 @@ class TableManager {
     clearSelection() {
         const checkboxes = this.tableBody.querySelectorAll('.row-checkbox:checked');
         checkboxes.forEach(cb => cb.checked = false);
+        this.onSelectionChange(this.getSelectedRows());
     }
     
     /**
