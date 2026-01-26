@@ -786,22 +786,7 @@
 <body>
     <!-- Navigation Bar -->
     <nav class="nav-bar">
-        <ul class="nav-tabs">
-            <li><a href="fabric-invoices.html" class="nav-tab">Fabric Invoices</a></li>
-            <li><a href="stitching-records.html" class="nav-tab">Stitching Records</a></li>
-            <li><a href="packing-lists.html" class="nav-tab">Packing Lists</a></li>
-            <li><a href="group-bills.html" class="nav-tab active">Group Bills</a></li>
-            <li><a href="dashboard.html" class="nav-tab">Dashboard</a></li>
-        </ul>
-        <div class="nav-user">
-            <span class="version-indicator">v0002</span>
-            <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
-                <span class="icon" id="themeIcon">🌙</span>
-                <span id="themeText">Dark</span>
-            </button>
-            <span id="currentUser"></span>
-            <button onclick="logout()" class="logout-btn">Logout</button>
-        </div>
+        <!-- Navigation will be rendered by nav-bar.js -->
     </nav>
 
     <!-- Main Content -->
@@ -973,14 +958,13 @@
         window.addEventListener('load', async () => {
             console.log('🔄 Group Bills page loaded');
             
+            // Render navigation bar
+            renderNavBar('group-bills');
+            
             // Check authentication first
             if (!checkAuth()) {
                 return;
             }
-            
-            // Display current user
-            const username = localStorage.getItem('gms_username');
-            document.getElementById('currentUser').textContent = `Welcome, ${username}`;
             
             await loadGroupBillsData();
         });
@@ -2220,6 +2204,7 @@
             }
         }
     </script>
+    <script src="js/common/nav-bar.js"></script>
     <script src="js/table-sorting.js"></script>
 </body>
 </html>
