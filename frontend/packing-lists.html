@@ -653,6 +653,9 @@
             gap: 5px;
         }
     </style>
+    <script src="js/common/nav-bar.js"></script>
+    <script src="js/common/utils.js"></script>
+    <script src="js/table-sorting.js"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -911,29 +914,7 @@
             });
         }
 
-        function formatDateInput(input) {
-            // Auto-format date input to DD/MM/YY format (like old Qt app)
-            let text = input.value;
-            // Remove any non-digit characters
-            let digitsOnly = text.replace(/\D/g, '');
-            
-            // Format as DD/MM/YY
-            let formatted = "";
-            if (digitsOnly.length >= 1) {
-                formatted += digitsOnly.slice(0, 2);
-            }
-            if (digitsOnly.length >= 3) {
-                formatted += "/" + digitsOnly.slice(2, 4);
-            }
-            if (digitsOnly.length >= 5) {
-                formatted += "/" + digitsOnly.slice(4, 6);
-            }
-            
-            // Update text if different
-            if (formatted !== text) {
-                input.value = formatted;
-            }
-        }
+        // Formatting functions moved to js/common/utils.js
 
         function clearFilters() {
             document.getElementById('plFilter').value = '';
@@ -1371,29 +1352,7 @@
             return ids;
         }
 
-        function formatNumber(num) {
-            if (num === null || num === undefined || isNaN(num)) return '0.00';
-            return parseFloat(num).toFixed(2);
-        }
-
-        function formatInteger(num) {
-            if (num === null || num === undefined || isNaN(num)) return '0';
-            return parseInt(num).toString();
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: '2-digit'
-                });
-            } catch (error) {
-                return dateString;
-            }
-        }
+        // Formatting functions moved to js/common/utils.js
 
         function downloadPDF(showCost = false) {
             const selectedPackingListIds = getSelectedPackingListIds();
@@ -1862,8 +1821,5 @@
             }
         }
     </script>
-    <script src="js/common/nav-bar.js"></script>
-    <script src="js/common/utils.js"></script>
-    <script src="js/table-sorting.js"></script>
 </body>
 </html>

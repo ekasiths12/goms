@@ -3,6 +3,7 @@
  * Shared functions used across all pages
  * 
  * Function #1: Theme Management (toggleTheme, loadTheme)
+ * Function #2: Formatting Utilities (formatDate, formatNumber, formatInteger, formatDateInput)
  */
 
 const GOMS = {
@@ -57,9 +58,70 @@ const GOMS = {
                 if (themeText) themeText.textContent = 'Dark';
             }
         }
+    },
+    
+    /**
+     * Formatting Utilities
+     */
+    format: {
+        date: function(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                // Format as DD/MM/YY like old Qt app
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear().toString().slice(-2);
+                return `${day}/${month}/${year}`;
+            } catch (error) {
+                return dateString;
+            }
+        },
+        
+        number: function(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00';
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        },
+        
+        integer: function(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0';
+            return parseInt(num).toString();
+        },
+        
+        dateInput: function(input) {
+            // Auto-format date input to DD/MM/YY format (like old Qt app)
+            if (!input || !input.value) return;
+            
+            let text = input.value;
+            // Remove any non-digit characters
+            let digitsOnly = text.replace(/\D/g, '');
+            
+            // Format as DD/MM/YY
+            let formatted = "";
+            if (digitsOnly.length >= 1) {
+                formatted += digitsOnly.slice(0, 2);
+            }
+            if (digitsOnly.length >= 3) {
+                formatted += "/" + digitsOnly.slice(2, 4);
+            }
+            if (digitsOnly.length >= 5) {
+                formatted += "/" + digitsOnly.slice(4, 6);
+            }
+            
+            if (formatted !== text) {
+                input.value = formatted;
+            }
+        }
     }
 };
 
-// Global shortcuts for backward compatibility
+// Global shortcuts for backward compatibility - MUST be defined immediately
 window.toggleTheme = GOMS.theme.toggle;
 window.loadTheme = GOMS.theme.load;
+window.formatDate = GOMS.format.date;
+window.formatNumber = GOMS.format.number;
+window.formatInteger = GOMS.format.integer;
+window.formatDateInput = GOMS.format.dateInput;

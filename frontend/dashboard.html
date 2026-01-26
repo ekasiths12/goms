@@ -1832,9 +1832,7 @@
             }).format(amount);
         }
 
-        function formatNumber(number) {
-            return new Intl.NumberFormat('en-US').format(number);
-        }
+        // Formatting functions moved to js/common/utils.js
 
         function showLoading() {
             document.getElementById('loading').classList.add('show');

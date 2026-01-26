@@ -628,6 +628,9 @@
             }
         }
     </style>
+    <script src="js/common/nav-bar.js"></script>
+    <script src="js/common/utils.js"></script>
+    <script src="js/table-sorting.js"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -844,29 +847,7 @@
             return dateString;
         }
 
-        function formatDateInput(input) {
-            // Auto-format date input to DD/MM/YY format (like old Qt app)
-            let text = input.value;
-            // Remove any non-digit characters
-            let digitsOnly = text.replace(/\D/g, '');
-            
-            // Format as DD/MM/YY
-            let formatted = "";
-            if (digitsOnly.length >= 1) {
-                formatted += digitsOnly.slice(0, 2);
-            }
-            if (digitsOnly.length >= 3) {
-                formatted += "/" + digitsOnly.slice(2, 4);
-            }
-            if (digitsOnly.length >= 5) {
-                formatted += "/" + digitsOnly.slice(4, 6);
-            }
-            
-            // Update text if different
-            if (formatted !== text) {
-                input.value = formatted;
-            }
-        }
+        // Formatting functions moved to js/common/utils.js
 
         async function loadStitchingData() {
             console.log('🔄 loadStitchingData called');
@@ -2323,8 +2304,5 @@
             }
         }
     </script>
-    <script src="js/common/nav-bar.js"></script>
-    <script src="js/common/utils.js"></script>
-    <script src="js/table-sorting.js"></script>
 </body>
 </html>
