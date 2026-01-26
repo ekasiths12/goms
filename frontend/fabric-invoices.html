@@ -5,160 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Fabric Invoices - Garment Management System</title>
+    <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/table-sorting.css">
     <style>
-        :root {
-            /* Dark theme (default) */
-            --bg-primary: #212121;
-            --bg-secondary: #2c2c2c;
-            --bg-tertiary: #424242;
-            --text-primary: #eceff1;
-            --text-secondary: #b0bec5;
-            --nav-bg: #23272f;
-            --nav-border: #3949ab;
-            --nav-active: #3949ab;
-            --nav-hover: #3949ab;
-            --border-color: #555;
-            --focus-color: #5c6bc0;
-            --card-bg: #2c2c2c;
-            --chart-grid: #37474f;
-        }
-
-        [data-theme="light"] {
-            /* Light theme */
-            --bg-primary: #f5f5f5;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #f8f9fa;
-            --text-primary: #212121;
-            --text-secondary: #666666;
-            --nav-bg: #ffffff;
-            --nav-border: #e0e0e0;
-            --nav-active: #1976d2;
-            --nav-hover: #f5f5f5;
-            --border-color: #e0e0e0;
-            --focus-color: #1976d2;
-            --card-bg: #ffffff;
-            --chart-grid: #e0e0e0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 13px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* Navigation Bar */
-        .nav-bar {
-            background: var(--nav-bg);
-            border-bottom: 1px solid var(--nav-border);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .nav-tabs {
-            display: flex;
-            list-style: none;
-            gap: 0;
-        }
-
-        .nav-tab {
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            padding: 15px 25px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-bottom: 3px solid transparent;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .nav-tab:hover {
-            background-color: var(--nav-hover);
-            color: var(--text-primary);
-        }
-
-        .nav-tab.active {
-            background-color: var(--nav-active);
-            color: var(--text-primary);
-            border-bottom-color: var(--focus-color);
-        }
-
-        .nav-user {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .nav-user span {
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-
-        /* Theme Toggle Button */
-        .theme-toggle {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .theme-toggle:hover {
-            background: var(--bg-secondary);
-            border-color: var(--focus-color);
-        }
-
-        .theme-toggle .icon {
-            font-size: 14px;
-        }
-
-        .logout-btn {
-            background: #d32f2f;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: #f44336;
-        }
-
-        /* Main Content */
-        .main-content {
-            margin-top: 60px;
-            padding: 20px;
-            min-height: calc(100vh - 60px);
-        }
+        /* Page-specific styles only - common styles moved to common.css */
 
 
 
@@ -1090,6 +940,7 @@
             <li><a href="dashboard.html" class="nav-tab">Dashboard</a></li>
         </ul>
         <div class="nav-user">
+            <span class="version-indicator">v0002</span>
             <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle">
                 <span class="icon" id="themeIcon">🌙</span>
                 <span id="themeText">Dark</span>
