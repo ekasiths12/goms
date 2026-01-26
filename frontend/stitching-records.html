@@ -1306,48 +1306,47 @@
             }
         }
 
-        function updatePaginationControls() {
-            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
-            const startRecord = (currentPage - 1) * itemsPerPage + 1;
-            const endRecord = Math.min(currentPage * itemsPerPage, stitchingData.length);
-            
-            // Update info
-            document.getElementById('currentPageInfo').textContent = `${startRecord}-${endRecord}`;
-            document.getElementById('totalRecords').textContent = stitchingData.length;
-            
-            // Update buttons
-            document.getElementById('firstPage').disabled = currentPage === 1;
-            document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = currentPage === totalPages;
-            document.getElementById('lastPage').disabled = currentPage === totalPages;
-            
-            // Update page numbers
-            const pageNumbers = document.getElementById('pageNumbers');
-            pageNumbers.innerHTML = '';
-            
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            
-            if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                pageBtn.textContent = i;
-                pageBtn.onclick = () => goToPage(i);
-                pageNumbers.appendChild(pageBtn);
-            }
+        // Pagination functions - using utilities with page-specific variables
+        function getTotalPages() {
+            return GOMS.pagination.getTotalPages(stitchingData.length, itemsPerPage);
         }
 
         function goToPage(page) {
-            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
-            if (page >= 1 && page <= totalPages) {
-                currentPage = page;
+            const totalPages = getTotalPages();
+            GOMS.pagination.goToPage(page, totalPages, (newPage) => {
+                currentPage = newPage;
                 populateStitchingTreeview();
-            }
+            });
+        }
+
+        function updatePaginationControls() {
+            // Stitching records uses different element IDs
+            const totalPages = getTotalPages();
+            const startRecord = (currentPage - 1) * itemsPerPage + 1;
+            const endRecord = Math.min(currentPage * itemsPerPage, stitchingData.length);
+            
+            // Update info (stitching records uses different IDs)
+            const currentPageInfo = document.getElementById('currentPageInfo');
+            const totalRecords = document.getElementById('totalRecords');
+            if (currentPageInfo) currentPageInfo.textContent = `${startRecord}-${endRecord}`;
+            if (totalRecords) totalRecords.textContent = stitchingData.length;
+            
+            // Use generic function for buttons and page numbers
+            GOMS.pagination.updateControls({
+                currentPage: currentPage,
+                dataLength: stitchingData.length,
+                itemsPerPage: itemsPerPage,
+                paginationInfoId: 'paginationInfo', // Not used, but required
+                firstPageId: 'firstPage',
+                prevPageId: 'prevPage',
+                nextPageId: 'nextPage',
+                lastPageId: 'lastPage',
+                pageNumbersId: 'pageNumbers',
+                onPageChange: (page) => {
+                    currentPage = page;
+                    populateStitchingTreeview();
+                }
+            });
         }
 
 

@@ -6,6 +6,8 @@
  * Function #2: Formatting Utilities (formatDate, formatNumber, formatInteger, formatDateInput)
  * Function #3: API Utilities (getApiBaseUrl)
  * Function #4: Authentication Utilities (checkAuth, logout)
+ * Function #5: Date Utilities (isDateInRange, parseDDMMYY, formatForAPI)
+ * Function #6: Pagination Utilities (getTotalPages, goToPage, updatePaginationControls)
  */
 
 const GOMS = {
@@ -185,6 +187,140 @@ const GOMS = {
         getUsername: function() {
             return localStorage.getItem('gms_username') || 'User';
         }
+    },
+    
+    /**
+     * Date Utilities
+     */
+    date: {
+        isInRange: function(date, filterDate, type) {
+            if (!filterDate || filterDate.length !== 8 || filterDate.split('/').length !== 3) {
+                return true;
+            }
+            
+            try {
+                const [day, month, year] = filterDate.split('/');
+                const fullYear = year.length === 2 ? (parseInt(year) < 50 ? '20' + year : '19' + year) : year;
+                const filterDateObj = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                
+                if (type === 'from') {
+                    return date >= filterDateObj;
+                } else {
+                    return date <= filterDateObj;
+                }
+            } catch (error) {
+                return true;
+            }
+        },
+        
+        parseDDMMYY: function(dateString) {
+            // Convert DD/MM/YY to Date object
+            if (!dateString || dateString.length !== 8 || dateString.split('/').length !== 3) {
+                return null;
+            }
+            
+            try {
+                const [day, month, year] = dateString.split('/');
+                const fullYear = year.length === 2 ? (parseInt(year) < 50 ? '20' + year : '19' + year) : year;
+                return new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+            } catch (error) {
+                return null;
+            }
+        },
+        
+        formatForAPI: function(dateString) {
+            // Convert DD/MM/YY to YYYY-MM-DD for API
+            const date = this.parseDDMMYY(dateString);
+            if (!date) return null;
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    },
+    
+    /**
+     * Pagination Utilities
+     * Note: These functions require page-specific variables (currentPage, itemsPerPage, dataArray)
+     * They are designed to be called with the appropriate context
+     */
+    pagination: {
+        getTotalPages: function(dataLength, itemsPerPage) {
+            return Math.ceil(dataLength / itemsPerPage);
+        },
+        
+        goToPage: function(page, totalPages, onPageChange) {
+            if (page < 1 || page > totalPages) {
+                return;
+            }
+            if (onPageChange) {
+                onPageChange(page);
+            }
+        },
+        
+        updateControls: function(options) {
+            // options: { currentPage, dataLength, itemsPerPage, paginationInfoId, firstPageId, prevPageId, nextPageId, lastPageId, pageNumbersId, onPageChange }
+            const {
+                currentPage,
+                dataLength,
+                itemsPerPage,
+                paginationInfoId = 'paginationInfo',
+                firstPageId = 'firstPage',
+                prevPageId = 'prevPage',
+                nextPageId = 'nextPage',
+                lastPageId = 'lastPage',
+                pageNumbersId = 'pageNumbers',
+                onPageChange
+            } = options;
+            
+            const totalPages = Math.ceil(dataLength / itemsPerPage);
+            const startRecord = (currentPage - 1) * itemsPerPage + 1;
+            const endRecord = Math.min(currentPage * itemsPerPage, dataLength);
+            
+            // Update pagination info
+            const paginationInfo = document.getElementById(paginationInfoId);
+            if (paginationInfo) {
+                paginationInfo.textContent = `Showing ${startRecord} to ${endRecord} of ${dataLength} records`;
+            }
+            
+            // Update button states
+            const firstPageBtn = document.getElementById(firstPageId);
+            const prevPageBtn = document.getElementById(prevPageId);
+            const nextPageBtn = document.getElementById(nextPageId);
+            const lastPageBtn = document.getElementById(lastPageId);
+            
+            if (firstPageBtn) firstPageBtn.disabled = currentPage === 1;
+            if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+            if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+            if (lastPageBtn) lastPageBtn.disabled = currentPage === totalPages;
+            
+            // Update page numbers
+            const pageNumbersContainer = document.getElementById(pageNumbersId);
+            if (pageNumbersContainer) {
+                pageNumbersContainer.innerHTML = '';
+                
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    pageBtn.textContent = i;
+                    pageBtn.onclick = () => {
+                        if (onPageChange) {
+                            onPageChange(i);
+                        }
+                    };
+                    pageNumbersContainer.appendChild(pageBtn);
+                }
+            }
+        }
     }
 };
 
@@ -198,3 +334,6 @@ window.formatDateInput = GOMS.format.dateInput;
 window.getApiBaseUrl = GOMS.api.getBaseUrl;
 window.checkAuth = GOMS.auth.check;
 window.logout = GOMS.auth.logout;
+window.isDateInRange = GOMS.date.isInRange;
+window.parseDDMMYY = GOMS.date.parseDDMMYY;
+window.formatForAPI = GOMS.date.formatForAPI;

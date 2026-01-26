@@ -1896,62 +1896,35 @@
         // Theme functions moved to js/common/utils.js
 
         // Pagination Functions
+        // Pagination functions - using utilities with page-specific variables
         function getTotalPages() {
-            return Math.ceil(groupBillsData.length / itemsPerPage);
+            return GOMS.pagination.getTotalPages(groupBillsData.length, itemsPerPage);
         }
 
         function goToPage(page) {
             const totalPages = getTotalPages();
-            if (page < 1 || page > totalPages) {
-                return;
-            }
-            currentPage = page;
-            populateGroupBillsTable();
+            GOMS.pagination.goToPage(page, totalPages, (newPage) => {
+                currentPage = newPage;
+                populateGroupBillsTable();
+            });
         }
 
         function updatePaginationControls() {
-            const totalPages = getTotalPages();
-            const startRecord = (currentPage - 1) * itemsPerPage + 1;
-            const endRecord = Math.min(currentPage * itemsPerPage, groupBillsData.length);
-            
-            // Update pagination info
-            const paginationInfo = document.getElementById('paginationInfo');
-            if (paginationInfo) {
-                paginationInfo.textContent = `Showing ${startRecord} to ${endRecord} of ${groupBillsData.length} records`;
-            }
-            
-            // Update button states
-            const firstPageBtn = document.getElementById('firstPage');
-            const prevPageBtn = document.getElementById('prevPage');
-            const nextPageBtn = document.getElementById('nextPage');
-            const lastPageBtn = document.getElementById('lastPage');
-            
-            if (firstPageBtn) firstPageBtn.disabled = currentPage === 1;
-            if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
-            if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
-            if (lastPageBtn) lastPageBtn.disabled = currentPage === totalPages;
-            
-            // Update page numbers
-            const pageNumbersContainer = document.getElementById('pageNumbers');
-            if (pageNumbersContainer) {
-                pageNumbersContainer.innerHTML = '';
-                
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            GOMS.pagination.updateControls({
+                currentPage: currentPage,
+                dataLength: groupBillsData.length,
+                itemsPerPage: itemsPerPage,
+                paginationInfoId: 'paginationInfo',
+                firstPageId: 'firstPage',
+                prevPageId: 'prevPage',
+                nextPageId: 'nextPage',
+                lastPageId: 'lastPage',
+                pageNumbersId: 'pageNumbers',
+                onPageChange: (page) => {
+                    currentPage = page;
+                    populateGroupBillsTable();
                 }
-                
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                    pageBtn.textContent = i;
-                    pageBtn.onclick = () => goToPage(i);
-                    pageNumbersContainer.appendChild(pageBtn);
-                }
-            }
+            });
         }
 
         // ===== TABLE SORTING FUNCTIONALITY =====
