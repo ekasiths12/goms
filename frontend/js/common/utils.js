@@ -4,6 +4,7 @@
  * 
  * Function #1: Theme Management (toggleTheme, loadTheme)
  * Function #2: Formatting Utilities (formatDate, formatNumber, formatInteger, formatDateInput)
+ * Function #3: API Utilities (getApiBaseUrl)
  * Function #4: Authentication Utilities (checkAuth, logout)
  */
 
@@ -119,6 +120,50 @@ const GOMS = {
     },
     
     /**
+     * API Utilities
+     */
+    api: {
+        getBaseUrl: function() {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            const protocol = window.location.protocol;
+            
+            console.log('🔍 getApiBaseUrl debug:', { hostname, port, protocol });
+            
+            // Local development - Flask backend runs on port 8000
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // If frontend is on port 3000, backend should be on 8000
+                if (port === '3000') {
+                    return 'http://localhost:8000';
+                }
+                // If frontend is on port 5000, backend is on 8000
+                if (port === '5000') {
+                    return 'http://localhost:8000';
+                }
+                // Default to port 8000 for local development
+                return 'http://localhost:8000';
+            }
+            
+            // Railway deployment - force HTTPS
+            if (hostname.includes('railway.app') || hostname.includes('up.railway.app')) {
+                // Force HTTPS for Railway
+                const httpsUrl = `https://${hostname}`;
+                console.log('🚀 Using Railway HTTPS URL:', httpsUrl);
+                return httpsUrl;
+            }
+            
+            // Other deployments - use same protocol and domain, but prefer HTTPS
+            const origin = window.location.origin;
+            if (protocol === 'https:') {
+                return origin;
+            } else {
+                // Force HTTPS for production
+                return origin.replace('http://', 'https://');
+            }
+        }
+    },
+    
+    /**
      * Authentication Utilities
      */
     auth: {
@@ -150,5 +195,6 @@ window.formatDate = GOMS.format.date;
 window.formatNumber = GOMS.format.number;
 window.formatInteger = GOMS.format.integer;
 window.formatDateInput = GOMS.format.dateInput;
+window.getApiBaseUrl = GOMS.api.getBaseUrl;
 window.checkAuth = GOMS.auth.check;
 window.logout = GOMS.auth.logout;

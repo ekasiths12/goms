@@ -4,7 +4,7 @@
 
 This document addresses the massive code duplication in frontend HTML files. Analysis shows **~11,000+ lines of duplicated code** across themes, tables, sorting, filters, and common behaviors that should be extracted into reusable components.
 
-**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, and JavaScript Utilities (Functions #1-2) completed. Remaining work focuses on additional JavaScript utilities, filters, pagination, and table management.
+**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, and JavaScript Utilities (Functions #1-4) completed. Remaining work focuses on date utilities, filters, pagination, and table management.
 
 ---
 
@@ -36,6 +36,19 @@ This document addresses the massive code duplication in frontend HTML files. Ana
 - ✅ All functions exposed as global shortcuts for backward compatibility
 - ✅ Version updated to GOMSv2.006
 
+### JavaScript Utilities - Function #3: API Utilities (COMPLETED)
+- ✅ Added `GOMS.api.getBaseUrl()` to `utils.js`
+- ✅ Removed duplicate `getApiBaseUrl()` functions from all 5 pages (~40 lines per page)
+- ✅ Handles localhost (ports 3000, 5000, default 8000), Railway deployment (HTTPS), and other deployments
+- ✅ Function exposed as global shortcut `window.getApiBaseUrl`
+- ✅ Version updated to GOMSv2.008
+
+### JavaScript Utilities - Function #4: Authentication Utilities (COMPLETED)
+- ✅ Added `GOMS.auth.check()`, `GOMS.auth.logout()`, and `GOMS.auth.getUsername()` to `utils.js`
+- ✅ Removed duplicate `checkAuth()` and `logout()` functions from all 5 pages (~15 lines per page)
+- ✅ All functions exposed as global shortcuts for backward compatibility
+- ✅ Version updated to GOMSv2.007
+
 ---
 
 ## 1. JavaScript Function Duplication
@@ -51,9 +64,9 @@ This document addresses the massive code duplication in frontend HTML files. Ana
 | `formatNumber()` | 5 | ~10 lines each | ✅ Completed (Function #2) |
 | `formatDateInput()` | 4 | ~25 lines each | ✅ Completed (Function #2) |
 | `formatInteger()` | 3 | ~8 lines each | ✅ Completed (Function #2) |
-| `getApiBaseUrl()` | 5 | ~40 lines each | ⏳ Pending (Function #3) |
-| `checkAuth()` | 5 | ~10 lines each | ⏳ Pending (Function #4) |
-| `logout()` | 5 | ~5 lines each | ⏳ Pending (Function #4) |
+| `getApiBaseUrl()` | 5 | ~40 lines each | ✅ Completed (Function #3) |
+| `checkAuth()` | 5 | ~10 lines each | ✅ Completed (Function #4) |
+| `logout()` | 5 | ~5 lines each | ✅ Completed (Function #4) |
 | `goToPage()` | 4 | ~10 lines each | ⏳ Pending (Function #6) |
 | `updatePaginationControls()` | 4 | ~50 lines each | ⏳ Pending (Function #6) |
 | `getTotalPages()` | 4 | ~5 lines each | ⏳ Pending (Function #6) |
@@ -585,12 +598,12 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - [x] Create `frontend/js/common/utils.js`
 - [x] Move theme functions (Function #1: ✅ COMPLETED)
 - [x] Move formatting functions (Function #2: ✅ COMPLETED)
-- [ ] Move API utilities (Function #3: getApiBaseUrl)
-- [ ] Move auth utilities (Function #4: checkAuth, logout)
+- [x] Move API utilities (Function #3: ✅ COMPLETED)
+- [x] Move auth utilities (Function #4: ✅ COMPLETED)
 - [ ] Move date utilities (Function #5: isDateInRange, parseDDMMYY, formatForAPI)
 - [x] Update all HTML files to include `utils.js`
-- [x] Remove duplicated theme and formatting functions from HTML files
-- [x] Test all pages for functionality (Functions #1-2)
+- [x] Remove duplicated functions from HTML files (Functions #1-4)
+- [x] Test all pages for functionality (Functions #1-4)
 
 ### Phase 3: Create Components (PENDING)
 - [ ] Create `frontend/js/common/filter-manager.js` with multi-select
@@ -636,7 +649,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 ### New Common Files
 - `css/common.css`: ~173 lines (✅ Created)
 - `js/common/nav-bar.js`: ~47 lines (✅ Created)
-- `js/common/utils.js`: ~128 lines (✅ Partially Created - Functions #1-2 completed, Functions #3-5 pending)
+- `js/common/utils.js`: ~200 lines (✅ Partially Created - Functions #1-4 completed, Function #5 pending)
 - `js/common/filter-manager.js`: ~400 lines (Pending - with multi-select)
 - `js/common/pagination.js`: ~150 lines (Pending)
 - `js/common/hierarchical-table-manager.js`: ~200 lines (Pending)
