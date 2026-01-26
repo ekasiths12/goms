@@ -1517,15 +1517,7 @@
             locations: []
         };
 
-        // Check authentication
-        function checkAuth() {
-            const isLoggedIn = localStorage.getItem('gms_logged_in');
-            if (isLoggedIn !== 'true') {
-                window.location.href = 'login.html';
-                return false;
-            }
-            return true;
-        }
+        // Authentication functions moved to js/common/utils.js
 
         // Load data when page loads
         window.addEventListener('load', async () => {
@@ -1759,46 +1751,7 @@
             return tableManager.getSelectedRowIds();
         }
 
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            // Format as DD/MM/YY like old Qt app
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear().toString().slice(-2);
-            return `${day}/${month}/${year}`;
-        }
-
-        function formatNumber(num) {
-            return new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(num || 0);
-        }
-
-        function formatDateInput(input) {
-            // Auto-format date input to DD/MM/YY format (like old Qt app)
-            let text = input.value;
-            // Remove any non-digit characters
-            let digitsOnly = text.replace(/\D/g, '');
-            
-            // Format as DD/MM/YY
-            let formatted = "";
-            if (digitsOnly.length >= 1) {
-                formatted += digitsOnly.slice(0, 2);
-            }
-            if (digitsOnly.length >= 3) {
-                formatted += "/" + digitsOnly.slice(2, 4);
-            }
-            if (digitsOnly.length >= 5) {
-                formatted += "/" + digitsOnly.slice(4, 6);
-            }
-            
-            // Update text if different
-            if (formatted !== text) {
-                input.value = formatted;
-            }
-        }
+        // Formatting functions moved to js/common/utils.js
 
         // Filter functions
         function clearFilters() {
@@ -3364,11 +3317,7 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        function logout() {
-            localStorage.removeItem('gms_logged_in');
-            localStorage.removeItem('gms_username');
-            window.location.href = 'login.html';
-        }
+        // Authentication functions moved to js/common/utils.js
 
         // Theme Management
         // Theme functions moved to js/common/utils.js

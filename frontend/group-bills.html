@@ -948,15 +948,7 @@
         };
 
         // Load data when page loads
-        // Check authentication
-        function checkAuth() {
-            const isLoggedIn = localStorage.getItem('gms_logged_in');
-            if (isLoggedIn !== 'true') {
-                window.location.href = 'login.html';
-                return false;
-            }
-            return true;
-        }
+        // Authentication functions moved to js/common/utils.js
 
         window.addEventListener('load', async () => {
             console.log('🔄 Group Bills page loaded');
@@ -1936,11 +1928,7 @@
             }
         }
 
-        function logout() {
-            localStorage.removeItem('gms_logged_in');
-            localStorage.removeItem('gms_username');
-            window.location.href = 'login.html';
-        }
+        // Authentication functions moved to js/common/utils.js
 
         // Theme Management
         // Theme functions moved to js/common/utils.js

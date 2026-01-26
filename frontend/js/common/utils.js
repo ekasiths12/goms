@@ -4,6 +4,7 @@
  * 
  * Function #1: Theme Management (toggleTheme, loadTheme)
  * Function #2: Formatting Utilities (formatDate, formatNumber, formatInteger, formatDateInput)
+ * Function #4: Authentication Utilities (checkAuth, logout)
  */
 
 const GOMS = {
@@ -115,13 +116,39 @@ const GOMS = {
                 input.value = formatted;
             }
         }
+    },
+    
+    /**
+     * Authentication Utilities
+     */
+    auth: {
+        check: function() {
+            const isLoggedIn = localStorage.getItem('gms_logged_in');
+            if (isLoggedIn !== 'true') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        },
+        
+        logout: function() {
+            localStorage.removeItem('gms_logged_in');
+            localStorage.removeItem('gms_username');
+            window.location.href = 'login.html';
+        },
+        
+        getUsername: function() {
+            return localStorage.getItem('gms_username') || 'User';
+        }
     }
 };
 
-// Global shortcuts for backward compatibility - MUST be defined immediately
+// Global shortcuts for backward compatibility
 window.toggleTheme = GOMS.theme.toggle;
 window.loadTheme = GOMS.theme.load;
 window.formatDate = GOMS.format.date;
 window.formatNumber = GOMS.format.number;
 window.formatInteger = GOMS.format.integer;
 window.formatDateInput = GOMS.format.dateInput;
+window.checkAuth = GOMS.auth.check;
+window.logout = GOMS.auth.logout;
