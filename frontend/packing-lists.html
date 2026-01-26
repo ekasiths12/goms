@@ -655,6 +655,7 @@
     </style>
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
+    <script src="js/common/filter-manager.js"></script>
     <script src="js/table-sorting.js"></script>
 </head>
 <body>
@@ -665,67 +666,10 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Filter Controls - Compact Design -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label class="filter-label">PL#:</label>
-                    <input type="text" class="filter-input" id="plFilter" placeholder="PL#">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Serial#:</label>
-                    <input type="text" class="filter-input" id="serialFilter" placeholder="Serial #">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Fab.:</label>
-                    <input type="text" class="filter-input" id="fabricFilter" placeholder="Fabric">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Cust.:</label>
-                    <input type="text" class="filter-input" id="customerFilter" placeholder="Customer">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Tax Inv #:</label>
-                    <input type="text" class="filter-input" id="taxInvFilter" placeholder="Tax Inv #">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Fab. Inv:</label>
-                    <input type="text" class="filter-input" id="fabInvFilter" placeholder="Fabric Inv">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Fab. DN:</label>
-                    <input type="text" class="filter-input" id="fabDnFilter" placeholder="Fabric DN">
-                </div>
-                <div class="filter-group">
-                    <label>From:</label>
-                    <input type="text" class="filter-input" id="dateFromFilter" placeholder="DD/MM/YY">
-                </div>
-                <div class="filter-group">
-                    <label>To:</label>
-                    <input type="text" class="filter-input" id="dateToFilter" placeholder="DD/MM/YY">
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Show:</label>
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="billingStatus" value="unbilled" checked>
-                            <span>Unbilled</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="billingStatus" value="billed">
-                            <span>Billed</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="billingStatus" value="all">
-                            <span>All</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
-                </div>
-            </div>
-    </div>
+        <!-- Filter Controls - Managed by FilterManager -->
+        <div class="filter-controls" id="filterControls">
+            <!-- Filters will be rendered by FilterManager -->
+        </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
@@ -817,6 +761,7 @@
         let selectedPackingListIds = [];
         let currentPage = 1;
         const itemsPerPage = 50;
+        let filterManager = null;
 
         // API utilities moved to js/common/utils.js
 
@@ -833,153 +778,214 @@
                 return;
             }
             
-            setupFilters();
+            // Load data first, then initialize FilterManager
             await refreshPackingListTable();
-            // Default to unbilled and apply filter automatically
-            document.querySelector('input[name="billingStatus"][value="unbilled"]').checked = true;
-            filterData();
+            
+            // Initialize FilterManager after data is loaded
+            initializeFilterManager();
         });
 
-        function setupFilters() {
-            // Setup filter event listeners
-            document.getElementById('plFilter').addEventListener('input', filterData);
-            document.getElementById('serialFilter').addEventListener('input', filterData);
-            document.getElementById('fabricFilter').addEventListener('input', filterData);
-            document.getElementById('customerFilter').addEventListener('input', filterData);
-            document.getElementById('taxInvFilter').addEventListener('input', filterData);
-            document.getElementById('fabInvFilter').addEventListener('input', filterData);
-            document.getElementById('fabDnFilter').addEventListener('input', filterData);
-            document.getElementById('dateFromFilter').addEventListener('input', filterData);
-            document.getElementById('dateToFilter').addEventListener('input', filterData);
-            
-            // Add date input formatting
-            const dateFromInput = document.getElementById('dateFromFilter');
-            const dateToInput = document.getElementById('dateToFilter');
-            
-            if (dateFromInput) {
-                dateFromInput.addEventListener('input', () => formatDateInput(dateFromInput));
-            }
-            if (dateToInput) {
-                dateToInput.addEventListener('input', () => formatDateInput(dateToInput));
-            }
-            
-            // Radio button listeners
-            document.querySelectorAll('input[name="billingStatus"]').forEach(radio => {
-                radio.addEventListener('change', filterData);
+        /**
+         * Initialize FilterManager with packing list filters
+         */
+        function initializeFilterManager() {
+            const filterConfig = [
+                {
+                    id: 'plFilter',
+                    type: 'dropdown',
+                    label: 'PL#',
+                    placeholder: 'Select PL#',
+                    multiSelect: true,
+                    customExtract: (packingList) => packingList.packing_list_serial || null,
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const plSerial = (packingList.packing_list_serial || '').toLowerCase();
+                        if (Array.isArray(filterValue)) {
+                            return filterValue.some(val => plSerial.includes(String(val).toLowerCase()));
+                        }
+                        return plSerial.includes(String(filterValue).toLowerCase());
+                    }
+                },
+                {
+                    id: 'serialFilter',
+                    type: 'dropdown',
+                    label: 'Serial#',
+                    placeholder: 'Select Serial #',
+                    multiSelect: true,
+                    customExtract: (packingList) => {
+                        if (!packingList.lines) return null;
+                        return packingList.lines.map(line => line.stitching_invoice_number).filter(Boolean);
+                    },
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        return packingList.lines && packingList.lines.some(line => {
+                            const serial = (line.stitching_invoice_number || '').toLowerCase();
+                            return searchTerms.some(term => serial.includes(String(term).toLowerCase()));
+                        });
+                    }
+                },
+                {
+                    id: 'fabricFilter',
+                    type: 'dropdown',
+                    label: 'Fab.',
+                    placeholder: 'Select Fabric',
+                    multiSelect: true,
+                    customExtract: (packingList) => {
+                        if (!packingList.lines) return null;
+                        return packingList.lines.map(line => line.fabric_name).filter(Boolean);
+                    },
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        return packingList.lines && packingList.lines.some(line => {
+                            const fabric = (line.fabric_name || '').toLowerCase();
+                            return searchTerms.some(term => fabric.includes(String(term).toLowerCase()));
+                        });
+                    }
+                },
+                {
+                    id: 'customerFilter',
+                    type: 'dropdown',
+                    label: 'Cust.',
+                    placeholder: 'Select Customer',
+                    dataKey: 'customer_name',
+                    multiSelect: true,
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const customerName = (packingList.customer_name || '').toLowerCase();
+                        if (Array.isArray(filterValue)) {
+                            return filterValue.some(val => customerName.includes(String(val).toLowerCase()));
+                        }
+                        return customerName.includes(String(filterValue).toLowerCase());
+                    }
+                },
+                {
+                    id: 'taxInvFilter',
+                    type: 'dropdown',
+                    label: 'Tax Inv #',
+                    placeholder: 'Select Tax Inv #',
+                    multiSelect: true,
+                    customExtract: (packingList) => {
+                        if (!packingList.lines) return null;
+                        return packingList.lines.map(line => line.tax_invoice_number).filter(Boolean);
+                    },
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        return packingList.lines && packingList.lines.some(line => {
+                            const taxInv = (line.tax_invoice_number || '').toLowerCase();
+                            return searchTerms.some(term => taxInv.includes(String(term).toLowerCase()));
+                        });
+                    }
+                },
+                {
+                    id: 'fabInvFilter',
+                    type: 'dropdown',
+                    label: 'Fab. Inv',
+                    placeholder: 'Select Fabric Inv',
+                    multiSelect: true,
+                    customExtract: (packingList) => {
+                        if (!packingList.lines) return null;
+                        return packingList.lines.map(line => line.fabric_invoice_number).filter(Boolean);
+                    },
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        return packingList.lines && packingList.lines.some(line => {
+                            const fabInv = (line.fabric_invoice_number || '').toLowerCase();
+                            return searchTerms.some(term => fabInv.includes(String(term).toLowerCase()));
+                        });
+                    }
+                },
+                {
+                    id: 'fabDnFilter',
+                    type: 'dropdown',
+                    label: 'Fab. DN',
+                    placeholder: 'Select Fabric DN',
+                    multiSelect: true,
+                    customExtract: (packingList) => {
+                        if (!packingList.lines) return null;
+                        return packingList.lines.map(line => line.delivery_note).filter(Boolean);
+                    },
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        return packingList.lines && packingList.lines.some(line => {
+                            const fabDn = (line.delivery_note || '').toLowerCase();
+                            return searchTerms.some(term => fabDn.includes(String(term).toLowerCase()));
+                        });
+                    }
+                },
+                {
+                    id: 'dateFromFilter',
+                    type: 'date',
+                    label: 'From',
+                    placeholder: 'DD/MM/YY',
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || filterValue.trim() === '' || filterValue.length !== 8) return true;
+                        const createdDate = new Date(packingList.created_at);
+                        return isDateInRange(createdDate, filterValue, 'from');
+                    }
+                },
+                {
+                    id: 'dateToFilter',
+                    type: 'date',
+                    label: 'To',
+                    placeholder: 'DD/MM/YY',
+                    customFilter: (packingList, filterValue) => {
+                        if (!filterValue || filterValue.trim() === '' || filterValue.length !== 8) return true;
+                        const createdDate = new Date(packingList.created_at);
+                        return isDateInRange(createdDate, filterValue, 'to');
+                    }
+                },
+                {
+                    id: 'billingStatus',
+                    type: 'radio',
+                    label: 'Show',
+                    options: [
+                        { value: 'unbilled', label: 'Unbilled' },
+                        { value: 'billed', label: 'Billed' },
+                        { value: 'all', label: 'All' }
+                    ],
+                    defaultValue: 'unbilled',
+                    customFilter: (packingList, filterValue) => {
+                        if (filterValue === 'all') return true;
+                        const hasBilledRecords = packingList.lines && packingList.lines.some(line => 
+                            line.billing_group_id !== null && line.billing_group_id !== undefined
+                        );
+                        if (filterValue === 'billed') return hasBilledRecords;
+                        if (filterValue === 'unbilled') return !hasBilledRecords;
+                        return true;
+                    }
+                }
+            ];
+
+            filterManager = new FilterManager({
+                containerId: 'filterControls',
+                filters: filterConfig,
+                data: packingListData,
+                onFilterChange: (filteredData, filterValues) => {
+                    filteredPackingListData = filteredData;
+                    currentPage = 1; // Reset to first page when filtering
+                    populatePackingListTable(filteredPackingListData);
+                },
+                debounceDelay: 500
             });
+
+            // Add Clear Filter button
+            const clearBtn = document.createElement('div');
+            clearBtn.className = 'filter-group';
+            clearBtn.innerHTML = '<button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>';
+            document.getElementById('filterControls').querySelector('.filter-row').appendChild(clearBtn);
         }
 
         // Formatting functions moved to js/common/utils.js
 
         function clearFilters() {
-            document.getElementById('plFilter').value = '';
-            document.getElementById('serialFilter').value = '';
-            document.getElementById('fabricFilter').value = '';
-            document.getElementById('customerFilter').value = '';
-            document.getElementById('taxInvFilter').value = '';
-            document.getElementById('fabInvFilter').value = '';
-            document.getElementById('fabDnFilter').value = '';
-            document.getElementById('dateFromFilter').value = '';
-            document.getElementById('dateToFilter').value = '';
-            document.querySelector('input[name="billingStatus"][value="unbilled"]').checked = true;
-            filterData();
-        }
-
-        function filterData() {
-            const plFilter = document.getElementById('plFilter').value.toLowerCase();
-            const serialFilter = document.getElementById('serialFilter').value.toLowerCase();
-            const fabricFilter = document.getElementById('fabricFilter').value.toLowerCase();
-            const customerFilter = document.getElementById('customerFilter').value.toLowerCase();
-            const taxInvFilter = document.getElementById('taxInvFilter').value.toLowerCase();
-            const fabInvFilter = document.getElementById('fabInvFilter').value.toLowerCase();
-            const fabDnFilter = document.getElementById('fabDnFilter').value.toLowerCase();
-            const dateFrom = document.getElementById('dateFromFilter').value;
-            const dateTo = document.getElementById('dateToFilter').value;
-            const billingStatus = document.querySelector('input[name="billingStatus"]:checked').value;
-
-            filteredPackingListData = packingListData.filter(packingList => {
-                // PL Serial filter
-                if (plFilter && !packingList.packing_list_serial.toLowerCase().includes(plFilter)) {
-                    return false;
-                }
-
-                // Customer filter
-                if (customerFilter && !packingList.customer_name.toLowerCase().includes(customerFilter)) {
-                    return false;
-                }
-
-                // Date range filter
-                if (dateFrom || dateTo) {
-                    const createdDate = new Date(packingList.created_at);
-                    if (dateFrom && !isDateInRange(createdDate, dateFrom, 'from')) {
-                        return false;
-                    }
-                    if (dateTo && !isDateInRange(createdDate, dateTo, 'to')) {
-                        return false;
-                    }
-                }
-
-                // Check if any lines match the other filters
-                const hasMatchingLines = packingList.lines && packingList.lines.some(line => {
-                    // Serial filter
-                    if (serialFilter && !line.stitching_invoice_number.toLowerCase().includes(serialFilter)) {
-                        return false;
-                    }
-
-                    // Fabric filter
-                    if (fabricFilter && !line.fabric_name.toLowerCase().includes(fabricFilter)) {
-                        return false;
-                    }
-
-                    // Tax invoice filter
-                    if (taxInvFilter && !(line.tax_invoice_number || '').toLowerCase().includes(taxInvFilter)) {
-                        return false;
-                    }
-
-                    // Fabric invoice filter
-                    if (fabInvFilter && !(line.fabric_invoice_number || '').toLowerCase().includes(fabInvFilter)) {
-                        return false;
-                    }
-
-                    // Fabric DN filter
-                    if (fabDnFilter && !(line.delivery_note || '').toLowerCase().includes(fabDnFilter)) {
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                if (!hasMatchingLines) {
-                    return false;
-                }
-
-                // Billing status filter
-                if (billingStatus !== 'all') {
-                    console.log('🔍 Checking billing status for PL:', packingList.packing_list_serial, 'Status:', billingStatus);
-                    console.log('📋 Lines data:', packingList.lines);
-                    
-                    const hasBilledRecords = packingList.lines && packingList.lines.some(line => {
-                        console.log('🔍 Line billing_group_id:', line.billing_group_id, 'Type:', typeof line.billing_group_id);
-                        return line.billing_group_id !== null && line.billing_group_id !== undefined;
-                    });
-                    
-                    console.log('🔍 Has billed records:', hasBilledRecords);
-                    
-                    if (billingStatus === 'billed' && !hasBilledRecords) {
-                        console.log('❌ Filtering out - billed status but no billed records');
-                        return false;
-                    }
-                    if (billingStatus === 'unbilled' && hasBilledRecords) {
-                        console.log('❌ Filtering out - unbilled status but has billed records');
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-
-            currentPage = 1; // Reset to first page when filtering
-            populatePackingListTable(filteredPackingListData);
+            if (filterManager) {
+                filterManager.clearFilters();
+            }
         }
 
         // Date utilities moved to js/common/utils.js
@@ -1021,7 +1027,13 @@
                 packingListData = data;
                 filteredPackingListData = data; // Initialize filtered data with all data
                 currentPage = 1; // Reset to first page when new data is loaded
-                populatePackingListTable(data);
+                
+                // Update FilterManager with new data
+                if (filterManager) {
+                    filterManager.updateData(data);
+                } else {
+                    populatePackingListTable(data);
+                }
                 console.log('✅ Packing list data loaded successfully');
                 
             } catch (error) {
