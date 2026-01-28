@@ -4,7 +4,7 @@
 
 This document addresses the massive code duplication in frontend HTML files. Analysis shows **~11,000+ lines of duplicated code** across themes, tables, sorting, filters, and common behaviors that should be extracted into reusable components.
 
-**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, and Fabric Invoices filter migration completed. Remaining work focuses on migrating remaining pages to FilterManager, pagination components, and table management.
+**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, Fabric Invoices filter migration completed, Stitching Records filter migration completed, and Group Bills filter migration completed. Remaining work focuses on pagination components and table management.
 
 ---
 
@@ -98,6 +98,19 @@ This document addresses the massive code duplication in frontend HTML files. Ana
 - ✅ Removed old filter implementation (~150 lines of code removed)
 - ✅ All filters now work uniformly with multi-select support
 - ✅ Version updated to GOMSv2.014
+
+### Phase 4: Group Bills Filter Migration (COMPLETED)
+- ✅ Migrated Group Bills page to FilterManager
+- ✅ Converted from server-side filtering to client-side filtering for consistency
+- ✅ All dropdown filters (Customer, Group Number) now support multi-select
+- ✅ Date filters (From/To) use custom filter functions that handle both Group Bills and Commission Sales data structures
+- ✅ Group Number filter only applies to Group Bills view (returns true for Commission Sales items)
+- ✅ Preserved toggle functionality: "Show Group Bills" / "Show Commission Sales" button still works correctly
+- ✅ FilterManager updates data source when toggling views and re-applies filters
+- ✅ Loads all data for both views upfront (client-side filtering)
+- ✅ Removed old filter implementation (~100 lines of code removed)
+- ✅ All filters now work uniformly with multi-select support
+- ✅ Version updated to GOMSv2.015
 
 ---
 
@@ -288,14 +301,14 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - **Special**: Filters both parent and child rows (checks if any line matches)
 
 #### Group Bills
-- **Type**: Server-side filtering (via API)
-- **Method**: Simple text inputs
-- **Filters**:
-  - Customer (text input)
-  - Group Number (text input)
-  - Date From/To (text input with auto-format)
-- **Implementation**: `loadGroupBillsData()` builds query params
-- **Special**: Can toggle between group bills and commission sales views
+- **Type**: Client-side filtering (filters loaded data in memory) ✅ **MIGRATED**
+- **Method**: FilterManager with enhanced dropdowns and multi-select
+- **Filters**: 
+  - Customer (multi-select dropdown) ✅
+  - Group Number (multi-select dropdown, only filters Group Bills view) ✅
+  - Date From/To (text input with custom filter for both Group Bills and Commission Sales data structures) ✅
+- **Implementation**: `FilterManager` class with `filterConfig` array
+- **Special**: Auto-extracts options from loaded data, supports multi-select, handles both Group Bills and Commission Sales views, toggle button preserved and works with FilterManager
 
 ### 5.6 Refactoring Strategy for Tables
 
@@ -344,11 +357,11 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
    - **Fabric Invoices**: ✅ **COMPLETED** - Migrated to FilterManager with multi-select, client-side filtering
    - **Packing Lists**: ✅ **COMPLETED** - Migrated to FilterManager with multi-select dropdowns
    - **Stitching Records**: ✅ **COMPLETED** - Migrated to FilterManager with multi-select dropdowns, delivery status logic preserved
-   - **Group Bills**: Convert text inputs to enhanced dropdowns with multi-select
+   - **Group Bills**: ✅ **COMPLETED** - Migrated to FilterManager with multi-select dropdowns, toggle functionality preserved
 3. **Phase 3**: Standardize filter configurations:
-   - All filters use the same UI pattern ✅ (Fabric Invoices, Packing Lists, Stitching Records)
-   - All filters support multi-select ✅ (Fabric Invoices, Packing Lists, Stitching Records)
-   - All filters have search functionality ✅ (Fabric Invoices, Packing Lists, Stitching Records)
+   - All filters use the same UI pattern ✅ (Fabric Invoices, Packing Lists, Stitching Records, Group Bills)
+   - All filters support multi-select ✅ (Fabric Invoices, Packing Lists, Stitching Records, Group Bills)
+   - All filters have search functionality ✅ (Fabric Invoices, Packing Lists, Stitching Records, Group Bills)
    - Date filters remain as text inputs (with auto-format) ✅
    - Radio button filters remain as radio buttons ✅
 
@@ -390,15 +403,15 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - [ ] Create `frontend/js/common/hierarchical-table-manager.js`
 - [ ] Refactor remaining pages one by one
 
-### Phase 4: Standardize Filters (IN PROGRESS)
+### Phase 4: Standardize Filters (COMPLETED)
 - [x] FilterManager component created with multi-select support
 - [x] Packing Lists page migrated to FilterManager (all filters are dropdowns except date)
 - [x] Fabric Invoices page migrated to FilterManager (all dropdowns support multi-select, client-side filtering)
 - [x] Stitching Records page migrated to FilterManager (all dropdowns support multi-select, delivery status logic preserved)
-- [ ] Migrate Group Bills to FilterManager
-- [ ] Standardize filter configurations across all pages
-- [ ] Ensure all filters support multi-select
-- [ ] Test filter behavior on all pages
+- [x] Group Bills page migrated to FilterManager (all dropdowns support multi-select, toggle functionality preserved)
+- [x] Standardize filter configurations across all pages
+- [x] Ensure all filters support multi-select
+- [x] Test filter behavior on all pages
 
 ### Phase 5: Cleanup (PENDING)
 - [ ] Remove all remaining duplicated code

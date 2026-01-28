@@ -784,6 +784,7 @@
     </style>
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
+    <script src="js/common/filter-manager.js"></script>
     <script src="js/table-sorting.js"></script>
 </head>
 <body>
@@ -795,31 +796,7 @@
     <!-- Main Content -->
     <div class="main-content">
         <!-- Filter Controls -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Customer:</label>
-                    <input type="text" id="filterCustomer" class="filter-input" placeholder="Customer name">
-                </div>
-                
-                <div class="filter-group">
-                    <label>Group Number:</label>
-                    <input type="text" id="filterGroupNumber" class="filter-input" placeholder="Group number">
-                </div>
-                
-                <div class="filter-group">
-                    <label>From:</label>
-                    <input type="text" id="filterDateFrom" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
-                </div>
-                
-                <div class="filter-group">
-                    <label>To:</label>
-                    <input type="text" id="filterDateTo" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
-                </div>
-                
-                <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
-            </div>
-        </div>
+        <div class="filter-controls" id="filterControls"></div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
@@ -902,10 +879,14 @@
     <script>
         // Group Bills Functions
         let groupBillsData = [];
+        let allGroupBillsData = []; // Store all group bills data for client-side filtering
+        let allCommissionSalesData = []; // Store all commission sales data for client-side filtering
         let selectedGroupBillIds = [];
+        let selectedCommissionSaleIds = [];
         let currentPage = 1;
         const itemsPerPage = 50;
         let showingCommissionSales = false;
+        let filterManager = null;
 
         // API utilities moved to js/common/utils.js
 
@@ -924,6 +905,9 @@
             }
             
             await loadGroupBillsData();
+            
+            // Initialize FilterManager after data is loaded
+            initializeFilterManager();
         });
 
         async function loadGroupBillsData() {
@@ -940,77 +924,54 @@
             tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading group bills data...</td></tr>';
             
             try {
-                // Build query parameters
-                const params = new URLSearchParams();
-                const customer = document.getElementById('filterCustomer').value;
-                const groupNumber = document.getElementById('filterGroupNumber').value;
-                const dateFrom = document.getElementById('filterDateFrom').value;
-                const dateTo = document.getElementById('filterDateTo').value;
-                
-                if (customer) params.append('customer', customer);
-                if (groupNumber) params.append('group_number', groupNumber);
-                
-                // Convert DD/MM/YY to YYYY-MM-DD for backend
-                if (dateFrom) {
-                    try {
-                        const parts = dateFrom.split('/');
-                        if (parts.length === 3) {
-                            const day = parts[0];
-                            const month = parts[1];
-                            const year = '20' + parts[2];
-                            params.append('date_from', `${year}-${month}-${day}`);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing date_from:', error);
-                    }
-                }
-                
-                if (dateTo) {
-                    try {
-                        const parts = dateTo.split('/');
-                        if (parts.length === 3) {
-                            const day = parts[0];
-                            const month = parts[1];
-                            const year = '20' + parts[2];
-                            params.append('date_to', `${year}-${month}-${day}`);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing date_to:', error);
-                    }
-                }
-                
-                const queryString = params.toString();
                 const baseUrl = getApiBaseUrl();
-                let url;
                 
-                if (showingCommissionSales) {
-                    // Load commission sales data
-                    url = queryString ? `${baseUrl}/api/group-bills/commission-sales?${queryString}` : `${baseUrl}/api/group-bills/commission-sales`;
-                    url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
-                } else {
-                    // Load regular group bills data
-                    url = queryString ? `${baseUrl}/api/group-bills?${queryString}` : `${baseUrl}/api/group-bills`;
-                    url += queryString ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
-                }
-                
-                console.log('🔍 API URL debug:', { baseUrl, url, windowLocation: window.location.href });
-                console.log('🌐 Fetching', url);
-                const response = await fetch(url, {
+                // Load all data for both views (client-side filtering)
+                console.log('🌐 Loading all group bills data...');
+                const groupBillsResponse = await fetch(`${baseUrl}/api/group-bills?_t=${Date.now()}`, {
                     method: 'GET',
                     headers: {
                         'Cache-Control': 'no-cache',
                         'Pragma': 'no-cache'
                     }
                 });
-                console.log('📡 Response status:', response.status);
                 
-                if (response.ok) {
-                    groupBillsData = await response.json();
-                    console.log('📊 Received group bills data:', groupBillsData.length, 'records');
-                    currentPage = 1; // Reset to first page when new data is loaded
-                    populateGroupBillsTable();
+                console.log('🌐 Loading all commission sales data...');
+                const commissionSalesResponse = await fetch(`${baseUrl}/api/group-bills/commission-sales?_t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                console.log('📡 Group bills response status:', groupBillsResponse.status);
+                console.log('📡 Commission sales response status:', commissionSalesResponse.status);
+                
+                if (groupBillsResponse.ok && commissionSalesResponse.ok) {
+                    allGroupBillsData = await groupBillsResponse.json();
+                    allCommissionSalesData = await commissionSalesResponse.json();
+                    console.log('📊 Received group bills data:', allGroupBillsData.length, 'records');
+                    console.log('📊 Received commission sales data:', allCommissionSalesData.length, 'records');
+                    
+                    // Update FilterManager with appropriate data based on current view
+                    if (filterManager) {
+                        const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
+                        filterManager.updateData(currentData);
+                    } else {
+                        // Fallback: if FilterManager not initialized yet, just set data
+                        groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
+                        currentPage = 1;
+                        populateGroupBillsTable();
+                    }
                 } else {
-                    console.error('❌ Failed to load group bills data, status:', response.status);
+                    console.error('❌ Failed to load data');
+                    if (!groupBillsResponse.ok) {
+                        console.error('❌ Group bills response status:', groupBillsResponse.status);
+                    }
+                    if (!commissionSalesResponse.ok) {
+                        console.error('❌ Commission sales response status:', commissionSalesResponse.status);
+                    }
                     tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Failed to load group bills data. Please try refreshing the page.</td></tr>';
                 }
             } catch (error) {
@@ -1060,8 +1021,26 @@
             selectedCommissionSaleIds = [];
             updateActionButtons();
             
-            // Reload data with new view
-            loadGroupBillsData();
+            // Update FilterManager with appropriate data and re-apply filters
+            if (filterManager) {
+                const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
+                // Update FilterManager data and refresh filter options
+                filterManager.updateData(currentData);
+                // Re-populate filter options for Group Number (only shows for group bills)
+                const groupNumberFilter = filterManager.filters.find(f => f.id === 'groupNumber');
+                if (groupNumberFilter) {
+                    // Force refresh of dropdown options
+                    const dropdown = document.getElementById(`dropdown_groupNumber`);
+                    if (dropdown) {
+                        const searchInput = dropdown.querySelector('.filter-input-search');
+                        const currentSearch = searchInput ? searchInput.value : '';
+                        filterManager.populateDropdownOptions(groupNumberFilter, currentSearch);
+                    }
+                }
+            } else {
+                // Fallback: reload data if FilterManager not initialized
+                loadGroupBillsData();
+            }
         }
         
         function updateTableHeadersForCommissionSales() {
@@ -1641,12 +1620,144 @@
             return selectedGroupBillIds;
         }
 
+        /**
+         * Initialize FilterManager with filter configuration
+         */
+        function initializeFilterManager() {
+            console.log('🔄 Initializing FilterManager...');
+            
+            const filterConfig = [
+                {
+                    id: 'customer',
+                    type: 'dropdown',
+                    label: 'Customer',
+                    placeholder: 'Select Customer',
+                    multiSelect: true,
+                    customExtract: (item) => {
+                        // Handle both group bills and commission sales data structures
+                        // Check if item has commission_date (commission sales) or group_number (group bills)
+                        if (item.commission_date !== undefined) {
+                            // Commission sales structure
+                            return item.customer_name || null;
+                        } else {
+                            // Group bills structure
+                            return item.customer_name || null;
+                        }
+                    },
+                    customFilter: (item, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        const customerName = (item.customer_name || '').toLowerCase();
+                        return searchTerms.some(term => customerName.includes(String(term).toLowerCase()));
+                    }
+                },
+                {
+                    id: 'groupNumber',
+                    type: 'dropdown',
+                    label: 'Group Number',
+                    placeholder: 'Select Group Number',
+                    multiSelect: true,
+                    customFilter: (item, filterValue) => {
+                        // Only filter group bills by group number (commission sales don't have this)
+                        // Check if item has commission_date (commission sales) - skip filtering
+                        if (item.commission_date !== undefined) {
+                            return true; // Don't filter commission sales by group number
+                        }
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        const groupNumber = (item.group_number || '').toLowerCase();
+                        return searchTerms.some(term => groupNumber.includes(String(term).toLowerCase()));
+                    },
+                    customExtract: (item) => {
+                        // Only extract from group bills (commission sales don't have group_number)
+                        // Check if item has commission_date (commission sales) - return null
+                        if (item.commission_date !== undefined) {
+                            return null;
+                        }
+                        return item.group_number || null;
+                    }
+                },
+                {
+                    id: 'dateFrom',
+                    type: 'date',
+                    label: 'From',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'from',
+                    customFilter: (item, filterValue) => {
+                        if (!filterValue || filterValue.length !== 8) return true;
+                        let recordDate;
+                        // Check if item has commission_date (commission sales) or created_at/invoice_date (group bills)
+                        if (item.commission_date !== undefined) {
+                            recordDate = new Date(item.commission_date);
+                        } else {
+                            recordDate = new Date(item.created_at || item.invoice_date);
+                        }
+                        if (isNaN(recordDate.getTime())) return true;
+                        return isDateInRange(recordDate, filterValue, 'from');
+                    }
+                },
+                {
+                    id: 'dateTo',
+                    type: 'date',
+                    label: 'To',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'to',
+                    customFilter: (item, filterValue) => {
+                        if (!filterValue || filterValue.length !== 8) return true;
+                        let recordDate;
+                        // Check if item has commission_date (commission sales) or created_at/invoice_date (group bills)
+                        if (item.commission_date !== undefined) {
+                            recordDate = new Date(item.commission_date);
+                        } else {
+                            recordDate = new Date(item.created_at || item.invoice_date);
+                        }
+                        if (isNaN(recordDate.getTime())) return true;
+                        return isDateInRange(recordDate, filterValue, 'to');
+                    }
+                }
+            ];
+            
+            // Get initial data based on current view
+            const initialData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
+            
+            filterManager = new FilterManager({
+                containerId: 'filterControls',
+                filters: filterConfig,
+                data: initialData || [],
+                onFilterChange: (filteredData, filterValues) => {
+                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
+                    // Update table with filtered data
+                    groupBillsData = filteredData;
+                    currentPage = 1; // Reset to first page when filters change
+                    populateGroupBillsTable();
+                },
+                debounceDelay: 500
+            });
+            
+            // Add Clear Filter button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-secondary';
+            clearButton.textContent = 'Clear Filter';
+            clearButton.onclick = () => {
+                filterManager.clearFilters();
+            };
+            
+            // Append button to filter controls
+            const filterControls = document.getElementById('filterControls');
+            if (filterControls) {
+                const filterRow = filterControls.querySelector('.filter-row');
+                if (filterRow) {
+                    filterRow.appendChild(clearButton);
+                }
+            }
+            
+            console.log('✅ FilterManager initialized');
+        }
+
         function clearFilters() {
-            document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterGroupNumber').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            loadGroupBillsData();
+            if (filterManager) {
+                filterManager.clearFilters();
+            }
         }
 
         function refreshGroupBillsTable() {
