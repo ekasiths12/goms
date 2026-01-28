@@ -301,16 +301,7 @@
             background: var(--nav-active);
         }
 
-        .pagination-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-color);
-        }
+        /* Pagination Styles - moved to common.css */
 
         /* Checkbox styling */
         .checkbox-wrapper {
@@ -344,41 +335,6 @@
 
         .data-table tr:hover td {
             background: var(--bg-tertiary) !important;
-        }
-
-        .pagination-info {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .pagination-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .pagination-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            background: var(--focus-color);
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination-btn.active {
-            background: #5c6bc0;
-            color: #fff;
         }
 
         /* Action Buttons */
@@ -922,6 +878,7 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
+    <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
     <script src="js/common/table-manager.js"></script>
     <script src="js/common/action-manager.js"></script>
@@ -995,9 +952,9 @@
             </div>
             <div class="pagination-buttons">
                 <button class="pagination-btn" id="firstPage" onclick="goToPage(1)">First</button>
-                <button class="pagination-btn" id="prevPage" onclick="goToPage(currentPage - 1)">Previous</button>
+                <button class="pagination-btn" id="prevPage" onclick="goToPreviousPage()">Previous</button>
                 <span id="pageNumbers"></span>
-                <button class="pagination-btn" id="nextPage" onclick="goToPage(currentPage + 1)">Next</button>
+                <button class="pagination-btn" id="nextPage" onclick="goToNextPage()">Next</button>
                 <button class="pagination-btn" id="lastPage" onclick="goToPage(getTotalPages())">Last</button>
             </div>
         </div>
@@ -1315,8 +1272,7 @@
     <script>
         // Fabric Invoice Functions - Using new modular system
         let selectedRows = [];
-        let currentPage = 1;
-        const itemsPerPage = 50;
+        // Note: currentPage and itemsPerPage are managed by TableManager
         
         // Initialize modular components
         let tableManager = null;
@@ -1330,6 +1286,35 @@
         
         // API Base URL - works for both local development and Railway
         // API utilities moved to js/common/utils.js
+
+        // Pagination wrapper functions for TableManager (must be defined before HTML uses them)
+        function goToPage(page) {
+            if (tableManager) {
+                tableManager.goToPage(page);
+            }
+        }
+        
+        function goToPreviousPage() {
+            if (tableManager && tableManager.currentPage > 1) {
+                tableManager.goToPage(tableManager.currentPage - 1);
+            }
+        }
+        
+        function goToNextPage() {
+            if (tableManager) {
+                const totalPages = Math.ceil(tableManager.filteredData.length / tableManager.itemsPerPage);
+                if (tableManager.currentPage < totalPages) {
+                    tableManager.goToPage(tableManager.currentPage + 1);
+                }
+            }
+        }
+        
+        function getTotalPages() {
+            if (tableManager) {
+                return Math.ceil(tableManager.filteredData.length / tableManager.itemsPerPage);
+            }
+            return 1;
+        }
 
         // Simple notification function
         function showNotification(message, type = 'info') {
@@ -1386,32 +1371,25 @@
 
         // Authentication functions moved to js/common/utils.js
 
-        // Load data when page loads
-        window.addEventListener('load', async () => {
-            console.log('🔄 Fabric Invoices page loaded');
-            
-            // Render navigation bar
-            renderNavBar('fabric-invoices');
-            
-            // Check authentication first
-            if (!checkAuth()) {
-                return;
+        // Initialize page using PageInitializer
+        PageInitializer.onLoad({
+            activeTab: 'fabric-invoices',
+            onAuthSuccess: async () => {
+                // Initialize table manager first
+                initializeTableManager();
+                
+                await loadInvoiceData();
+                
+                // Initialize FilterManager after data is loaded
+                initializeFilterManager();
+                
+                // Load cost and price lists for filter options
+                await loadCostList();
+                await loadPriceList();
+                
+                // Load customers for dropdowns
+                await loadCustomers();
             }
-            
-            // Initialize table manager first
-            initializeTableManager();
-            
-            await loadInvoiceData();
-            
-            // Initialize FilterManager after data is loaded
-            initializeFilterManager();
-            
-            // Load cost and price lists for filter options
-            await loadCostList();
-            await loadPriceList();
-            
-            // Load customers for dropdowns
-            await loadCustomers();
         });
 
         async function loadInvoiceData() {

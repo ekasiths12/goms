@@ -349,20 +349,58 @@ class TableManager {
         
         pageNumbersSpan.innerHTML = '';
         
+        if (totalPages === 0) {
+            return;
+        }
+        
         const maxVisiblePages = 5;
         let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
         
-        if (endPage - startPage + 1 < maxVisiblePages) {
+        // Adjust if we're near the end
+        if (endPage - startPage < maxVisiblePages - 1) {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
         
+        // Add first page and ellipsis if needed
+        if (startPage > 1) {
+            const firstBtn = document.createElement('button');
+            firstBtn.className = `pagination-btn ${1 === this.currentPage ? 'active' : ''}`;
+            firstBtn.textContent = '1';
+            firstBtn.onclick = () => this.goToPage(1);
+            pageNumbersSpan.appendChild(firstBtn);
+            
+            if (startPage > 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                pageNumbersSpan.appendChild(ellipsis);
+            }
+        }
+        
+        // Add page number buttons
         for (let i = startPage; i <= endPage; i++) {
             const pageBtn = document.createElement('button');
             pageBtn.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
             pageBtn.textContent = i;
             pageBtn.onclick = () => this.goToPage(i);
             pageNumbersSpan.appendChild(pageBtn);
+        }
+        
+        // Add last page and ellipsis if needed
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                pageNumbersSpan.appendChild(ellipsis);
+            }
+            
+            const lastBtn = document.createElement('button');
+            lastBtn.className = `pagination-btn ${totalPages === this.currentPage ? 'active' : ''}`;
+            lastBtn.textContent = totalPages;
+            lastBtn.onclick = () => this.goToPage(totalPages);
+            pageNumbersSpan.appendChild(lastBtn);
         }
     }
     

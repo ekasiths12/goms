@@ -203,52 +203,7 @@
             background: var(--bg-tertiary) !important;
         }
 
-        .pagination-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-color);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .pagination-info {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .pagination-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .pagination-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            background: var(--focus-color);
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination-btn.active {
-            background: var(--focus-color);
-            color: var(--text-primary);
-        }
+        /* Pagination Styles - moved to common.css */
 
         /* Action Buttons */
         .action-buttons {
@@ -724,67 +679,13 @@
             text-align: right;
         }
 
-        /* Pagination Styles */
-        .pagination-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-            padding: 15px 20px;
-            background: var(--card-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .pagination-info {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .pagination-buttons {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .pagination-btn {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            min-width: 60px;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            background: var(--focus-color);
-            border-color: var(--nav-active);
-        }
-
-        .pagination-btn:disabled {
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            cursor: not-allowed;
-        }
-
-        .pagination-btn.active {
-            background: var(--focus-color);
-            border-color: var(--nav-active);
-            font-weight: bold;
-        }
-
-        .page-numbers {
-            display: flex;
-            gap: 5px;
-        }
+        /* Pagination Styles - moved to common.css */
     </style>
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
+    <script src="js/common/pagination.js"></script>
+    <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
 </head>
 <body>
@@ -860,18 +761,7 @@
         </div>
         
         <!-- Pagination Controls -->
-        <div class="pagination-controls">
-            <div class="pagination-info">
-                <span id="paginationInfo">Showing 0 of 0 records</span>
-            </div>
-            <div class="pagination-buttons">
-                <button class="pagination-btn" onclick="goToPage(1)" id="firstPage">First</button>
-                <button class="pagination-btn" onclick="goToPage(currentPage - 1)" id="prevPage">Previous</button>
-                <div id="pageNumbers" class="page-numbers"></div>
-                <button class="pagination-btn" onclick="goToPage(currentPage + 1)" id="nextPage">Next</button>
-                <button class="pagination-btn" onclick="goToPage(getTotalPages())" id="lastPage">Last</button>
-            </div>
-        </div>
+        <div id="paginationContainer"></div>
     </div>
 
 
@@ -887,27 +777,25 @@
         const itemsPerPage = 50;
         let showingCommissionSales = false;
         let filterManager = null;
+        let paginationComponent = null;
 
         // API utilities moved to js/common/utils.js
 
         // Load data when page loads
         // Authentication functions moved to js/common/utils.js
 
-        window.addEventListener('load', async () => {
-            console.log('🔄 Group Bills page loaded');
-            
-            // Render navigation bar
-            renderNavBar('group-bills');
-            
-            // Check authentication first
-            if (!checkAuth()) {
-                return;
+        // Initialize page using PageInitializer
+        PageInitializer.onLoad({
+            activeTab: 'group-bills',
+            onAuthSuccess: async () => {
+                await loadGroupBillsData();
+                
+                // Initialize FilterManager after data is loaded
+                initializeFilterManager();
+                
+                // Initialize PaginationComponent
+                initializePagination();
             }
-            
-            await loadGroupBillsData();
-            
-            // Initialize FilterManager after data is loaded
-            initializeFilterManager();
         });
 
         async function loadGroupBillsData() {
@@ -959,10 +847,13 @@
                         const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
                         filterManager.updateData(currentData);
                     } else {
-                        // Fallback: if FilterManager not initialized yet, just set data
-                        groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-                        currentPage = 1;
-                        populateGroupBillsTable();
+                    // Fallback: if FilterManager not initialized yet, just set data
+                    groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
+                    currentPage = 1;
+                    if (paginationComponent) {
+                        paginationComponent.reset();
+                    }
+                    populateGroupBillsTable();
                     }
                 } else {
                     console.error('❌ Failed to load data');
@@ -1729,6 +1620,9 @@
                     // Update table with filtered data
                     groupBillsData = filteredData;
                     currentPage = 1; // Reset to first page when filters change
+                    if (paginationComponent) {
+                        paginationComponent.reset();
+                    }
                     populateGroupBillsTable();
                 },
                 debounceDelay: 500
@@ -2006,36 +1900,33 @@
         // Theme Management
         // Theme functions moved to js/common/utils.js
 
-        // Pagination Functions
-        // Pagination functions - using utilities with page-specific variables
-        function getTotalPages() {
-            return GOMS.pagination.getTotalPages(groupBillsData.length, itemsPerPage);
-        }
-
-        function goToPage(page) {
-            const totalPages = getTotalPages();
-            GOMS.pagination.goToPage(page, totalPages, (newPage) => {
-                currentPage = newPage;
-                populateGroupBillsTable();
-            });
-        }
-
-        function updatePaginationControls() {
-            GOMS.pagination.updateControls({
-                currentPage: currentPage,
-                dataLength: groupBillsData.length,
+        /**
+         * Initialize PaginationComponent
+         */
+        function initializePagination() {
+            paginationComponent = new PaginationComponent({
+                containerId: 'paginationContainer',
+                currentPage: 1,
                 itemsPerPage: itemsPerPage,
-                paginationInfoId: 'paginationInfo',
-                firstPageId: 'firstPage',
-                prevPageId: 'prevPage',
-                nextPageId: 'nextPage',
-                lastPageId: 'lastPage',
-                pageNumbersId: 'pageNumbers',
+                dataLength: groupBillsData.length,
                 onPageChange: (page) => {
                     currentPage = page;
                     populateGroupBillsTable();
                 }
             });
+        }
+        
+        /**
+         * Update pagination when data changes
+         */
+        function updatePaginationControls() {
+            if (paginationComponent) {
+                paginationComponent.updateDataLength(groupBillsData.length);
+                // Sync current page if needed
+                if (paginationComponent.getCurrentPage() !== currentPage) {
+                    paginationComponent.goToPage(currentPage);
+                }
+            }
         }
 
         // ===== TABLE SORTING FUNCTIONALITY =====

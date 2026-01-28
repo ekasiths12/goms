@@ -10,6 +10,7 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
+    <script src="js/common/page-initializer.js"></script>
     <style>
         /* Page-specific styles only - common styles moved to common.css */
 
@@ -427,50 +428,42 @@
         }
         
         // Initialize dashboard when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Render navigation bar
-            renderNavBar('dashboard');
-            
-            console.log('DOM loaded, checking canvas elements...');
-            
-            // Test if chart containers exist
-            const profitMarginContainer = document.querySelector('[data-chart="profitMarginChart"]');
-            console.log('Chart containers found:', {
-                profitMarginContainer: !!profitMarginContainer
-            });
-            
-            // Load theme immediately to prevent flashing
-            loadTheme();
-            
-            // Check authentication first
-            if (!checkAuth()) {
-                return;
+        PageInitializer.onDOMReady({
+            activeTab: 'dashboard',
+            onAuthSuccess: async () => {
+                console.log('DOM loaded, checking canvas elements...');
+                
+                // Test if chart containers exist
+                const profitMarginContainer = document.querySelector('[data-chart="profitMarginChart"]');
+                console.log('Chart containers found:', {
+                    profitMarginContainer: !!profitMarginContainer
+                });
+                
+                // Set default date range (last 30 days) - will be set in FilterManager after initialization
+                const today = new Date();
+                const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+                
+                // Store default dates to set in FilterManager after initialization
+                window.defaultDateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+                window.defaultDateTo = today.toISOString().split('T')[0];
+                
+                // Set active date button
+                document.querySelector('.date-btn').classList.add('active');
+                
+                // Initialize dashboard after a short delay to ensure canvas elements are ready
+                setTimeout(() => {
+                    console.log('revenueChart:', document.getElementById('revenueChart'));
+                    console.log('customersChart:', document.getElementById('customersChart'));
+        
+                    console.log('productionChart:', document.getElementById('productionChart'));
+                    console.log('earningsBreakdownChart:', document.getElementById('earningsBreakdownChart'));
+                    console.log('earningsByCustomerChart:', document.getElementById('earningsByCustomerChart'));
+                    console.log('stockChart:', document.getElementById('stockChart'));
+                    console.log('fabricAgingChart:', document.getElementById('fabricAgingChart'));
+                    console.log('productionRateChart:', document.getElementById('productionRateChart'));
+                    initializeDashboard();
+                }, 500);
             }
-            
-            // Set default date range (last 30 days) - will be set in FilterManager after initialization
-            const today = new Date();
-            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-            
-            // Store default dates to set in FilterManager after initialization
-            window.defaultDateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-            window.defaultDateTo = today.toISOString().split('T')[0];
-            
-            // Set active date button
-            document.querySelector('.date-btn').classList.add('active');
-            
-            // Initialize dashboard after a short delay to ensure canvas elements are ready
-            setTimeout(() => {
-                console.log('revenueChart:', document.getElementById('revenueChart'));
-                console.log('customersChart:', document.getElementById('customersChart'));
-    
-                console.log('productionChart:', document.getElementById('productionChart'));
-                console.log('earningsBreakdownChart:', document.getElementById('earningsBreakdownChart'));
-                console.log('earningsByCustomerChart:', document.getElementById('earningsByCustomerChart'));
-                console.log('stockChart:', document.getElementById('stockChart'));
-                console.log('fabricAgingChart:', document.getElementById('fabricAgingChart'));
-                console.log('productionRateChart:', document.getElementById('productionRateChart'));
-                initializeDashboard();
-            }, 500);
         });
 
         async function initializeDashboard() {
