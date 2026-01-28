@@ -218,11 +218,6 @@
             font-style: italic;
         }
 
-        .filter-option:first-child {
-            font-weight: bold;
-            color: var(--focus-color);
-            border-bottom: 2px solid var(--border-color);
-        }
 
         .checkbox-label {
             display: flex;
@@ -926,6 +921,7 @@
     </style>
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
+    <script src="js/common/filter-manager.js"></script>
     <script src="js/table-sorting.js"></script>
     <script src="js/common/table-manager.js"></script>
     <script src="js/common/action-manager.js"></script>
@@ -941,101 +937,7 @@
     <main class="main-content">
         
         <!-- Filter Controls -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Customer:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterCustomer" class="filter-select-enhanced" placeholder="Select Customer">
-                        <div id="filterCustomerDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Fab Inv:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterFabInvoice" class="filter-select-enhanced" placeholder="Select Invoice">
-                        <div id="filterFabInvoiceDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Tax Inv:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterTaxInvoice" class="filter-select-enhanced" placeholder="Select Tax Invoice">
-                        <div id="filterTaxInvoiceDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Item:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterItemCode" class="filter-select-enhanced" placeholder="Select Item">
-                        <div id="filterItemCodeDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>DN:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterDN" class="filter-select-enhanced" placeholder="Select DN">
-                        <div id="filterDNDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>Location:</label>
-                    <div class="filter-container">
-                        <input type="text" id="filterLocation" class="filter-select-enhanced" placeholder="Select Location">
-                        <div id="filterLocationDropdown" class="filter-dropdown">
-                            <input type="text" class="filter-input-search" placeholder="Type to search...">
-                            <div class="filter-options"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>From:</label>
-                    <input type="text" id="filterDateFrom" class="filter-input" placeholder="DD/MM/YY">
-                </div>
-                
-                <div class="filter-group">
-                    <label>To:</label>
-                    <input type="text" id="filterDateTo" class="filter-input" placeholder="DD/MM/YY">
-                </div>
-                
-                <div class="filter-group">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 12px;">Stock Status:</label>
-                    <div style="display: flex; gap: 10px;">
-                        <label class="checkbox-label">
-                            <input type="radio" name="stockStatus" value="inStock" id="inStock" checked>
-                            In Stock
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="radio" name="stockStatus" value="noStock" id="noStock">
-                            No Stock
-                        </label>
-                    </div>
-                </div>
-                
-                <button class="btn btn-secondary" onclick="clearFilters()">Clear Filter</button>
-            </div>
-        </div>
+        <div class="filter-controls" id="filterControls"></div>
         
         <!-- Action Buttons -->
         <div class="action-buttons">
@@ -1478,16 +1380,9 @@
             }, 3000);
         }
 
-        // Enhanced Filter Dropdown Variables
-        let filterTimer = null;
-        let filterData = {
-            customers: [],
-            invoiceNumbers: [],
-            taxInvoices: [],
-            itemCodes: [],
-            deliveryNotes: [],
-            locations: []
-        };
+        // Filter Manager
+        let filterManager = null;
+        let allInvoiceData = []; // Store all data for client-side filtering
 
         // Authentication functions moved to js/common/utils.js
 
@@ -1508,8 +1403,8 @@
             
             await loadInvoiceData();
             
-            // Initialize enhanced filter dropdowns
-            initializeEnhancedFilters();
+            // Initialize FilterManager after data is loaded
+            initializeFilterManager();
             
             // Load cost and price lists for filter options
             await loadCostList();
@@ -1517,41 +1412,6 @@
             
             // Load customers for dropdowns
             await loadCustomers();
-            
-            // Add date input formatting
-            const dateFromInput = document.getElementById('filterDateFrom');
-            const dateToInput = document.getElementById('filterDateTo');
-            
-            if (dateFromInput) {
-                dateFromInput.addEventListener('input', () => formatDateInput(dateFromInput));
-            }
-            if (dateToInput) {
-                dateToInput.addEventListener('input', () => formatDateInput(dateToInput));
-            }
-            
-            // Add filter change listeners
-            const stockStatusRadios = document.querySelectorAll('input[name="stockStatus"]');
-            stockStatusRadios.forEach(radio => {
-                radio.addEventListener('change', applyFilters);
-            });
-
-            // Add real-time filter listeners for text inputs
-            const filterInputs = ['filterCustomer', 'filterFabInvoice', 'filterTaxInvoice', 'filterItemCode', 'filterDN', 'filterLocation'];
-            filterInputs.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', () => {
-                        // Clear existing timer
-                        if (filterTimer) {
-                            clearTimeout(filterTimer);
-                        }
-                        // Set new timer for debounced update
-                        filterTimer = setTimeout(() => {
-                            applyFilters();
-                        }, 500);
-                    });
-                }
-            });
         });
 
         async function loadInvoiceData() {
@@ -1567,33 +1427,10 @@
             console.log('🧹 Cleared selectedRows due to data refresh');
             
             try {
-                // Build query parameters from filters
-                const params = new URLSearchParams();
-                
-                const customerFilter = document.getElementById('filterCustomer')?.value?.trim();
-                const invoiceFilter = document.getElementById('filterFabInvoice')?.value?.trim();
-                const taxInvoiceFilter = document.getElementById('filterTaxInvoice')?.value?.trim();
-                const itemFilter = document.getElementById('filterItemCode')?.value?.trim();
-                const dnFilter = document.getElementById('filterDN')?.value?.trim();
-                const locationFilter = document.getElementById('filterLocation')?.value?.trim();
-                const dateFrom = document.getElementById('filterDateFrom')?.value;
-                const dateTo = document.getElementById('filterDateTo')?.value;
-                const stockStatus = document.querySelector('input[name="stockStatus"]:checked')?.value;
-                
-                if (customerFilter) params.append('customer', customerFilter);
-                if (invoiceFilter) params.append('invoice_number', invoiceFilter);
-                if (taxInvoiceFilter) params.append('tax_invoice', taxInvoiceFilter);
-                if (itemFilter) params.append('item_code', itemFilter);
-                if (dnFilter) params.append('dn', dnFilter);
-                if (locationFilter) params.append('location', locationFilter);
-                if (dateFrom) params.append('date_from', dateFrom);
-                if (dateTo) params.append('date_to', dateTo);
-                if (stockStatus) params.append('stock_status', stockStatus);
-                
-                console.log('🌐 Fetching /api/invoices with filters...');
+                // Load all data without filters (client-side filtering)
+                console.log('🌐 Fetching /api/invoices (all data)...');
                 const apiBaseUrl = getApiBaseUrl();
-                const apiUrl = `${apiBaseUrl}/api/invoices?${params.toString()}`;
-                console.log('🌐 Full API URL:', apiUrl);
+                const apiUrl = `${apiBaseUrl}/api/invoices`;
                 
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -1609,14 +1446,16 @@
                         const data = JSON.parse(responseText);
                         console.log('📊 Received invoice data:', data.length, 'records');
                         
-                        // Use table manager to set data
-                        tableManager.setData(data);
+                        // Store all data for filtering
+                        allInvoiceData = data;
                         
-                        // Update filter data for enhanced dropdowns
-                        // Add a small delay to ensure table manager is fully ready
-                        setTimeout(() => {
-                            updateFilterData();
-                        }, 100);
+                        // Update FilterManager with new data (it will apply filters and update table)
+                        if (filterManager) {
+                            filterManager.updateData(data);
+                        } else {
+                            // Fallback: if FilterManager not initialized yet, just set data
+                            tableManager.setData(data);
+                        }
                         
                     } catch (parseError) {
                         console.error('❌ JSON parse error:', parseError);
@@ -1670,10 +1509,126 @@
             console.log('✅ TableManager and ActionManager initialized');
         }
 
-
-
-
-
+        /**
+         * Initialize FilterManager with filter configuration
+         */
+        function initializeFilterManager() {
+            console.log('🔄 Initializing FilterManager...');
+            
+            const filterConfig = [
+                {
+                    id: 'customer',
+                    type: 'dropdown',
+                    label: 'Customer',
+                    placeholder: 'Select Customer',
+                    multiSelect: true,
+                    dataKey: 'customer.short_name'
+                },
+                {
+                    id: 'fabInvoice',
+                    type: 'dropdown',
+                    label: 'Fab Inv',
+                    placeholder: 'Select Invoice',
+                    multiSelect: true,
+                    dataKey: 'invoice_number'
+                },
+                {
+                    id: 'taxInvoice',
+                    type: 'dropdown',
+                    label: 'Tax Inv',
+                    placeholder: 'Select Tax Invoice',
+                    multiSelect: true,
+                    dataKey: 'tax_invoice_number'
+                },
+                {
+                    id: 'itemCode',
+                    type: 'dropdown',
+                    label: 'Item',
+                    placeholder: 'Select Item',
+                    multiSelect: true,
+                    dataKey: 'item_name'
+                },
+                {
+                    id: 'dn',
+                    type: 'dropdown',
+                    label: 'DN',
+                    placeholder: 'Select DN',
+                    multiSelect: true,
+                    dataKey: 'delivery_note'
+                },
+                {
+                    id: 'location',
+                    type: 'dropdown',
+                    label: 'Location',
+                    placeholder: 'Select Location',
+                    multiSelect: true,
+                    dataKey: 'delivered_location'
+                },
+                {
+                    id: 'dateFrom',
+                    type: 'date',
+                    label: 'From',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'from'
+                },
+                {
+                    id: 'dateTo',
+                    type: 'date',
+                    label: 'To',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'to'
+                },
+                {
+                    id: 'stockStatus',
+                    type: 'radio',
+                    label: 'Stock Status',
+                    options: [
+                        { value: 'inStock', label: 'In Stock' },
+                        { value: 'noStock', label: 'No Stock' }
+                    ],
+                    defaultValue: 'inStock',
+                    customFilter: (item, filterValue) => {
+                        if (filterValue === 'inStock') {
+                            return !item.delivered_location || item.delivered_location === '';
+                        } else if (filterValue === 'noStock') {
+                            return item.delivered_location && item.delivered_location !== '';
+                        }
+                        return true;
+                    }
+                }
+            ];
+            
+            filterManager = new FilterManager({
+                containerId: 'filterControls',
+                filters: filterConfig,
+                data: allInvoiceData || [],
+                onFilterChange: (filteredData, filterValues) => {
+                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
+                    // Update table with filtered data
+                    tableManager.setData(filteredData);
+                },
+                debounceDelay: 500
+            });
+            
+            // Add Clear Filter button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-secondary';
+            clearButton.textContent = 'Clear Filter';
+            clearButton.onclick = () => {
+                filterManager.clearFilters();
+            };
+            
+            // Append button to filter controls
+            const filterControls = document.getElementById('filterControls');
+            if (filterControls) {
+                const filterRow = filterControls.querySelector('.filter-row');
+                if (filterRow) {
+                    filterRow.appendChild(clearButton);
+                }
+            }
+            
+            console.log('✅ FilterManager initialized');
+        }
 
 
 
@@ -1727,200 +1682,9 @@
 
         // Filter functions
         function clearFilters() {
-            // Clear enhanced filter inputs
-            const enhancedFilters = ['filterCustomer', 'filterFabInvoice', 'filterTaxInvoice', 'filterItemCode', 'filterDN', 'filterLocation'];
-            enhancedFilters.forEach(filterId => {
-                const filterInput = document.getElementById(filterId);
-                if (filterInput) {
-                    filterInput.value = '';
-                    filterInput.dataset.selectedValue = '';
-                }
-            });
-            
-            // Clear date inputs
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            // Reset stock status to "In Stock"
-            document.getElementById('inStock').checked = true;
-            
-            // Close all dropdowns
-            closeAllDropdowns();
-            
-            currentPage = 1; // Reset to first page when clearing filters
-            loadInvoiceData(); // Show all data
-        }
-
-        function applyFilters() {
-            loadInvoiceData();
-        }
-
-        // Enhanced Filter Functions
-        function initializeEnhancedFilters() {
-            console.log('🔄 Initializing enhanced filters');
-            
-            // Initialize each filter dropdown
-            const filters = [
-                { id: 'filterCustomer', dropdownId: 'filterCustomerDropdown', dataKey: 'customers' },
-                { id: 'filterFabInvoice', dropdownId: 'filterFabInvoiceDropdown', dataKey: 'invoiceNumbers' },
-                { id: 'filterTaxInvoice', dropdownId: 'filterTaxInvoiceDropdown', dataKey: 'taxInvoices' },
-                { id: 'filterItemCode', dropdownId: 'filterItemCodeDropdown', dataKey: 'itemCodes' },
-                { id: 'filterDN', dropdownId: 'filterDNDropdown', dataKey: 'deliveryNotes' },
-                { id: 'filterLocation', dropdownId: 'filterLocationDropdown', dataKey: 'locations' }
-            ];
-
-            filters.forEach(filter => {
-                initializeFilterDropdown(filter.id, filter.dropdownId, filter.dataKey);
-            });
-        }
-
-        function initializeFilterDropdown(filterId, dropdownId, dataKey) {
-            const filterInput = document.getElementById(filterId);
-            const dropdown = document.getElementById(dropdownId);
-            const searchInput = dropdown.querySelector('.filter-input-search');
-            const optionsContainer = dropdown.querySelector('.filter-options');
-
-            // Toggle dropdown on input click
-            filterInput.addEventListener('click', (e) => {
-                e.preventDefault();
-                closeAllDropdowns();
-                dropdown.classList.add('show');
-                // Don't auto-focus the search input - let user click on it if they want to search
-                populateFilterOptions(filterId, dataKey, '');
-            });
-
-            // Handle direct typing in the main filter input
-            filterInput.addEventListener('input', (e) => {
-                const value = e.target.value;
-                // Clear the selected value when user types
-                filterInput.dataset.selectedValue = '';
-            });
-
-            // Handle backspace and delete to clear the filter
-            filterInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' || e.key === 'Delete') {
-                    // Allow normal backspace/delete behavior
-                    // The main input listener will handle the filter update
-                }
-            });
-
-            // Handle search input in dropdown
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                populateFilterOptions(filterId, dataKey, searchTerm);
-            });
-
-            // Handle option selection
-            optionsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('filter-option')) {
-                    const value = e.target.dataset.value;
-                    const text = e.target.textContent;
-                    
-                    filterInput.value = text;
-                    filterInput.dataset.selectedValue = value;
-                    
-                    dropdown.classList.remove('show');
-                    triggerFilterUpdate();
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!filterInput.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.remove('show');
-                }
-            });
-
-            // Handle keyboard navigation in dropdown
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const firstOption = optionsContainer.querySelector('.filter-option:not(.empty)');
-                    if (firstOption) {
-                        firstOption.click();
-                    }
-                } else if (e.key === 'Escape') {
-                    dropdown.classList.remove('show');
-                }
-            });
-        }
-
-        function populateFilterOptions(filterId, dataKey, searchTerm) {
-            const dropdown = document.getElementById(filterId.replace('filter', 'filter') + 'Dropdown');
-            const optionsContainer = dropdown.querySelector('.filter-options');
-            
-            let options = filterData[dataKey] || [];
-            
-            // Filter options based on search term
-            if (searchTerm) {
-                options = options.filter(option => 
-                    option.toLowerCase().includes(searchTerm)
-                );
+            if (filterManager) {
+                filterManager.clearFilters();
             }
-
-            // Clear existing options
-            optionsContainer.innerHTML = '';
-
-            // Add filtered options (removed "All" option)
-            if (options.length === 0) {
-                const emptyOption = document.createElement('div');
-                emptyOption.className = 'filter-option empty';
-                emptyOption.textContent = 'No matches found';
-                optionsContainer.appendChild(emptyOption);
-            } else {
-                options.forEach(option => {
-                    const optionElement = document.createElement('div');
-                    optionElement.className = 'filter-option';
-                    optionElement.dataset.value = option;
-                    optionElement.textContent = option;
-                    optionsContainer.appendChild(optionElement);
-                });
-            }
-        }
-
-        function closeAllDropdowns() {
-            const dropdowns = document.querySelectorAll('.filter-dropdown');
-            dropdowns.forEach(dropdown => dropdown.classList.remove('show'));
-        }
-
-        function triggerFilterUpdate() {
-            // Clear existing timer
-            if (filterTimer) {
-                clearTimeout(filterTimer);
-            }
-            
-            // Set new timer for debounced update
-            filterTimer = setTimeout(() => {
-                applyFilters();
-            }, 500); // 500ms delay like Qt app
-        }
-
-        function updateFilterData() {
-            console.log('🔄 Updating filter data from table manager data');
-            
-            // Safety check - ensure tableManager is initialized
-            if (!tableManager) {
-                console.warn('⚠️ TableManager not initialized yet, skipping filter data update');
-                return;
-            }
-            
-            // Get data from table manager instead of old invoiceData
-            const data = tableManager.getData();
-            
-            // Safety check - ensure data exists
-            if (!data || !Array.isArray(data)) {
-                console.warn('⚠️ No data available for filter update');
-                return;
-            }
-            
-            // Extract unique values from invoice data
-            filterData.customers = [...new Set(data.map(inv => inv.customer?.short_name).filter(Boolean))];
-            filterData.invoiceNumbers = [...new Set(data.map(inv => inv.invoice_number).filter(Boolean))];
-            filterData.taxInvoices = [...new Set(data.map(inv => inv.tax_invoice_number).filter(Boolean))];
-
-            filterData.itemCodes = [...new Set(data.map(inv => inv.item_name).filter(Boolean))];
-            filterData.deliveryNotes = [...new Set(data.map(inv => inv.delivery_note).filter(Boolean))];
-            filterData.locations = [...new Set(data.map(inv => inv.delivered_location).filter(Boolean))];
-            
-            console.log('✅ Filter data updated:', filterData);
         }
 
         // Action button functions - Using new modular system
