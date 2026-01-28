@@ -9,139 +9,9 @@
     <link rel="stylesheet" href="css/table-sorting.css">
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
+    <script src="js/common/filter-manager.js"></script>
     <style>
         /* Page-specific styles only - common styles moved to common.css */
-
-        /* Filter Controls */
-        .filter-controls {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .filter-input {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            min-width: 120px;
-            transition: border-color 0.3s ease;
-        }
-
-        .filter-input:focus {
-            outline: none;
-            border-color: var(--focus-color);
-        }
-
-        .filter-select {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            min-width: 120px;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--focus-color);
-        }
-
-        /* Searchable Dropdown Styling */
-        .searchable-dropdown {
-            position: relative;
-            width: 100%;
-        }
-
-        .dropdown-options {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 4px 4px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        .dropdown-option {
-            padding: 8px 12px;
-            cursor: pointer;
-            color: var(--text-primary);
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-        }
-
-        .dropdown-option:hover {
-            background-color: var(--focus-color);
-        }
-
-        .dropdown-option.selected {
-            background-color: var(--focus-color);
-            color: var(--text-primary);
-        }
-
-        .selected-items {
-            margin-top: 5px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-
-        .selected-item {
-            background: var(--focus-color);
-            color: var(--text-primary);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .selected-item .remove-btn {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 14px;
-            padding: 0;
-            margin: 0;
-            line-height: 1;
-        }
-
-        .selected-item .remove-btn:hover {
-            color: #f44336;
-        }
 
         /* Date Range Buttons */
         .date-range-buttons {
@@ -388,42 +258,8 @@
                         <button class="date-btn" onclick="setDateRange('LFY')">Last Financial Year</button>
                     </div>
                 </div>
-                <div class="filter-group">
-                    <label>Date From:</label>
-                    <input type="date" id="dateFrom" class="filter-input" onchange="updateDashboard()">
-                </div>
-                <div class="filter-group">
-                    <label>Date To:</label>
-                    <input type="date" id="dateTo" class="filter-input" onchange="updateDashboard()">
-                </div>
-                <div class="filter-group">
-                    <label>Customer:</label>
-                    <div class="searchable-dropdown">
-                        <input type="text" id="customerFilter" class="filter-input" placeholder="Type to search customers..." oninput="filterDropdown('customerFilter', 'customerDropdown')" onfocus="showDropdown('customerDropdown')">
-                        <div id="customerDropdown" class="dropdown-options" style="display: none;"></div>
-                        <div id="customerSelected" class="selected-items"></div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>Garment Type:</label>
-                    <div class="searchable-dropdown">
-                        <input type="text" id="garmentFilter" class="filter-input" placeholder="Type to search garments..." oninput="filterDropdown('garmentFilter', 'garmentDropdown')" onfocus="showDropdown('garmentDropdown')">
-                        <div id="garmentDropdown" class="dropdown-options" style="display: none;"></div>
-                        <div id="garmentSelected" class="selected-items"></div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>Location:</label>
-                    <div class="searchable-dropdown">
-                        <input type="text" id="locationFilter" class="filter-input" placeholder="Type to search locations..." oninput="filterDropdown('locationFilter', 'locationDropdown')" onfocus="showDropdown('locationDropdown')">
-                        <div id="locationDropdown" class="dropdown-options" style="display: none;"></div>
-                        <div id="locationSelected" class="selected-items"></div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <button class="btn btn-secondary" onclick="clearDashboardFilters()">Clear Filters</button>
-                </div>
             </div>
+            <div id="filterControls"></div>
         </div>
 
         <!-- Loading -->
@@ -571,6 +407,13 @@
     <script>
         // Global variables
         let charts = {};
+        let filterManager = null;
+        let dashboardFilterOptions = {
+            customers: [],
+            garments: [],
+            locations: []
+        };
+        let isUpdatingDashboard = false; // Flag to prevent infinite loops
 
         // Theme-aware color helper
         function getThemeColors() {
@@ -604,12 +447,13 @@
                 return;
             }
             
-            // Set default date range (last 30 days)
+            // Set default date range (last 30 days) - will be set in FilterManager after initialization
             const today = new Date();
             const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
             
-            document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
-            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            // Store default dates to set in FilterManager after initialization
+            window.defaultDateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+            window.defaultDateTo = today.toISOString().split('T')[0];
             
             // Set active date button
             document.querySelector('.date-btn').classList.add('active');
@@ -659,8 +503,11 @@
                     }
                 });
                 
-                // Load filter options
-                await loadFilterOptions();
+                // Load filter options (without triggering updates)
+                await loadFilterOptions(false);
+                
+                // Initialize FilterManager after options are loaded
+                initializeFilterManager();
                 
                 // Update dashboard
                 await updateDashboard();
@@ -671,13 +518,20 @@
         }
 
         async function updateDashboard() {
+            // Prevent infinite loops
+            if (isUpdatingDashboard) {
+                console.log('⚠️ Dashboard update already in progress, skipping...');
+                return;
+            }
+            
+            isUpdatingDashboard = true;
             showLoading();
             
             try {
                 const filters = getFilters();
                 
-                // Reload filter options when date range changes
-                await loadFilterOptions();
+                // Reload filter options when date range changes (without triggering filter updates)
+                await loadFilterOptions(false);
                 
                 // Fetch all dashboard data in parallel
                 const [
@@ -745,25 +599,38 @@
             } catch (error) {
                 console.error('Error updating dashboard:', error);
                 hideLoading();
+            } finally {
+                isUpdatingDashboard = false;
             }
         }
 
         function getFilters() {
-            // Get selected values from searchable dropdowns
-            const getSelectedValues = (selectedElementId) => {
-                const selectedElement = document.getElementById(selectedElementId);
-                if (!selectedElement) return '';
-                const selectedItems = selectedElement.querySelectorAll('.selected-item');
-                const values = Array.from(selectedItems).map(item => item.dataset.value);
-                return values.filter(value => value !== '').join(',');
-            };
+            // Get filter values from FilterManager
+            let customer = '';
+            let garment = '';
+            let location = '';
+            let dateFrom = '';
+            let dateTo = '';
+            
+            if (filterManager) {
+                const filterValues = filterManager.getFilterValues();
+                customer = filterValues.customer ? (Array.isArray(filterValues.customer) ? filterValues.customer.join(',') : filterValues.customer) : '';
+                garment = filterValues.garment ? (Array.isArray(filterValues.garment) ? filterValues.garment.join(',') : filterValues.garment) : '';
+                location = filterValues.location ? (Array.isArray(filterValues.location) ? filterValues.location.join(',') : filterValues.location) : '';
+                dateFrom = filterValues.dateFrom || '';
+                dateTo = filterValues.dateTo || '';
+            } else {
+                // Fallback: return empty if FilterManager not initialized
+                dateFrom = '';
+                dateTo = '';
+            }
             
             return {
-                dateFrom: document.getElementById('dateFrom').value,
-                dateTo: document.getElementById('dateTo').value,
-                customer: getSelectedValues('customerSelected'),
-                garment: getSelectedValues('garmentSelected'),
-                location: getSelectedValues('locationSelected')
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                customer: customer,
+                garment: garment,
+                location: location
             };
         }
 
@@ -1640,18 +1507,48 @@
                 case 'LFY':
                     startDate = new Date(today.getFullYear() - 1, 0, 1);
                     const endDate = new Date(today.getFullYear() - 1, 11, 31);
-                    document.getElementById('dateFrom').value = startDate.toISOString().split('T')[0];
-                    document.getElementById('dateTo').value = endDate.toISOString().split('T')[0];
+                    const lfyFromValue = startDate.toISOString().split('T')[0];
+                    const lfyToValue = endDate.toISOString().split('T')[0];
+                    
+                    // Update FilterManager if it exists
+                    if (filterManager) {
+                        const dateFromInput = document.getElementById('filter_dateFrom');
+                        const dateToInput = document.getElementById('filter_dateTo');
+                        if (dateFromInput) {
+                            dateFromInput.value = lfyFromValue;
+                            filterManager.filterValues.dateFrom = lfyFromValue;
+                        }
+                        if (dateToInput) {
+                            dateToInput.value = lfyToValue;
+                            filterManager.filterValues.dateTo = lfyToValue;
+                        }
+                    }
+                    
                     updateDashboard();
                     return;
             }
             
-            document.getElementById('dateFrom').value = startDate.toISOString().split('T')[0];
-            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            const dateFromValue = startDate.toISOString().split('T')[0];
+            const dateToValue = today.toISOString().split('T')[0];
+            
+            // Update FilterManager if it exists
+            if (filterManager) {
+                const dateFromInput = document.getElementById('filter_dateFrom');
+                const dateToInput = document.getElementById('filter_dateTo');
+                if (dateFromInput) {
+                    dateFromInput.value = dateFromValue;
+                    filterManager.filterValues.dateFrom = dateFromValue;
+                }
+                if (dateToInput) {
+                    dateToInput.value = dateToValue;
+                    filterManager.filterValues.dateTo = dateToValue;
+                }
+            }
+            
             updateDashboard();
         }
 
-        async function loadFilterOptions() {
+        async function loadFilterOptions(triggerUpdate = true) {
             try {
                 const filters = getFilters();
                 const params = new URLSearchParams();
@@ -1662,116 +1559,164 @@
                 const response = await fetch(`${getApiBaseUrl()}/api/dashboard/filter-options?${params}`);
                 const data = await response.json();
                 
-                // Store options globally for searchable dropdowns
-                window.filterOptions = {
+                // Store options for FilterManager
+                dashboardFilterOptions = {
                     customers: data.customers || [],
                     garments: data.garments || [],
                     locations: data.locations || []
                 };
+                
+                // Update FilterManager with new options if it exists
+                // Always update the data to refresh options, but prevent callback from firing
+                if (filterManager) {
+                    // Create dummy data array with all unique values for each filter
+                    const dummyData = [];
+                    dashboardFilterOptions.customers.forEach(c => {
+                        dummyData.push({ customer: c, garment: null, location: null });
+                    });
+                    dashboardFilterOptions.garments.forEach(g => {
+                        dummyData.push({ customer: null, garment: g, location: null });
+                    });
+                    dashboardFilterOptions.locations.forEach(l => {
+                        dummyData.push({ customer: null, garment: null, location: l });
+                    });
+                    
+                    // Temporarily disable the callback to prevent infinite loop when loading options
+                    const originalCallback = filterManager.onFilterChange;
+                    filterManager.onFilterChange = () => {
+                        // Only trigger update if explicitly requested
+                        if (triggerUpdate && !isUpdatingDashboard) {
+                            originalCallback();
+                        }
+                    };
+                    filterManager.updateData(dummyData);
+                    filterManager.onFilterChange = originalCallback; // Restore callback
+                }
 
             } catch (error) {
                 console.error('Error loading filter options:', error);
             }
         }
-
-        // Searchable Dropdown Functions
-        function showDropdown(dropdownId) {
-            const dropdown = document.getElementById(dropdownId);
-            if (!dropdown) return;
+        
+        /**
+         * Initialize FilterManager with filter configuration
+         */
+        function initializeFilterManager() {
+            console.log('🔄 Initializing FilterManager for Dashboard...');
             
-            const filterType = dropdownId.replace('Dropdown', '');
-            const options = window.filterOptions?.[filterType + 's'] || [];
-            
-            dropdown.innerHTML = '';
-            options.forEach(option => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'dropdown-option';
-                optionElement.textContent = option;
-                optionElement.dataset.value = option;
-                optionElement.onclick = () => selectOption(filterType, option);
-                dropdown.appendChild(optionElement);
+            // Create dummy data from filter options for FilterManager to extract options
+            const dummyData = [];
+            dashboardFilterOptions.customers.forEach(c => {
+                dummyData.push({ customer: c, garment: null, location: null });
+            });
+            dashboardFilterOptions.garments.forEach(g => {
+                dummyData.push({ customer: null, garment: g, location: null });
+            });
+            dashboardFilterOptions.locations.forEach(l => {
+                dummyData.push({ customer: null, garment: null, location: l });
             });
             
-            dropdown.style.display = 'block';
-        }
-
-        function filterDropdown(inputId, dropdownId) {
-            const input = document.getElementById(inputId);
-            const dropdown = document.getElementById(dropdownId);
-            if (!input || !dropdown) return;
-            
-            const searchTerm = input.value.toLowerCase();
-            const filterType = dropdownId.replace('Dropdown', '');
-            const options = window.filterOptions?.[filterType + 's'] || [];
-            
-            dropdown.innerHTML = '';
-            const filteredOptions = options.filter(option => 
-                option.toLowerCase().includes(searchTerm)
-            );
-            
-            filteredOptions.forEach(option => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'dropdown-option';
-                optionElement.textContent = option;
-                optionElement.dataset.value = option;
-                optionElement.onclick = () => selectOption(filterType, option);
-                dropdown.appendChild(optionElement);
-            });
-            
-            dropdown.style.display = filteredOptions.length > 0 ? 'block' : 'none';
-        }
-
-        function selectOption(filterType, value) {
-            const selectedElement = document.getElementById(filterType + 'Selected');
-            const input = document.getElementById(filterType + 'Filter');
-            const dropdown = document.getElementById(filterType + 'Dropdown');
-            
-            if (!selectedElement || !input) return;
-            
-            // Check if already selected
-            const existingItems = selectedElement.querySelectorAll('.selected-item');
-            const alreadySelected = Array.from(existingItems).some(item => item.dataset.value === value);
-            
-            if (!alreadySelected) {
-                // Add selected item
-                const selectedItem = document.createElement('div');
-                selectedItem.className = 'selected-item';
-                selectedItem.dataset.value = value;
-                selectedItem.innerHTML = `
-                    ${value}
-                    <button class="remove-btn" onclick="removeSelectedItem('${filterType}', '${value}')">&times;</button>
-                `;
-                selectedElement.appendChild(selectedItem);
-            }
-            
-            // Clear input and hide dropdown
-            input.value = '';
-            dropdown.style.display = 'none';
-            
-            // Update dashboard
-            updateDashboard();
-        }
-
-        function removeSelectedItem(filterType, value) {
-            const selectedElement = document.getElementById(filterType + 'Selected');
-            if (!selectedElement) return;
-            
-            const itemToRemove = selectedElement.querySelector(`[data-value="${value}"]`);
-            if (itemToRemove) {
-                itemToRemove.remove();
-                updateDashboard();
-            }
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdowns = document.querySelectorAll('.dropdown-options');
-            dropdowns.forEach(dropdown => {
-                if (!dropdown.contains(event.target) && !event.target.closest('.searchable-dropdown')) {
-                    dropdown.style.display = 'none';
+            const filterConfig = [
+                {
+                    id: 'dateFrom',
+                    type: 'date',
+                    label: 'Date From',
+                    placeholder: 'Select start date',
+                    rangeType: 'from',
+                    customFilter: () => true // Server-side filtering, so always return true
+                },
+                {
+                    id: 'dateTo',
+                    type: 'date',
+                    label: 'Date To',
+                    placeholder: 'Select end date',
+                    rangeType: 'to',
+                    customFilter: () => true // Server-side filtering, so always return true
+                },
+                {
+                    id: 'customer',
+                    type: 'dropdown',
+                    label: 'Customer',
+                    placeholder: 'Select Customer',
+                    multiSelect: true,
+                    customExtract: (item) => item.customer || null,
+                    customFilter: () => true // Server-side filtering, so always return true
+                },
+                {
+                    id: 'garment',
+                    type: 'dropdown',
+                    label: 'Garment Type',
+                    placeholder: 'Select Garment Type',
+                    multiSelect: true,
+                    customExtract: (item) => item.garment || null,
+                    customFilter: () => true // Server-side filtering, so always return true
+                },
+                {
+                    id: 'location',
+                    type: 'dropdown',
+                    label: 'Location',
+                    placeholder: 'Select Location',
+                    multiSelect: true,
+                    customExtract: (item) => item.location || null,
+                    customFilter: () => true // Server-side filtering, so always return true
                 }
+            ];
+            
+            filterManager = new FilterManager({
+                containerId: 'filterControls',
+                filters: filterConfig,
+                data: dummyData,
+                onFilterChange: (filteredData, filterValues) => {
+                    console.log('🔍 Dashboard filters changed, updating dashboard...');
+                    // For dashboard, we use server-side filtering, so just update the dashboard
+                    // Only update if not already updating (prevent infinite loops)
+                    if (!isUpdatingDashboard) {
+                        updateDashboard();
+                    }
+                },
+                debounceDelay: 500
             });
-        });
+            
+            // Set initial date values from default dates or existing filter values
+            const dateFromValue = window.defaultDateFrom || '';
+            const dateToValue = window.defaultDateTo || '';
+            
+            if (dateFromValue) {
+                const filterInput = document.getElementById('filter_dateFrom');
+                if (filterInput) {
+                    filterInput.value = dateFromValue;
+                    filterManager.filterValues.dateFrom = dateFromValue;
+                }
+            }
+            if (dateToValue) {
+                const filterInput = document.getElementById('filter_dateTo');
+                if (filterInput) {
+                    filterInput.value = dateToValue;
+                    filterManager.filterValues.dateTo = dateToValue;
+                }
+            }
+            
+            // Add Clear Filter button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-secondary';
+            clearButton.textContent = 'Clear Filters';
+            clearButton.onclick = () => {
+                clearDashboardFilters();
+            };
+            
+            // Append button to filter controls
+            const filterControls = document.getElementById('filterControls');
+            if (filterControls) {
+                const filterRow = filterControls.querySelector('.filter-row');
+                if (filterRow) {
+                    filterRow.appendChild(clearButton);
+                }
+            }
+            
+            console.log('✅ FilterManager initialized for Dashboard');
+        }
+
+        // Searchable Dropdown Functions removed - now using FilterManager
 
         function updateChangeIndicator(elementId, change) {
             const element = document.getElementById(elementId);
@@ -1822,24 +1767,13 @@
         };
 
         function clearDashboardFilters() {
-            // Clear date inputs
-            document.getElementById('dateFrom').value = '';
-            document.getElementById('dateTo').value = '';
+            // Clear FilterManager filters
+            if (filterManager) {
+                filterManager.clearFilters();
+            }
             
-            // Clear filter inputs
-            document.getElementById('customerFilter').value = '';
-            document.getElementById('garmentFilter').value = '';
-            document.getElementById('locationFilter').value = '';
-            
-            // Clear selected items
-            document.getElementById('customerSelected').innerHTML = '';
-            document.getElementById('garmentSelected').innerHTML = '';
-            document.getElementById('locationSelected').innerHTML = '';
-            
-            // Reset selected customers, garments, and locations arrays
-            selectedCustomers = [];
-            selectedGarments = [];
-            selectedLocations = [];
+            // Remove active class from date range buttons
+            document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
             
             // Update dashboard with cleared filters
             updateDashboard();
