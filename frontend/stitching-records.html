@@ -630,6 +630,7 @@
     </style>
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
+    <script src="js/common/filter-manager.js"></script>
     <script src="js/table-sorting.js"></script>
 </head>
 <body>
@@ -641,50 +642,8 @@
     <!-- Main Content -->
     <main class="main-content">
 
-        <!-- Enhanced Filter Controls like Qt App -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>PL#:</label>
-                    <input type="text" id="filterPLNumber" class="filter-input" placeholder="Filter by PL#">
-                </div>
-                <div class="filter-group">
-                    <label>Serial#:</label>
-                    <input type="text" id="filterSerialNumber" class="filter-input" placeholder="Filter by Serial#">
-                </div>
-                <div class="filter-group">
-                    <label>Fabric:</label>
-                    <input type="text" id="filterFabricName" class="filter-input" placeholder="Filter by Fabric">
-                </div>
-                <div class="filter-group">
-                    <label>Customer:</label>
-                    <input type="text" id="filterCustomer" class="filter-input" placeholder="Filter by Customer">
-                </div>
-                <div class="filter-group">
-                    <label>From:</label>
-                    <input type="text" id="filterDateFrom" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
-                </div>
-                <div class="filter-group">
-                    <label>To:</label>
-                    <input type="text" id="filterDateTo" class="filter-input" placeholder="DD/MM/YY" oninput="formatDateInput(this)">
-                </div>
-                <div class="filter-group">
-                    <label>Delivery Status:</label>
-                    <div class="radio-group">
-                        <input type="radio" id="showAllRecords" name="deliveryStatus" value="all" checked onchange="loadStitchingData()">
-                        <label for="showAllRecords">All Records</label>
-                        <input type="radio" id="showDelivered" name="deliveryStatus" value="delivered" onchange="loadStitchingData()">
-                        <label for="showDelivered">Delivered Only</label>
-                        <input type="radio" id="showUndelivered" name="deliveryStatus" value="undelivered" onchange="loadStitchingData()">
-                        <label for="showUndelivered">Undelivered Only</label>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
-                    <button onclick="clearFilters()" class="btn btn-secondary">Clear</button>
-                </div>
-            </div>
-        </div>
+        <!-- Filter Controls -->
+        <div class="filter-controls" id="filterControls"></div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
@@ -794,10 +753,12 @@
     <script>
         // Stitching Records Functions
         let stitchingData = [];
+        let allStitchingData = []; // Store all data for client-side filtering
         let selectedRows = [];
         let currentPage = 1;
         const itemsPerPage = 50;
         let currentStitchingRecord = null;
+        let filterManager = null;
 
 
         // Authentication functions moved to js/common/utils.js
@@ -814,14 +775,10 @@
                 return;
             }
             
-            // Set default filter to undelivered items
-            const undeliveredRadio = document.querySelector('input[name="deliveryStatus"][value="undelivered"]');
-            if (undeliveredRadio) {
-                undeliveredRadio.checked = true;
-                console.log('✅ Set default filter to undelivered items');
-            }
-            
             await loadStitchingData();
+            
+            // Initialize FilterManager after data is loaded
+            initializeFilterManager();
         });
 
         function formatDateForAPI(dateString) {
@@ -841,6 +798,141 @@
 
         // Formatting functions moved to js/common/utils.js
 
+        /**
+         * Initialize FilterManager with filter configuration
+         */
+        function initializeFilterManager() {
+            console.log('🔄 Initializing FilterManager...');
+            
+            const filterConfig = [
+                {
+                    id: 'plNumber',
+                    type: 'dropdown',
+                    label: 'PL#',
+                    placeholder: 'Select PL#',
+                    multiSelect: true,
+                    dataKey: 'packing_list_number'
+                },
+                {
+                    id: 'serialNumber',
+                    type: 'dropdown',
+                    label: 'Serial#',
+                    placeholder: 'Select Serial#',
+                    multiSelect: true,
+                    dataKey: 'stitching_invoice_number'
+                },
+                {
+                    id: 'fabricName',
+                    type: 'dropdown',
+                    label: 'Fabric',
+                    placeholder: 'Select Fabric',
+                    multiSelect: true,
+                    dataKey: 'item_name'
+                },
+                {
+                    id: 'customer',
+                    type: 'dropdown',
+                    label: 'Customer',
+                    placeholder: 'Select Customer',
+                    multiSelect: true,
+                    dataKey: 'customer_name'
+                },
+                {
+                    id: 'dateFrom',
+                    type: 'date',
+                    label: 'From',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'from',
+                    customFilter: (record, filterValue) => {
+                        if (!filterValue || filterValue.length !== 8) return true;
+                        const recordDate = new Date(record.created_at);
+                        if (isNaN(recordDate.getTime())) return true;
+                        return isDateInRange(recordDate, filterValue, 'from');
+                    }
+                },
+                {
+                    id: 'dateTo',
+                    type: 'date',
+                    label: 'To',
+                    placeholder: 'DD/MM/YY',
+                    rangeType: 'to',
+                    customFilter: (record, filterValue) => {
+                        if (!filterValue || filterValue.length !== 8) return true;
+                        const recordDate = new Date(record.created_at);
+                        if (isNaN(recordDate.getTime())) return true;
+                        return isDateInRange(recordDate, filterValue, 'to');
+                    }
+                },
+                {
+                    id: 'deliveryStatus',
+                    type: 'radio',
+                    label: 'Delivery Status',
+                    options: [
+                        { value: 'all', label: 'All Records' },
+                        { value: 'delivered', label: 'Delivered Only' },
+                        { value: 'undelivered', label: 'Undelivered Only' }
+                    ],
+                    defaultValue: 'undelivered', // Default to undelivered as per original behavior
+                    customFilter: (record, filterValue) => {
+                        // Check if record has packing_list_number (delivered) or not (undelivered)
+                        const hasPackingList = record.packing_list_number && 
+                                             record.packing_list_number.trim() !== '';
+                        
+                        if (filterValue === 'delivered') {
+                            return hasPackingList;
+                        } else if (filterValue === 'undelivered') {
+                            return !hasPackingList;
+                        } else {
+                            // 'all' - show all records
+                            return true;
+                        }
+                    }
+                }
+            ];
+            
+            filterManager = new FilterManager({
+                containerId: 'filterControls',
+                filters: filterConfig,
+                data: allStitchingData || [],
+                onFilterChange: (filteredData, filterValues) => {
+                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
+                    // Update table with filtered data
+                    stitchingData = filteredData;
+                    currentPage = 1; // Reset to first page when filters change
+                    populateStitchingTreeview();
+                },
+                debounceDelay: 500
+            });
+            
+            // Add Clear Filter button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-secondary';
+            clearButton.textContent = 'Clear';
+            clearButton.onclick = () => {
+                filterManager.clearFilters();
+                // After clearing, set default back to undelivered
+                setTimeout(() => {
+                    const undeliveredRadio = document.querySelector('input[name="radio_deliveryStatus"][value="undelivered"]');
+                    if (undeliveredRadio) {
+                        undeliveredRadio.checked = true;
+                        filterManager.filterValues.deliveryStatus = 'undelivered';
+                        filterManager.triggerFilterUpdate();
+                    }
+                }, 100);
+            };
+            
+            // Append button to filter controls
+            const filterControls = document.getElementById('filterControls');
+            if (filterControls) {
+                const filterRow = filterControls.querySelector('.filter-row');
+                if (filterRow) {
+                    filterRow.appendChild(clearButton);
+                }
+            }
+            
+            console.log('✅ FilterManager initialized');
+        }
+
         async function loadStitchingData() {
             console.log('🔄 loadStitchingData called');
             
@@ -854,30 +946,10 @@
             tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td></tr>';
             
             try {
-                // Build query parameters from filters
-                const params = new URLSearchParams();
-                
-                const plNumberFilter = document.getElementById('filterPLNumber')?.value;
-                const serialNumberFilter = document.getElementById('filterSerialNumber')?.value;
-                const fabricNameFilter = document.getElementById('filterFabricName')?.value;
-                const customerFilter = document.getElementById('filterCustomer')?.value;
-                const dateFrom = document.getElementById('filterDateFrom')?.value;
-                const dateTo = document.getElementById('filterDateTo')?.value;
-                const deliveryStatusFilter = document.querySelector('input[name="deliveryStatus"]:checked')?.value;
-                
-                if (plNumberFilter) params.append('pl_number', plNumberFilter);
-                if (serialNumberFilter) params.append('serial_number', serialNumberFilter);
-                if (fabricNameFilter) params.append('fabric_name', fabricNameFilter);
-                if (customerFilter) params.append('customer', customerFilter);
-                if (dateFrom) params.append('date_from', formatDateForAPI(dateFrom));
-                if (dateTo) params.append('date_to', formatDateForAPI(dateTo));
-                if (deliveryStatusFilter === 'delivered') params.append('delivered_only', 'true');
-                if (deliveryStatusFilter === 'undelivered') params.append('undelivered_only', 'true');
-                
-                console.log('🌐 Fetching /api/stitching with filters...');
+                // Load all data without filters (client-side filtering)
+                console.log('🌐 Fetching /api/stitching (all data)...');
                 const apiBaseUrl = getApiBaseUrl();
-                const apiUrl = `${apiBaseUrl}/api/stitching?${params.toString()}`;
-                console.log('🌐 Full API URL:', apiUrl);
+                const apiUrl = `${apiBaseUrl}/api/stitching`;
                 
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -890,10 +962,21 @@
                 console.log('📡 Response status:', response.status);
                 
                 if (response.ok) {
-                    stitchingData = await response.json();
-                    console.log('📊 Received stitching data:', stitchingData.length, 'records');
-                    currentPage = 1; // Reset to first page when new data is loaded
-                    populateStitchingTreeview();
+                    const data = await response.json();
+                    console.log('📊 Received stitching data:', data.length, 'records');
+                    
+                    // Store all data for filtering
+                    allStitchingData = data;
+                    
+                    // Update FilterManager with new data (it will apply filters and update table)
+                    if (filterManager) {
+                        filterManager.updateData(data);
+                    } else {
+                        // Fallback: if FilterManager not initialized yet, just set data
+                        stitchingData = data;
+                        currentPage = 1;
+                        populateStitchingTreeview();
+                    }
                 } else {
                     console.error('❌ Failed to load stitching data, status:', response.status);
                     const errorText = await response.text();
@@ -1447,18 +1530,25 @@
         }
 
         function applyFilters() {
-            loadStitchingData();
+            // Filters are now handled by FilterManager
+            if (filterManager) {
+                filterManager.triggerFilterUpdate();
+            }
         }
 
         function clearFilters() {
-            document.getElementById('filterPLNumber').value = '';
-            document.getElementById('filterSerialNumber').value = '';
-            document.getElementById('filterFabricName').value = '';
-            document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            document.getElementById('showAllRecords').checked = true;
-            loadStitchingData();
+            if (filterManager) {
+                filterManager.clearFilters();
+                // After clearing, set default back to undelivered
+                setTimeout(() => {
+                    const undeliveredRadio = document.querySelector('input[name="radio_deliveryStatus"][value="undelivered"]');
+                    if (undeliveredRadio) {
+                        undeliveredRadio.checked = true;
+                        filterManager.filterValues.deliveryStatus = 'undelivered';
+                        filterManager.triggerFilterUpdate();
+                    }
+                }, 100);
+            }
         }
 
         function refreshStitchingTable() {
@@ -1981,27 +2071,6 @@
         }
 
         // API utilities moved to js/common/utils.js
-
-
-
-        function applyFilters() {
-            loadStitchingData();
-        }
-
-        function clearFilters() {
-            document.getElementById('filterPLNumber').value = '';
-            document.getElementById('filterSerialNumber').value = '';
-            document.getElementById('filterFabricName').value = '';
-            document.getElementById('filterCustomer').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
-            document.getElementById('showAllRecords').checked = true;
-            loadStitchingData();
-        }
-
-        function refreshStitchingTable() {
-            loadStitchingData();
-        }
 
         function exportStitchingRecords() {
             // TODO: Implement export functionality
