@@ -1,6 +1,7 @@
 /**
  * Table Manager - Modular component for efficient table operations
  * Handles optimistic updates, partial data updates, and performance optimizations
+ * Uses PaginationComponent for pagination functionality
  */
 class TableManager {
     constructor(tableId, options = {}) {
@@ -17,6 +18,10 @@ class TableManager {
         this.rowIdentifier = options.rowIdentifier || 'id';
         this.optimisticUpdates = options.optimisticUpdates !== false;
         
+        // Pagination component
+        this.paginationComponent = null;
+        this.paginationContainerId = options.paginationContainerId || 'paginationContainer';
+        
         // Performance tracking
         this.lastUpdateTime = 0;
         this.updateQueue = [];
@@ -32,7 +37,98 @@ class TableManager {
             return;
         }
         
+        console.log(`🔍 Checking for pagination container: ${this.paginationContainerId}`);
+        
+        // Initialize PaginationComponent if container exists
+        // Try multiple times to ensure DOM is ready
+        const tryInitializePagination = () => {
+            const container = document.getElementById(this.paginationContainerId);
+            if (container) {
+                console.log(`✅ Pagination container found: ${this.paginationContainerId}`);
+                this.initializePagination();
+            } else {
+                console.warn(`⚠️ Pagination container not found: ${this.paginationContainerId}. Will retry...`);
+            }
+        };
+        
+        // Try immediately
+        tryInitializePagination();
+        
+        // Also try after a short delay
+        setTimeout(tryInitializePagination, 100);
+        
+        // And try after a longer delay as fallback
+        setTimeout(tryInitializePagination, 500);
+        
         console.log(`✅ TableManager initialized for ${this.tableId}`);
+    }
+    
+    /**
+     * Initialize PaginationComponent
+     */
+    initializePagination() {
+        console.log(`🔍 initializePagination() called for container: ${this.paginationContainerId}`);
+        
+        // Check if PaginationComponent class is available
+        if (typeof PaginationComponent === 'undefined') {
+            console.error(`❌ PaginationComponent class is not defined! Make sure pagination.js is loaded before table-manager.js`);
+            return false;
+        }
+        
+        const container = document.getElementById(this.paginationContainerId);
+        if (!container) {
+            console.warn(`⚠️ Pagination container not found: ${this.paginationContainerId}. Will retry when data is loaded.`);
+            return false;
+        }
+        
+        // Don't re-initialize if already exists
+        if (this.paginationComponent) {
+            console.log(`ℹ️ PaginationComponent already initialized for ${this.paginationContainerId}`);
+            return true;
+        }
+        
+        console.log(`🔄 Creating PaginationComponent for container: ${this.paginationContainerId}`);
+        console.log(`   - Current page: ${this.currentPage}`);
+        console.log(`   - Items per page: ${this.itemsPerPage}`);
+        console.log(`   - Data length: ${this.filteredData.length}`);
+        
+        try {
+            this.paginationComponent = new PaginationComponent({
+                containerId: this.paginationContainerId,
+                currentPage: this.currentPage,
+                itemsPerPage: this.itemsPerPage,
+                dataLength: this.filteredData.length, // Use current filtered data length
+                onPageChange: (page) => {
+                    console.log(`📄 Page changed to: ${page}`);
+                    this.currentPage = page;
+                    // Re-render with new page
+                    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                    const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
+                    const pageData = this.filteredData.slice(startIndex, endIndex);
+                    
+                    this.tableBody.innerHTML = '';
+                    if (pageData.length === 0) {
+                        const emptyRow = document.createElement('tr');
+                        emptyRow.innerHTML = '<td colspan="15" style="text-align: center; padding: 20px; color: var(--text-secondary);">No data found</td>';
+                        this.tableBody.appendChild(emptyRow);
+                    } else {
+                        pageData.forEach((item, index) => {
+                            const row = this.createRow(item, startIndex + index);
+                            this.tableBody.appendChild(row);
+                        });
+                    }
+                }
+            });
+            
+            console.log(`✅ PaginationComponent created successfully`);
+            console.log(`   - Container element:`, container);
+            console.log(`   - Container innerHTML length:`, container.innerHTML ? container.innerHTML.length : 0);
+            return true;
+        } catch (error) {
+            console.error(`❌ Error initializing PaginationComponent:`, error);
+            console.error(`   - Error stack:`, error.stack);
+            return false;
+        }
     }
     
     /**
@@ -42,6 +138,22 @@ class TableManager {
         this.data = data || [];
         this.filteredData = [...this.data];
         this.currentPage = 1;
+        
+        // Ensure pagination is initialized (in case it wasn't ready before)
+        if (!this.paginationComponent) {
+            console.log(`🔄 Attempting to initialize pagination in setData()...`);
+            const initialized = this.initializePagination();
+            if (!initialized) {
+                console.warn(`⚠️ Pagination initialization failed. Will retry on next render.`);
+            }
+        }
+        
+        // Update pagination component if it exists
+        if (this.paginationComponent) {
+            this.paginationComponent.updateDataLength(this.filteredData.length);
+            this.paginationComponent.reset();
+        }
+        
         this.render();
         this.onDataUpdate(this.data);
     }
@@ -245,7 +357,9 @@ class TableManager {
     render() {
         if (!this.tableBody) return;
         
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        // Get current page from PaginationComponent if available, otherwise use internal
+        const page = this.paginationComponent ? this.paginationComponent.getCurrentPage() : this.currentPage;
+        const startIndex = (page - 1) * this.itemsPerPage;
         const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
         const pageData = this.filteredData.slice(startIndex, endIndex);
         
@@ -255,15 +369,34 @@ class TableManager {
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = '<td colspan="15" style="text-align: center; padding: 20px; color: var(--text-secondary);">No data found</td>';
             this.tableBody.appendChild(emptyRow);
-            return;
+        } else {
+            pageData.forEach((item, index) => {
+                const row = this.createRow(item, startIndex + index);
+                this.tableBody.appendChild(row);
+            });
         }
         
-        pageData.forEach((item, index) => {
-            const row = this.createRow(item, startIndex + index);
-            this.tableBody.appendChild(row);
-        });
-        
-        this.updatePagination();
+        // Update pagination component if it exists
+        if (this.paginationComponent) {
+            this.paginationComponent.updateDataLength(this.filteredData.length);
+            // Sync current page if it changed
+            if (this.paginationComponent.getCurrentPage() !== page) {
+                this.paginationComponent.goToPage(page);
+            } else {
+                this.paginationComponent.update();
+            }
+        } else {
+            // Try to initialize pagination if it doesn't exist yet
+            console.log(`🔄 Attempting to initialize pagination in render()...`);
+            const initialized = this.initializePagination();
+            if (initialized && this.paginationComponent) {
+                this.paginationComponent.updateDataLength(this.filteredData.length);
+                this.paginationComponent.update();
+            } else {
+                // Fallback: Update old pagination controls if PaginationComponent not available
+                this.updatePagination();
+            }
+        }
     }
     
     /**
@@ -309,110 +442,40 @@ class TableManager {
     }
     
     /**
-     * Update pagination controls
+     * Update pagination controls (legacy method - kept for backward compatibility)
+     * This is now handled by PaginationComponent, but kept as fallback
      */
     updatePagination() {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
-        
-        // Update pagination info
-        const startElement = document.getElementById('paginationStart');
-        const endElement = document.getElementById('paginationEnd');
-        const totalElement = document.getElementById('paginationTotal');
-        
-        if (startElement) startElement.textContent = this.filteredData.length > 0 ? startIndex + 1 : 0;
-        if (endElement) endElement.textContent = endIndex;
-        if (totalElement) totalElement.textContent = this.filteredData.length;
-        
-        // Update button states
-        const firstBtn = document.getElementById('firstPage');
-        const prevBtn = document.getElementById('prevPage');
-        const nextBtn = document.getElementById('nextPage');
-        const lastBtn = document.getElementById('lastPage');
-        
-        if (firstBtn) firstBtn.disabled = this.currentPage <= 1;
-        if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
-        if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
-        if (lastBtn) lastBtn.disabled = this.currentPage >= totalPages;
-        
-        // Update page numbers
-        this.updatePageNumbers(totalPages);
-    }
-    
-    /**
-     * Update page number buttons
-     */
-    updatePageNumbers(totalPages) {
-        const pageNumbersSpan = document.getElementById('pageNumbers');
-        if (!pageNumbersSpan) return;
-        
-        pageNumbersSpan.innerHTML = '';
-        
-        if (totalPages === 0) {
-            return;
-        }
-        
-        const maxVisiblePages = 5;
-        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-        
-        // Adjust if we're near the end
-        if (endPage - startPage < maxVisiblePages - 1) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-        
-        // Add first page and ellipsis if needed
-        if (startPage > 1) {
-            const firstBtn = document.createElement('button');
-            firstBtn.className = `pagination-btn ${1 === this.currentPage ? 'active' : ''}`;
-            firstBtn.textContent = '1';
-            firstBtn.onclick = () => this.goToPage(1);
-            pageNumbersSpan.appendChild(firstBtn);
-            
-            if (startPage > 2) {
-                const ellipsis = document.createElement('span');
-                ellipsis.className = 'pagination-ellipsis';
-                ellipsis.textContent = '...';
-                pageNumbersSpan.appendChild(ellipsis);
-            }
-        }
-        
-        // Add page number buttons
-        for (let i = startPage; i <= endPage; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
-            pageBtn.textContent = i;
-            pageBtn.onclick = () => this.goToPage(i);
-            pageNumbersSpan.appendChild(pageBtn);
-        }
-        
-        // Add last page and ellipsis if needed
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                const ellipsis = document.createElement('span');
-                ellipsis.className = 'pagination-ellipsis';
-                ellipsis.textContent = '...';
-                pageNumbersSpan.appendChild(ellipsis);
-            }
-            
-            const lastBtn = document.createElement('button');
-            lastBtn.className = `pagination-btn ${totalPages === this.currentPage ? 'active' : ''}`;
-            lastBtn.textContent = totalPages;
-            lastBtn.onclick = () => this.goToPage(totalPages);
-            pageNumbersSpan.appendChild(lastBtn);
-        }
+        // This method is deprecated - PaginationComponent handles this now
+        // Kept for backward compatibility if PaginationComponent is not available
+        console.warn('TableManager.updatePagination() is deprecated. Use PaginationComponent instead.');
     }
     
     /**
      * Go to specific page
      */
     goToPage(page) {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
-            this.currentPage = page;
-            this.render();
+        if (this.paginationComponent) {
+            this.paginationComponent.goToPage(page);
+            // onPageChange callback will handle rendering
+        } else {
+            // Fallback if PaginationComponent not available
+            const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                this.currentPage = page;
+                this.render();
+            }
         }
+    }
+    
+    /**
+     * Get current page (for compatibility)
+     */
+    getCurrentPage() {
+        if (this.paginationComponent) {
+            return this.paginationComponent.getCurrentPage();
+        }
+        return this.currentPage;
     }
     
     /**

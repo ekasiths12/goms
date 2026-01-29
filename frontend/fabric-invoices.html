@@ -879,8 +879,9 @@
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
     <script src="js/common/page-initializer.js"></script>
+    <script src="js/common/pagination.js?v=2.020"></script>
     <script src="js/table-sorting.js"></script>
-    <script src="js/common/table-manager.js"></script>
+    <script src="js/common/hierarchical-table-manager.js?v=2.020"></script>
     <script src="js/common/action-manager.js"></script>
     <script src="js/common/fabric-invoice-template.js"></script>
 </head>
@@ -946,18 +947,7 @@
         </div>
 
         <!-- Pagination Controls -->
-        <div class="pagination-controls">
-            <div class="pagination-info">
-                Showing <span id="paginationStart">0</span> to <span id="paginationEnd">0</span> of <span id="paginationTotal">0</span> records
-            </div>
-            <div class="pagination-buttons">
-                <button class="pagination-btn" id="firstPage" onclick="goToPage(1)">First</button>
-                <button class="pagination-btn" id="prevPage" onclick="goToPreviousPage()">Previous</button>
-                <span id="pageNumbers"></span>
-                <button class="pagination-btn" id="nextPage" onclick="goToNextPage()">Next</button>
-                <button class="pagination-btn" id="lastPage" onclick="goToPage(getTotalPages())">Last</button>
-            </div>
-        </div>
+        <div id="paginationContainer"></div>
         
         <!-- Import Progress -->
         <div id="importProgress" class="import-progress" style="display: none;">
@@ -1278,6 +1268,7 @@
         let tableManager = null;
         let actionManager = null;
         let rowTemplate = null;
+        let tableSorter = null;
         
         // Cost and Price List Data
         let costListData = [];
@@ -1287,7 +1278,8 @@
         // API Base URL - works for both local development and Railway
         // API utilities moved to js/common/utils.js
 
-        // Pagination wrapper functions for TableManager (must be defined before HTML uses them)
+        // Pagination wrapper functions for TableManager (for backward compatibility)
+        // Note: These are now handled by PaginationComponent, but kept for any external references
         function goToPage(page) {
             if (tableManager) {
                 tableManager.goToPage(page);
@@ -1295,25 +1287,63 @@
         }
         
         function goToPreviousPage() {
-            if (tableManager && tableManager.currentPage > 1) {
-                tableManager.goToPage(tableManager.currentPage - 1);
+            if (tableManager && tableManager.paginationComponent) {
+                const currentPage = tableManager.paginationComponent.getCurrentPage();
+                if (currentPage > 1) {
+                    tableManager.paginationComponent.goToPage(currentPage - 1);
+                }
             }
         }
         
         function goToNextPage() {
-            if (tableManager) {
-                const totalPages = Math.ceil(tableManager.filteredData.length / tableManager.itemsPerPage);
-                if (tableManager.currentPage < totalPages) {
-                    tableManager.goToPage(tableManager.currentPage + 1);
+            if (tableManager && tableManager.paginationComponent) {
+                const currentPage = tableManager.paginationComponent.getCurrentPage();
+                const totalPages = tableManager.paginationComponent.getTotalPages();
+                if (currentPage < totalPages) {
+                    tableManager.paginationComponent.goToPage(currentPage + 1);
                 }
             }
         }
         
         function getTotalPages() {
-            if (tableManager) {
-                return Math.ceil(tableManager.filteredData.length / tableManager.itemsPerPage);
+            if (tableManager && tableManager.paginationComponent) {
+                return tableManager.paginationComponent.getTotalPages();
             }
             return 1;
+        }
+
+        /**
+         * Sorting getter for Fabric Invoices columns.
+         * Maps header `data-sort` values to actual (and sometimes computed) values.
+         */
+        function invoiceSorterDataGetter(item, column) {
+            if (!item) return '';
+            switch (column) {
+                case 'date':
+                    return item.invoice_date || '';
+                case 'short_name':
+                    return item.customer?.short_name || '';
+                case 'total_used': {
+                    const yardsConsumed = item.yards_consumed || 0;
+                    const commissionYards = item.total_commission_yards || 0;
+                    return item.total_used ?? (yardsConsumed + commissionYards);
+                }
+                case 'pending': {
+                    const yardsSent = item.yards_sent || item.quantity || 0;
+                    const yardsConsumed = item.yards_consumed || 0;
+                    const commissionYards = item.total_commission_yards || 0;
+                    const totalUsed = yardsConsumed + commissionYards;
+                    return yardsSent - totalUsed;
+                }
+                case 'total': {
+                    const yardsSent = item.yards_sent || item.quantity || 0;
+                    const unitPrice = item.unit_price || 0;
+                    return yardsSent * unitPrice;
+                }
+                default:
+                    // Default: use property directly (e.g., invoice_number, color, unit_price, delivered_location)
+                    return item[column] ?? '';
+            }
         }
 
         // Simple notification function
@@ -1433,6 +1463,9 @@
                         } else {
                             // Fallback: if FilterManager not initialized yet, just set data
                             tableManager.setData(data);
+                            if (tableSorter) {
+                                tableSorter.setData(data, invoiceSorterDataGetter);
+                            }
                         }
                         
                     } catch (parseError) {
@@ -1457,12 +1490,14 @@
             // Create row template
             rowTemplate = new FabricInvoiceRowTemplate();
             
-            // Initialize table manager
-            tableManager = new TableManager('invoiceTable', {
+            // Initialize table manager (using HierarchicalTableManager as the new base)
+            // Fabric invoices is currently a flat table (no hierarchy), but this keeps us on the new foundation.
+            tableManager = new HierarchicalTableManager('invoiceTable', {
+                hierarchical: false,
                 itemsPerPage: 50,
                 rowTemplate: rowTemplate.template,
                 rowIdentifier: 'id',
-                optimisticUpdates: true,
+                paginationContainerId: 'paginationContainer', // Use PaginationComponent
                 onDataUpdate: (data) => {
                     console.log('📊 Table data updated:', data.length, 'records');
                 },
@@ -1476,6 +1511,22 @@
                     // Update bulk actions bar when selection changes
                 }
             });
+
+            // Initialize column sorting for the invoice table
+            tableSorter = window.createTableSorter ? window.createTableSorter('invoiceTable') : null;
+            if (tableSorter) {
+                const invoiceTableEl = document.getElementById('invoiceTable');
+                if (invoiceTableEl) {
+                    invoiceTableEl.addEventListener('tableSorted', (e) => {
+                        const sortedData = e?.detail?.data || [];
+                        tableManager.setData(sortedData);
+                        // Keep sorter in sync with current view
+                        tableSorter.setData(sortedData, invoiceSorterDataGetter);
+                    });
+                }
+            } else {
+                console.warn('⚠️ TableSorter not available; column sorting will be disabled.');
+            }
             
             // Initialize action manager
             actionManager = new ActionManager(tableManager, {
@@ -1584,6 +1635,9 @@
                     console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
                     // Update table with filtered data
                     tableManager.setData(filteredData);
+                    if (tableSorter) {
+                        tableSorter.setData(filteredData, invoiceSorterDataGetter);
+                    }
                 },
                 debounceDelay: 500
             });
