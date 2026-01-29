@@ -4,7 +4,7 @@
 
 This document addresses the massive code duplication in frontend HTML files. Analysis shows **~11,000+ lines of duplicated code** across themes, tables, sorting, filters, and common behaviors that should be extracted into reusable components.
 
-**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed (Fabric Invoices, Packing Lists, Stitching Records, Group Bills, and Dashboard), and pagination refactoring completed (all pages now use PaginationComponent and PageInitializer). Remaining work focuses on hierarchical table management.
+**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed, pagination refactoring completed (all pages use PaginationComponent and PageInitializer), and **table migrations completed**: Fabric Invoices, Packing Lists, Group Bills, and Stitching Records now use `HierarchicalTableManager` (with `PaginationComponent` and `TableSorter`). Current version: GOMSv2.023.
 
 ---
 
@@ -239,7 +239,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - **Expand/Collapse**: None
 - **Row Classes**: Standard `data-table` rows
 - **Selection**: Checkbox-based row selection
-- **Implementation**: Uses `TableManager` class from `table-manager.js`
+- **Implementation**: Uses `HierarchicalTableManager` (flat mode) from `hierarchical-table-manager.js`, with `PaginationComponent` and `TableSorter`
 - **Special Features**: 
   - Enhanced filter dropdowns with search
   - Bulk actions (assign location, tax invoice, commission sale)
@@ -258,7 +258,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
   - `treeview-parent` for main records
   - `treeview-child` for fabric/lining details
 - **Selection**: Checkbox-based, tracks by index
-- **Implementation**: Custom treeview rendering
+- **Implementation**: `HierarchicalTableManager` with `customRender`; existing treeview markup and expand/collapse preserved
 - **Special Features**:
   - Multi-fabric support (garment_fabrics)
   - Lining fabric support (lining_fabrics)
@@ -281,7 +281,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
   - `secondary-fabric-row` for additional fabrics
   - `lining-fabric-row` for lining fabrics
 - **Selection**: Checkbox-based by packing list ID
-- **Implementation**: Custom HTML string building
+- **Implementation**: `HierarchicalTableManager` with `customRender`; existing parent/child/secondary/lining markup and expand/collapse preserved
 - **Special Features**:
   - Filters child rows (stitching records) within parent
   - Billing status filter (billed/unbilled)
@@ -311,7 +311,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
   - `detail-row secondary-fabric-row` for secondary fabrics
   - `detail-row lining-fabric-row` for lining fabrics
 - **Selection**: Checkbox-based by group ID
-- **Implementation**: Custom DOM element creation
+- **Implementation**: `HierarchicalTableManager` with `customRender`; existing parent/child/detail markup and expand/collapse preserved; Commission Sales view uses same manager with different data
 - **Special Features**:
   - Can toggle between group bills and commission sales (flat table)
   - Commission sales mode: Simple flat table, no nesting
@@ -375,16 +375,16 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 
 ### 5.6 Refactoring Strategy for Tables
 
-#### Create Hierarchical Table Manager
+#### Hierarchical Table Manager (COMPLETED)
 
-**Create `frontend/js/common/hierarchical-table-manager.js`** (see Section 11.6 in original document for full implementation).
+**Created `frontend/js/common/hierarchical-table-manager.js`** – base component for flat and hierarchical tables (pagination, sorting, selection, optional `customRender`).
 
-#### Page-Specific Table Configurations
+#### Page Table Configurations (all migrated)
 
-- **Stitching Records** (2-level): `StitchingTableManager` extends `HierarchicalTableManager`
-- **Packing Lists** (3-level): `PackingListTableManager` extends `HierarchicalTableManager`
-- **Group Bills** (4-level): `GroupBillTableManager` extends `HierarchicalTableManager`
-- **Fabric Invoices**: Keep using existing `TableManager` (flat table)
+- **Fabric Invoices**: `HierarchicalTableManager` (flat mode), `PaginationComponent`, `TableSorter`
+- **Packing Lists**: `HierarchicalTableManager` with `customRender` (4 visual levels: parent PL → child line → secondary fabric → lining)
+- **Group Bills**: `HierarchicalTableManager` with `customRender` (Group Bills hierarchy + Commission Sales flat view)
+- **Stitching Records**: `HierarchicalTableManager` with `customRender` (2-level treeview: parent record → garment_fabrics/lining_fabrics child rows)
 
 ### 5.7 Refactoring Strategy for Filters
 
@@ -400,16 +400,13 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 
 ### 5.8 Migration Plan for Tables
 
-1. **Phase 1**: Create `HierarchicalTableManager` base class
-2. **Phase 2**: Create page-specific subclasses:
-   - `StitchingTableManager` (2-level)
-   - `PackingListTableManager` (3-level)
-   - `GroupBillTableManager` (4-level)
-3. **Phase 3**: Migrate one page at a time:
-   - Start with Stitching Records (simplest hierarchy)
-   - Then Packing Lists
-   - Finally Group Bills (most complex)
-4. **Phase 4**: Keep Fabric Invoices using existing `TableManager` (flat table)
+1. **Phase 1**: Create `HierarchicalTableManager` base class ✅ **COMPLETED**
+2. **Phase 2**: Migrate pages using shared manager (flat mode or `customRender` for existing markup) ✅ **COMPLETED**:
+   - **Fabric Invoices**: Flat mode, `PaginationComponent`, `TableSorter` (GOMSv2.020)
+   - **Packing Lists**: `customRender`, 4 visual levels preserved (GOMSv2.021)
+   - **Group Bills**: `customRender`, Group Bills + Commission Sales views preserved (GOMSv2.022)
+   - **Stitching Records**: `customRender`, 2-level treeview preserved (GOMSv2.023)
+3. No page-specific subclasses; all use `HierarchicalTableManager` with optional `customRender` for pages that keep their own row HTML.
 
 ### 5.9 Migration Plan for Filters
 
