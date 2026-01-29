@@ -703,6 +703,14 @@
                     dataKey: 'item_name'
                 },
                 {
+                    id: 'fabricInvoice',
+                    type: 'dropdown',
+                    label: 'Fabric Inv.',
+                    placeholder: 'Select Fabric Inv.',
+                    multiSelect: true,
+                    dataKey: 'fabric_invoice_number'
+                },
+                {
                     id: 'customer',
                     type: 'dropdown',
                     label: 'Customer',
@@ -717,7 +725,7 @@
                     placeholder: 'DD/MM/YY',
                     rangeType: 'from',
                     customFilter: (record, filterValue) => {
-                        if (!filterValue || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         const recordDate = new Date(record.created_at);
                         if (isNaN(recordDate.getTime())) return true;
                         return isDateInRange(recordDate, filterValue, 'from');
@@ -730,7 +738,7 @@
                     placeholder: 'DD/MM/YY',
                     rangeType: 'to',
                     customFilter: (record, filterValue) => {
-                        if (!filterValue || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         const recordDate = new Date(record.created_at);
                         if (isNaN(recordDate.getTime())) return true;
                         return isDateInRange(recordDate, filterValue, 'to');
@@ -1950,6 +1958,12 @@
             
             // Add dialog to page
             document.body.insertAdjacentHTML('beforeend', dialogHtml);
+            
+            // Calendar opens on click for delivery date (common: GOMS.date.attachDatePickerOnClick)
+            const deliveryDateInput = document.getElementById('deliveryDate');
+            if (deliveryDateInput && typeof attachDatePickerOnClick === 'function') {
+                attachDatePickerOnClick(deliveryDateInput);
+            }
             
             // Store selected IDs globally for later use
             window.selectedStitchingIds = stitchingIds;

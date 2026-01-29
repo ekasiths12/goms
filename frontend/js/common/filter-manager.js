@@ -172,16 +172,19 @@ class FilterManager {
     }
     
     /**
-     * Create date filter with auto-formatting
+     * Create date filter; native date input so calendar opens on click.
+     * Value is YYYY-MM-DD; isDateInRange in utils accepts both YYYY-MM-DD and DD/MM/YY.
      */
     createDateFilter(filter) {
         const input = document.createElement('input');
-        input.type = 'text';
+        input.type = 'date';
         input.id = `filter_${filter.id}`;
         input.className = 'filter-input';
-        input.placeholder = filter.placeholder || 'DD/MM/YY';
         input.dataset.filterId = filter.id;
         input.dataset.filterType = 'date';
+        if (typeof GOMS !== 'undefined' && GOMS.date && typeof GOMS.date.attachDatePickerOnClick === 'function') {
+            GOMS.date.attachDatePickerOnClick(input);
+        }
         return input;
     }
     
@@ -330,17 +333,13 @@ class FilterManager {
     }
     
     /**
-     * Setup date filter listeners
+     * Setup date filter listeners (type="date" input; value is YYYY-MM-DD)
      */
     setupDateListeners(filter) {
         const input = document.getElementById(`filter_${filter.id}`);
         if (!input) return;
         
-        // Auto-format date input
         input.addEventListener('input', () => {
-            if (typeof formatDateInput === 'function') {
-                formatDateInput(input);
-            }
             this.filterValues[filter.id] = input.value;
             this.triggerFilterUpdate();
         });
@@ -617,7 +616,7 @@ class FilterManager {
                 return itemValueStr.includes(String(filterValue).toLowerCase());
                 
             case 'date':
-                if (!filterValue || filterValue.length !== 8) return true;
+                if (!filterValue || String(filterValue).trim() === '') return true;
                 const date = new Date(itemValue);
                 if (isNaN(date.getTime())) return true;
                 

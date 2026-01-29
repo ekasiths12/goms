@@ -4,7 +4,7 @@
 
 This document addresses the massive code duplication in frontend HTML files. Analysis shows **~11,000+ lines of duplicated code** across themes, tables, sorting, filters, and common behaviors that should be extracted into reusable components.
 
-**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed, pagination refactoring completed (all pages use PaginationComponent and PageInitializer), and **table migrations completed**: Fabric Invoices, Packing Lists, Group Bills, and Stitching Records now use `HierarchicalTableManager` (with `PaginationComponent` and `TableSorter`). Phase 6 cleanup (duplicate CSS/comments removed). Current version: GOMSv2.024.
+**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed, pagination refactoring completed (all pages use PaginationComponent and PageInitializer), and **table migrations completed**: Fabric Invoices, Packing Lists, Group Bills, and Stitching Records now use `HierarchicalTableManager` (with `PaginationComponent` and `TableSorter`). Phase 6 cleanup (duplicate CSS/comments removed). **Phase 7 plan** (Section 6.1): further CSS consolidation—analysis of fabric-invoices lines 13–664 vs other pages; plan to move .btn, .action-buttons, .table-container, .data-table, .checkbox-wrapper, .modal, .form-group, .loading-state/.error-state to common.css and in-page cleanups. Current version: GOMSv2.024.
 
 ---
 
@@ -494,6 +494,91 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - [x] Remove redundant "Pagination Styles - moved to common.css" and duplicate filter/action-buttons blocks from group-bills, packing-lists, stitching-records
 - [x] Simplify comments in fabric-invoices (pagination wrappers, API/auth moved to utils)
 - [ ] Final testing (see testing list below)
+
+---
+
+## 6.1 Phase 7: Further CSS Consolidation (PLAN – no coding yet)
+
+This section documents the analysis of **fabric-invoices.html** inline styles (lines 13–664) and comparison with **packing-lists**, **group-bills**, **stitching-records**, and **dashboard** (first ~800 lines / `<style>` blocks) to identify what can be moved to `common.css` or otherwise refactored.
+
+### 6.1.1 Inventory: fabric-invoices.html &lt;style&gt; (lines 13–664)
+
+| Block | Description | Lines (approx) |
+|-------|-------------|----------------|
+| `.checkbox-label` | Checkbox + label flex | 13–23 |
+| `.table-container` | Card, border, overflow (first block) | 25–33 |
+| `.data-table` | Base table, th, td, tr:hover, tr.selected | 35–66 |
+| `.table-container` (second block) | max-height 600px, overflow-y, scrollbar | 68–93 |
+| `.checkbox-wrapper`, `.data-table td.checkbox-wrapper` | Checkbox cell alignment | 95–114 |
+| `.data-table tr` cursor/hover | Non-clickable row, hover | 116–127 |
+| `.action-buttons` | Flex, gap, margin-bottom | 129–135 |
+| Bulk item list | `.bulk-item-list`, `.bulk-item-row`, `.item-info`, `.control-group`, `.yards-input`, etc. | 138–220 |
+| **`.btn`** (base + variants) | .btn, .btn-primary … .btn-info | 222–286 |
+| Import progress | `.import-progress`, `.progress-bar`, `.progress-fill`, `.progress-text` | 288–316 |
+| **Modal** | `.modal`, `#costDialog/#priceDialog` z-index, `.modal-content`, `.modal-header`, `.modal-title`, `.close`, `.form-group`, `.modal-footer` | 319–414 |
+| **Custom dialog** | `.custom-dialog`, `.custom-dialog-content`, `.custom-dialog-header`, `.custom-dialog-btn-*` (primary, secondary, success, warning, danger, info) | 416–559 |
+| Fabric selection dialog hover | `.fabric-selection-dialog table tbody tr:hover` | 543–550 |
+| Content section | `.content-section`, `.section-header` | 561–576 |
+| Cost/Price list tables | `#costListTable`, `#priceListTable` | 578–604 |
+| **`.action-buttons`** (duplicate) | display flex, gap 5px | 606–609 |
+| `.btn-edit`, `.btn-delete` | Small action buttons | 611–636 |
+| Dialog-specific | `.modal-content[style*="width: 90%"]`, `#selectedLinesInfo` | 638–663 |
+
+### 6.1.2 Duplication Across Pages
+
+| Style / pattern | Fabric | Packing | Group | Stitching | Dashboard | In common.css? |
+|-----------------|--------|---------|-------|-----------|-----------|----------------|
+| **.btn** (base + .btn-primary … .btn-info) | ✓ ~65 lines | ✓ ~70 lines | ✓ ~65 lines | ✓ ~65 lines | ✓ ~65 lines | **No** → move |
+| **.action-buttons** (base: flex, gap, margin) | ✓ (2x – duplicate) | ✓ | ✓ (card wrapper variant) | ✓ | (uses filter row) | **No** → move base |
+| **.table-container** (card, max-height, overflow-y) | ✓ (2 blocks) | ✓ | ✓ | ✓ | — | **No** → move |
+| **.table-container** scrollbar (webkit) | ✓ | ✓ (+ data-table-container) | ✓ | ✓ (+ treeview-container) | — | **No** → move |
+| **.data-table** (base, th, td, tr:hover, tr.selected) | ✓ | ✓ (sticky th, min-width) | ✓ (sticky th) | ✓ (treeview separate) | — | **No** → move base |
+| **.checkbox-wrapper** | ✓ | ✓ (2x – duplicate) | ✓ (2x – duplicate) | ✓ | — | **No** → move |
+| **.data-table tr** cursor/hover | ✓ | ✓ | ✓ | ✓ (#424242 hardcoded) | — | **No** → move; fix stitching var |
+| **.modal** (base, content, header, title, close, footer, body) | ✓ | — | ✓ | ✓ (z-index 10000) | — | **No** → move |
+| **.form-group** (label, input, select, textarea, focus) | ✓ | — | ✓ | — | — | **No** → move |
+| **.loading-state**, **.error-state** | — | ✓ | ✓ | — | — | **No** → move |
+| Filter/nav/pagination | — | — | — | — | — | **Yes** (already) |
+
+### 6.1.3 Page-Only Styles (keep in page or optional common extras)
+
+- **Fabric-invoices only:** `.checkbox-label`, bulk item list (`.bulk-item-list`, `.bulk-item-row`, `.item-*`, `.control-group`, `.yards-input`), `.import-progress` / `.progress-bar` / `.progress-fill` / `.progress-text`, `#costDialog` / `#priceDialog` z-index, `.custom-dialog*` (if only fabric uses full set, consider moving base to common for future reuse), `.fabric-selection-dialog`, `.content-section`, `#costListTable` / `#priceListTable`, `.btn-edit` / `.btn-delete`, `.modal-content[style*="width: 90%"]`, `#selectedLinesInfo`.
+- **Packing-lists only:** `.data-table-container`, `.parent-row`, `.child-row`, `.secondary-fabric-row`, `.lining-fabric-row`, `.expand-indicator`, column `nth-child` widths.
+- **Group-bills only:** `.action-buttons` card wrapper (background, padding, border), `.commission-sales-table`, `.checkbox-group`, hierarchy (`.parent-row`, `.child-row`, `.sub-child-row`, `.detail-row`, `.expand-indicator`, indentation), column widths.
+- **Stitching-records only:** `.treeview-container`, `.treeview-table`, `.treeview-parent`, `.treeview-child`, `.expand-indicator`, `.status-badge`, `.image-preview`, `.detail-section` / `.detail-grid` / `.detail-item`, `.size-quantities`, treeview column widths.
+- **Dashboard only:** `.date-range-buttons`, `.date-btn`, `.kpi-grid` / `.kpi-card` / `.kpi-*`, `.charts-grid` / `.chart-card` / `.chart-container`, `.loading`.
+
+### 6.1.4 Refactor Plan (to implement in Phase 7)
+
+1. **Move to `common.css`** (then remove from each page):
+   - **Button set:** `.btn` (base) + `.btn-primary`, `.btn-secondary`, `.btn-success`, `.btn-warning`, `.btn-danger`, `.btn-info` and `:hover`. Use one canonical set (e.g. fabric-invoices) and drop from packing, group, stitching, dashboard.
+   - **Action bar base:** `.action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }`. Group-bills keeps its override (card wrapper) in page.
+   - **Table container:** `.table-container` base (card, border, max-height 600px or 500px – pick one or use a variable), plus `.table-container::-webkit-scrollbar` (track, thumb, thumb:hover). Optionally `.data-table-container` if shared (packing, group).
+   - **Data table base:** `.data-table` (width, border-collapse, font-size), `.data-table th` (background, color, padding, border-bottom, font-weight), `.data-table td` (padding, border-bottom), `.data-table tr:hover`, `.data-table tr.selected`. Pages that need `text-align: left`, `sticky` th, or `min-width` add overrides in page.
+   - **Checkbox:** `.checkbox-wrapper` (flex, center), `.checkbox-wrapper input[type="checkbox"]`, `.data-table td.checkbox-wrapper` if shared. Optionally `.checkbox-label` if used on more than one page.
+   - **Row behavior:** `.data-table tr { cursor: default; }`, `.data-table tr:hover`, `.data-table tr:hover td` using `var(--bg-tertiary)` (not hardcoded).
+   - **Modal:** `.modal` (fixed overlay), `.modal-content`, `.modal-header`, `.modal-title`, `.close`, `.modal-body`, `.modal-footer`. Stitching’s higher z-index can stay as page override or be a modifier in common.
+   - **Form in modals:** `.form-group`, `.form-group label`, `.form-group input/select/textarea`, `:focus` (shared by fabric, group).
+   - **Loading/error:** `.loading-state`, `.error-state` (packing, group).
+
+2. **In-page cleanups (no new common CSS):**
+   - **Fabric-invoices:** Merge the two `.table-container` blocks into one; remove the second `.action-buttons` definition (line 606–609).
+   - **Packing-lists:** Remove duplicate `.checkbox-wrapper` block (lines 294–308 duplicate 265–279).
+   - **Group-bills:** Remove duplicate `.checkbox-wrapper` block (second block ~316–325).
+   - **Stitching-records:** Replace `.data-table tr:hover` / `tr:hover td` hardcoded `#424242` with `var(--bg-tertiary)` for theme consistency.
+
+3. **Optional (later):**
+   - **Custom dialog:** If only fabric-invoices uses `.custom-dialog*`, either move a minimal base to common for future reuse or leave in fabric. Align `.custom-dialog-btn-*` with `.btn-*` where possible (e.g. use `.btn` inside dialogs) to reduce duplication.
+   - **Column widths:** Keep all `nth-child` column widths page-specific (table structure differs per page).
+
+### 6.1.5 Phase 7 Checklist (when implementing)
+
+- [ ] Add to `common.css`: .btn set, .action-buttons base, .table-container + scrollbar, .data-table base, .checkbox-wrapper, .data-table tr cursor/hover, .modal set, .form-group set, .loading-state/.error-state.
+- [ ] Remove from fabric-invoices: duplicated blocks above; merge .table-container; remove duplicate .action-buttons.
+- [ ] Remove from packing-lists, group-bills, stitching-records, dashboard: same duplicated blocks; remove duplicate .checkbox-wrapper on packing and group.
+- [ ] Stitching-records: replace #424242 with var(--bg-tertiary) for .data-table tr:hover.
+- [ ] Test all pages: buttons, action bars, tables, modals, forms, loading/error states, theme toggle.
+- [ ] Update version and FRONTEND_REFACTORING.md when Phase 7 is done.
 
 ---
 

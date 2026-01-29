@@ -1525,22 +1525,73 @@
                     multiSelect: true,
                     customFilter: (item, filterValue) => {
                         // Only filter group bills by group number (commission sales don't have this)
-                        // Check if item has commission_date (commission sales) - skip filtering
-                        if (item.commission_date !== undefined) {
-                            return true; // Don't filter commission sales by group number
-                        }
+                        if (item.commission_date !== undefined) return true;
                         if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
                         const searchTerms = Array.isArray(filterValue) ? filterValue : [filterValue];
                         const groupNumber = (item.group_number || '').toLowerCase();
                         return searchTerms.some(term => groupNumber.includes(String(term).toLowerCase()));
                     },
                     customExtract: (item) => {
-                        // Only extract from group bills (commission sales don't have group_number)
-                        // Check if item has commission_date (commission sales) - return null
-                        if (item.commission_date !== undefined) {
-                            return null;
-                        }
+                        if (item.commission_date !== undefined) return null;
                         return item.group_number || null;
+                    }
+                },
+                {
+                    id: 'fabricInvoice',
+                    type: 'dropdown',
+                    label: 'Fabric Inv.',
+                    placeholder: 'Select Fabric Inv.',
+                    multiSelect: true,
+                    customExtract: (item) => {
+                        if (item.commission_date !== undefined) {
+                            return [item.fabric_invoice_number].filter(Boolean);
+                        }
+                        if (item.details && item.details.individual_records) {
+                            return item.details.individual_records.map(r => r.fabric_invoice_number).filter(Boolean);
+                        }
+                        return [item.fabric_invoice_number].filter(Boolean);
+                    },
+                    customFilter: (item, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const terms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        const getInvoices = (it) => {
+                            if (it.commission_date !== undefined) return [it.fabric_invoice_number].filter(Boolean);
+                            if (it.details && it.details.individual_records) {
+                                return it.details.individual_records.map(r => r.fabric_invoice_number).filter(Boolean);
+                            }
+                            return [it.fabric_invoice_number].filter(Boolean);
+                        };
+                        const invoices = getInvoices(item).map(s => (s || '').toLowerCase());
+                        return terms.some(term => invoices.some(inv => inv.includes(String(term).toLowerCase())));
+                    }
+                },
+                {
+                    id: 'fabric',
+                    type: 'dropdown',
+                    label: 'Fabric',
+                    placeholder: 'Select Fabric',
+                    multiSelect: true,
+                    customExtract: (item) => {
+                        if (item.commission_date !== undefined) return [item.item_name].filter(Boolean);
+                        if (item.details && item.details.individual_records) {
+                            return item.details.individual_records.map(r => r.item_name || r.fabric_name).filter(Boolean);
+                        }
+                        const first = item.details && item.details.individual_records && item.details.individual_records[0];
+                        const val = first ? (first.item_name || first.fabric_name) : (item.item_name || item.fabric);
+                        return val ? [val] : [];
+                    },
+                    customFilter: (item, filterValue) => {
+                        if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true;
+                        const terms = Array.isArray(filterValue) ? filterValue : [filterValue];
+                        const getFabrics = (it) => {
+                            if (it.commission_date !== undefined) return [it.item_name].filter(Boolean);
+                            if (it.details && it.details.individual_records) {
+                                return it.details.individual_records.map(r => r.item_name || r.fabric_name).filter(Boolean);
+                            }
+                            return [it.item_name || it.fabric].filter(Boolean);
+                        };
+                        const fabrics = getFabrics(item).map(s => (s || '').toLowerCase());
+                        return terms.some(term => fabrics.some(f => f.includes(String(term).toLowerCase())));
                     }
                 },
                 {
@@ -1550,9 +1601,8 @@
                     placeholder: 'DD/MM/YY',
                     rangeType: 'from',
                     customFilter: (item, filterValue) => {
-                        if (!filterValue || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         let recordDate;
-                        // Check if item has commission_date (commission sales) or created_at/invoice_date (group bills)
                         if (item.commission_date !== undefined) {
                             recordDate = new Date(item.commission_date);
                         } else {
@@ -1569,7 +1619,7 @@
                     placeholder: 'DD/MM/YY',
                     rangeType: 'to',
                     customFilter: (item, filterValue) => {
-                        if (!filterValue || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         let recordDate;
                         // Check if item has commission_date (commission sales) or created_at/invoice_date (group bills)
                         if (item.commission_date !== undefined) {

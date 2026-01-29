@@ -194,23 +194,50 @@ const GOMS = {
      */
     date: {
         isInRange: function(date, filterDate, type) {
-            if (!filterDate || filterDate.length !== 8 || filterDate.split('/').length !== 3) {
-                return true;
-            }
+            if (!filterDate || typeof filterDate !== 'string') return true;
+            const s = filterDate.trim();
+            if (!s) return true;
             
             try {
-                const [day, month, year] = filterDate.split('/');
-                const fullYear = year.length === 2 ? (parseInt(year) < 50 ? '20' + year : '19' + year) : year;
-                const filterDateObj = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-                
-                if (type === 'from') {
-                    return date >= filterDateObj;
+                let filterDateObj;
+                if (s.indexOf('-') >= 0 && s.length >= 10) {
+                    // YYYY-MM-DD (e.g. from type="date" input)
+                    filterDateObj = new Date(s.substring(0, 10));
+                } else if (s.split('/').length === 3 && s.length >= 8) {
+                    // DD/MM/YY
+                    const [day, month, year] = s.split('/');
+                    const fullYear = year.length === 2 ? (parseInt(year, 10) < 50 ? '20' + year : '19' + year) : year;
+                    filterDateObj = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
                 } else {
-                    return date <= filterDateObj;
+                    return true;
                 }
+                if (isNaN(filterDateObj.getTime())) return true;
+                if (type === 'from') return date >= filterDateObj;
+                return date <= filterDateObj;
             } catch (error) {
                 return true;
             }
+        },
+        /**
+         * Attach click handler so calendar opens immediately on date inputs (type="date").
+         * Use for filter date inputs and any dialog date fields. Safe to call multiple times (skips if already attached).
+         */
+        attachDatePickerOnClick: function(input) {
+            if (!input || input.type !== 'date') return;
+            if (input.dataset.datePickerOnClick === '1') return;
+            input.dataset.datePickerOnClick = '1';
+            input.addEventListener('click', function() {
+                if (typeof this.showPicker === 'function') this.showPicker();
+            });
+        },
+        /**
+         * Enhance all date inputs in the document so calendar opens on click (e.g. after dynamic content).
+         */
+        enhanceAllDateInputs: function() {
+            if (typeof document.querySelectorAll !== 'function') return;
+            document.querySelectorAll('input[type="date"]').forEach(function(inp) {
+                GOMS.date.attachDatePickerOnClick(inp);
+            });
         },
         
         parseDDMMYY: function(dateString) {
@@ -221,7 +248,7 @@ const GOMS = {
             
             try {
                 const [day, month, year] = dateString.split('/');
-                const fullYear = year.length === 2 ? (parseInt(year) < 50 ? '20' + year : '19' + year) : year;
+                const fullYear = year.length === 2 ? (parseInt(year, 10) < 50 ? '20' + year : '19' + year) : year;
                 return new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
             } catch (error) {
                 return null;
@@ -337,3 +364,5 @@ window.logout = GOMS.auth.logout;
 window.isDateInRange = GOMS.date.isInRange;
 window.parseDDMMYY = GOMS.date.parseDDMMYY;
 window.formatForAPI = GOMS.date.formatForAPI;
+window.attachDatePickerOnClick = GOMS.date.attachDatePickerOnClick;
+window.enhanceAllDateInputs = GOMS.date.enhanceAllDateInputs;

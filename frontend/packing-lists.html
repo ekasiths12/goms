@@ -806,7 +806,7 @@
                     label: 'From',
                     placeholder: 'DD/MM/YY',
                     customFilter: (packingList, filterValue) => {
-                        if (!filterValue || filterValue.trim() === '' || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         const createdDate = new Date(packingList.created_at);
                         return isDateInRange(createdDate, filterValue, 'from');
                     }
@@ -817,7 +817,7 @@
                     label: 'To',
                     placeholder: 'DD/MM/YY',
                     customFilter: (packingList, filterValue) => {
-                        if (!filterValue || filterValue.trim() === '' || filterValue.length !== 8) return true;
+                        if (!filterValue || !String(filterValue).trim()) return true;
                         const createdDate = new Date(packingList.created_at);
                         return isDateInRange(createdDate, filterValue, 'to');
                     }
