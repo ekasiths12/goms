@@ -684,9 +684,10 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
-    <script src="js/common/pagination.js"></script>
+    <script src="js/common/pagination.js?v=2.022"></script>
     <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
+    <script src="js/common/hierarchical-table-manager.js?v=2.022"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -777,7 +778,8 @@
         const itemsPerPage = 50;
         let showingCommissionSales = false;
         let filterManager = null;
-        let paginationComponent = null;
+        let tableManager = null;
+        let tableSorter = null;
 
         // API utilities moved to js/common/utils.js
 
@@ -788,13 +790,9 @@
         PageInitializer.onLoad({
             activeTab: 'group-bills',
             onAuthSuccess: async () => {
-                await loadGroupBillsData();
-                
-                // Initialize FilterManager after data is loaded
+                initializeTableManager();
                 initializeFilterManager();
-                
-                // Initialize PaginationComponent
-                initializePagination();
+                await loadGroupBillsData();
             }
         });
 
@@ -842,18 +840,13 @@
                     console.log('📊 Received group bills data:', allGroupBillsData.length, 'records');
                     console.log('📊 Received commission sales data:', allCommissionSalesData.length, 'records');
                     
-                    // Update FilterManager with appropriate data based on current view
+                    groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
                     if (filterManager) {
                         const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
                         filterManager.updateData(currentData);
                     } else {
-                    // Fallback: if FilterManager not initialized yet, just set data
-                    groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-                    currentPage = 1;
-                    if (paginationComponent) {
-                        paginationComponent.reset();
-                    }
-                    populateGroupBillsTable();
+                        if (tableManager) tableManager.setData(groupBillsData);
+                        if (tableSorter) tableSorter.setData(groupBillsData, getGroupBillsValueForSorting);
                     }
                 } else {
                     console.error('❌ Failed to load data');
@@ -912,7 +905,7 @@
             selectedCommissionSaleIds = [];
             updateActionButtons();
             
-            // Update FilterManager with appropriate data and re-apply filters
+            // Update FilterManager and table with appropriate data and re-apply filters
             if (filterManager) {
                 const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
                 // Update FilterManager data and refresh filter options
@@ -988,24 +981,27 @@
             `;
         }
         
-        function populateCommissionSalesTable() {
+        function populateCommissionSalesTable(data, options = {}) {
             const tbody = document.getElementById('groupBillsTableBody');
             if (!tbody) return;
-            
-            // Calculate pagination
-            const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
+            const skipPagination = options.skipPagination === true;
+            let pageData;
+            let startIndex;
+            if (skipPagination && data != null) {
+                pageData = data;
+                startIndex = 0;
+            } else {
+                const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
+                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+                startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+                pageData = groupBillsData.slice(startIndex, endIndex);
             }
-            
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
-            const pageData = groupBillsData.slice(startIndex, endIndex);
             
             tbody.innerHTML = '';
             
-            pageData.forEach((sale, pageIndex) => {
-                const actualIndex = startIndex + pageIndex;
+            (pageData || []).forEach((sale, pageIndex) => {
+                const actualIndex = (startIndex || 0) + pageIndex;
                 const row = document.createElement('tr');
                 row.className = 'commission-sale-row';
                 row.setAttribute('data-sale-id', sale.id);
@@ -1028,36 +1024,44 @@
                 tbody.appendChild(row);
             });
             
-            updatePaginationControls();
+            if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                tableManager.paginationComponent.update();
+            }
         }
 
-        function populateGroupBillsTable() {
+        function populateGroupBillsTable(data, options = {}) {
             const tbody = document.getElementById('groupBillsTableBody');
             if (!tbody) return;
+            const skipPagination = options.skipPagination === true;
+            const sourceData = skipPagination ? (data || []) : groupBillsData;
             
-            if (groupBillsData.length === 0) {
+            if (sourceData.length === 0) {
                 const message = showingCommissionSales ? 'No commission sales found.' : 'No group bills found.';
                 const colspan = showingCommissionSales ? '9' : '25';
                 tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align: center; padding: 20px; color: var(--text-secondary);">${message}</td></tr>`;
-                updatePaginationControls();
+                if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.update();
+                }
                 return;
             }
             
-            // Handle commission sales differently - simple line items
             if (showingCommissionSales) {
-                populateCommissionSalesTable();
+                populateCommissionSalesTable(skipPagination ? sourceData : undefined, { skipPagination });
                 return;
             }
             
-            // Calculate pagination
-            const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
+            let pageData;
+            let startIndex;
+            if (skipPagination) {
+                pageData = sourceData;
+                startIndex = 0;
+            } else {
+                const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
+                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+                startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+                pageData = groupBillsData.slice(startIndex, endIndex);
             }
-            
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
-            const pageData = groupBillsData.slice(startIndex, endIndex);
             
             tbody.innerHTML = '';
             
@@ -1367,7 +1371,9 @@
                 }
             });
             
-            updatePaginationControls();
+            if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                tableManager.paginationComponent.update();
+            }
         }
 
         function toggleSelectAll() {
@@ -1410,7 +1416,7 @@
                 selectedGroupBillIds.push(parseInt(checkbox.getAttribute('data-group-id')));
             });
             
-            updatePaginationControls();
+            if (tableManager && tableManager.paginationComponent) tableManager.paginationComponent.update();
             updateActionButtons();
         }
         
@@ -1435,7 +1441,7 @@
             selectedCommissionSaleIds = Array.from(document.querySelectorAll('.commission-sale-checkbox:checked'))
                 .map(checkbox => parseInt(checkbox.getAttribute('data-sale-id')));
             
-            updatePaginationControls();
+            if (tableManager && tableManager.paginationComponent) tableManager.paginationComponent.update();
             updateActionButtons();
         }
         
@@ -1509,6 +1515,38 @@
 
         function getSelectedGroupBillIds() {
             return selectedGroupBillIds;
+        }
+
+        /**
+         * Initialize table manager (pagination + custom render) and table sorter
+         */
+        function initializeTableManager() {
+            tableManager = new HierarchicalTableManager('groupBillsTable', {
+                hierarchical: false,
+                itemsPerPage: itemsPerPage,
+                paginationContainerId: 'paginationContainer',
+                customRender: (pageData) => {
+                    if (showingCommissionSales) {
+                        populateCommissionSalesTable(pageData, { skipPagination: true });
+                    } else {
+                        populateGroupBillsTable(pageData, { skipPagination: true });
+                    }
+                }
+            });
+            if (typeof updateTableHeadersForGroupBills === 'function') updateTableHeadersForGroupBills();
+            tableSorter = window.createTableSorter ? window.createTableSorter('groupBillsTable', {
+                dataGetter: getGroupBillsValueForSorting
+            }) : null;
+            if (tableSorter) {
+                const tableEl = document.getElementById('groupBillsTable');
+                if (tableEl) {
+                    tableEl.addEventListener('tableSorted', function(event) {
+                        const sortedData = event.detail?.data || [];
+                        tableManager.setData(sortedData);
+                        tableSorter.setData(sortedData, getGroupBillsValueForSorting);
+                    });
+                }
+            }
         }
 
         /**
@@ -1617,13 +1655,9 @@
                 data: initialData || [],
                 onFilterChange: (filteredData, filterValues) => {
                     console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
-                    // Update table with filtered data
                     groupBillsData = filteredData;
-                    currentPage = 1; // Reset to first page when filters change
-                    if (paginationComponent) {
-                        paginationComponent.reset();
-                    }
-                    populateGroupBillsTable();
+                    if (tableManager) tableManager.setData(filteredData);
+                    if (tableSorter) tableSorter.setData(filteredData, getGroupBillsValueForSorting);
                 },
                 debounceDelay: 500
             });
@@ -1901,143 +1935,59 @@
         // Theme functions moved to js/common/utils.js
 
         /**
-         * Initialize PaginationComponent
+         * Custom data getter for group bills / commission sales sorting (maps header data-sort to API fields)
          */
-        function initializePagination() {
-            paginationComponent = new PaginationComponent({
-                containerId: 'paginationContainer',
-                currentPage: 1,
-                itemsPerPage: itemsPerPage,
-                dataLength: groupBillsData.length,
-                onPageChange: (page) => {
-                    currentPage = page;
-                    populateGroupBillsTable();
-                }
-            });
-        }
-        
-        /**
-         * Update pagination when data changes
-         */
-        function updatePaginationControls() {
-            if (paginationComponent) {
-                paginationComponent.updateDataLength(groupBillsData.length);
-                // Sync current page if needed
-                if (paginationComponent.getCurrentPage() !== currentPage) {
-                    paginationComponent.goToPage(currentPage);
-                }
-            }
-        }
-
-        // ===== TABLE SORTING FUNCTIONALITY =====
-        
-        // Initialize table sorter
-        let tableSorter = null;
-
-        // Custom data getter for group bills data
         function getGroupBillsValueForSorting(item, column) {
+            if (!item) return '';
+            // Commission sales structure
+            if (item.commission_date !== undefined) {
+                switch (column) {
+                    case 'created_at': return item.commission_date || '';
+                    case 'group_bill_number': return item.serial_number || '';
+                    case 'packing_list_number': return item.serial_number || '';
+                    case 'garment': return item.item_name || '';
+                    case 'fabric': return '';
+                    case 'color': return item.color || '';
+                    case 'customer': return item.customer_name || '';
+                    case 'tax_invoice_number': return '';
+                    case 'msk_invoice_number': return '';
+                    case 'fabric_invoice': return '';
+                    case 'fabric_delivery_note': return '';
+                    case 'fabric_used': return item.commission_yards ?? '';
+                    case 'fabric_cost': return item.unit_price ?? '';
+                    case 'fabric_value': return item.total_sale_value ?? '';
+                    case 'sewing_cost': return item.unit_price ?? '';
+                    case 'sewing_value': return item.total_sale_value ?? '';
+                    default: return item[column] ?? '';
+                }
+            }
+            // Group bills structure (parent row: group_number, invoice_date, customer_name, details)
+            const firstRecord = item.details && item.details.individual_records && item.details.individual_records[0];
             switch (column) {
-                case 'created_at':
-                    return item.created_at;
-                case 'group_bill_number':
-                    return item.group_bill_number;
-                case 'packing_list_number':
-                    return item.packing_list_number;
-                case 'garment':
-                    return item.garment;
-                case 'fabric':
-                    return item.fabric;
-                case 'color':
-                    return item.color;
-                case 'customer':
-                    return item.customer;
-                case 'tax_invoice_number':
-                    return item.tax_invoice_number;
-                case 'msk_invoice_number':
-                    return item.msk_invoice_number;
-                case 'fabric_invoice':
-                    return item.fabric_invoice;
-                case 'fabric_delivery_note':
-                    return item.fabric_delivery_note;
-                case 'fabric_used':
-                    return item.fabric_used;
-                case 'fabric_cost':
-                    return item.fabric_cost;
-                case 'fabric_value':
-                    return item.fabric_value;
-                case 'size_s':
-                    return item.size_s;
-                case 'size_m':
-                    return item.size_m;
-                case 'size_l':
-                    return item.size_l;
-                case 'size_xl':
-                    return item.size_xl;
-                case 'size_xxl':
-                    return item.size_xxl;
-                case 'size_xxxl':
-                    return item.size_xxxl;
-                case 'total_qty':
-                    return item.total_qty;
-                case 'sewing_cost':
-                    return item.sewing_cost;
-                case 'sewing_value':
-                    return item.sewing_value;
-                default:
-                    return '';
-            }
-        }
-
-        // Initialize table sorter when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load theme immediately to prevent flashing
-            loadTheme();
-            
-            // Initialize table headers for group bills view
-            updateTableHeadersForGroupBills();
-            
-            // Initialize table sorter
-            tableSorter = createTableSorter('groupBillsTable', {
-                dataGetter: getGroupBillsValueForSorting
-            });
-            
-            // Listen for sort events
-            document.getElementById('groupBillsTable').addEventListener('tableSorted', function(event) {
-                const { data } = event.detail;
-                groupBillsData = data;
-                populateGroupBillsTable();
-            });
-            
-            console.log('✅ Group bills table sorter initialized and ready');
-        });
-
-        // Override the loadGroupBillsData function to update table sorter
-        const originalLoadGroupBillsData = loadGroupBillsData;
-        loadGroupBillsData = async function() {
-            await originalLoadGroupBillsData();
-            
-            // Initialize table sorter if not already done
-            if (!tableSorter) {
-                tableSorter = createTableSorter('groupBillsTable', {
-                    dataGetter: getGroupBillsValueForSorting
-                });
-                
-                // Listen for sort events
-                document.getElementById('groupBillsTable').addEventListener('tableSorted', function(event) {
-                    const { data } = event.detail;
-                    groupBillsData = data;
-                    populateGroupBillsTable();
-                });
-                
-                console.log('✅ Group bills table sorter initialized after data load');
-            }
-            
-            // Update table sorter with new data
-            if (tableSorter && groupBillsData && groupBillsData.length > 0) {
-                tableSorter.setData(groupBillsData, getGroupBillsValueForSorting);
-                console.log(`💾 Updated group bills table sorter with ${groupBillsData.length} records`);
-            } else {
-                console.log('⚠️ No group bills data available for table sorter');
+                case 'created_at': return item.invoice_date || item.created_at || '';
+                case 'group_bill_number': return item.group_number || item.group_bill_number || '';
+                case 'packing_list_number': return (firstRecord && firstRecord.packing_list_serial) || item.packing_list_number || '';
+                case 'garment': return (firstRecord && firstRecord.item_name) || item.garment || '';
+                case 'fabric': return (firstRecord && firstRecord.fabric_name) || item.fabric || '';
+                case 'color': return (firstRecord && firstRecord.color) || item.color || '';
+                case 'customer': return item.customer_name || item.customer || '';
+                case 'tax_invoice_number': return (firstRecord && firstRecord.beta_tax_invoice_number) || item.tax_invoice_number || '';
+                case 'msk_invoice_number': return (firstRecord && firstRecord.tax_invoice_number) || item.msk_invoice_number || '';
+                case 'fabric_invoice': return (firstRecord && firstRecord.fabric_invoice_number) || item.fabric_invoice || '';
+                case 'fabric_delivery_note': return (firstRecord && firstRecord.delivery_note) || item.fabric_delivery_note || '';
+                case 'fabric_used': return (item.details && item.details.total_fabric_used) ?? item.fabric_used ?? '';
+                case 'fabric_cost': return item.fabric_cost ?? '';
+                case 'fabric_value': return (item.details && item.details.total_fabric_value) ?? item.fabric_value ?? '';
+                case 'size_s': return (item.details && item.details.size_totals && item.details.size_totals.S) ?? item.size_s ?? 0;
+                case 'size_m': return (item.details && item.details.size_totals && item.details.size_totals.M) ?? item.size_m ?? 0;
+                case 'size_l': return (item.details && item.details.size_totals && item.details.size_totals.L) ?? item.size_l ?? 0;
+                case 'size_xl': return (item.details && item.details.size_totals && item.details.size_totals.XL) ?? item.size_xl ?? 0;
+                case 'size_xxl': return (item.details && item.details.size_totals && item.details.size_totals.XXL) ?? item.size_xxl ?? 0;
+                case 'size_xxxl': return (item.details && item.details.size_totals && item.details.size_totals.XXXL) ?? item.size_xxxl ?? 0;
+                case 'total_qty': return (item.details && item.details.size_totals && Object.values(item.details.size_totals).reduce((a, b) => (a || 0) + (b || 0), 0)) ?? item.total_qty ?? 0;
+                case 'sewing_cost': return (firstRecord && firstRecord.price) ?? item.sewing_cost ?? '';
+                case 'sewing_value': return (item.details && item.details.total_stitching_value) ?? item.sewing_value ?? '';
+                default: return item[column] ?? '';
             }
         }
     </script>
