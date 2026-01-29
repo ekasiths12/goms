@@ -45,6 +45,9 @@ class HierarchicalTableManager {
         this.onDataUpdate = options.onDataUpdate || (() => {});
         this.onRowUpdate = options.onRowUpdate || (() => {});
         
+        // Custom render: when set, render() calls customRender(pageData) instead of building rows (for pages that keep their own row markup)
+        this.customRender = options.customRender || null;
+        
         // Initialize
         this.initialize();
     }
@@ -157,17 +160,20 @@ class HierarchicalTableManager {
         const endIndex = Math.min(startIndex + this.itemsPerPage, paginationData.length);
         const pageData = paginationData.slice(startIndex, endIndex);
         
-        this.tableBody.innerHTML = '';
-        
-        if (pageData.length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = '<td colspan="100%" style="text-align: center; padding: 20px; color: var(--text-secondary);">No data found</td>';
-            this.tableBody.appendChild(emptyRow);
+        if (this.customRender && typeof this.customRender === 'function') {
+            this.customRender(pageData);
         } else {
-            if (this.hierarchical) {
-                this.renderHierarchicalTable(pageData, startIndex);
+            this.tableBody.innerHTML = '';
+            if (pageData.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="100%" style="text-align: center; padding: 20px; color: var(--text-secondary);">No data found</td>';
+                this.tableBody.appendChild(emptyRow);
             } else {
-                this.renderFlatTable(pageData, startIndex);
+                if (this.hierarchical) {
+                    this.renderHierarchicalTable(pageData, startIndex);
+                } else {
+                    this.renderFlatTable(pageData, startIndex);
+                }
             }
         }
         

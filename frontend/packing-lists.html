@@ -600,9 +600,10 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
-    <script src="js/common/pagination.js"></script>
+    <script src="js/common/pagination.js?v=2.020"></script>
     <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
+    <script src="js/common/hierarchical-table-manager.js?v=2.020"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -692,12 +693,13 @@
     <script>
         // Global variables
         let packingListData = [];
-        let filteredPackingListData = []; // Add this to track filtered data
+        let filteredPackingListData = []; // Kept for compatibility; tableManager holds current view
         let selectedPackingListIds = [];
         let currentPage = 1;
         const itemsPerPage = 50;
         let filterManager = null;
-        let paginationComponent = null;
+        let tableManager = null;
+        let tableSorter = null;
 
         // API utilities moved to js/common/utils.js
 
@@ -707,16 +709,39 @@
         PageInitializer.onLoad({
             activeTab: 'packing-lists',
             onAuthSuccess: async () => {
-                // Load data first, then initialize FilterManager and Pagination
-                await refreshPackingListTable();
-                
-                // Initialize FilterManager after data is loaded
+                // Table manager and filters first, then load data
+                initializeTableManager();
                 initializeFilterManager();
-                
-                // Initialize PaginationComponent
-                initializePagination();
+                await refreshPackingListTable();
             }
         });
+
+        /**
+         * Initialize table manager (pagination + custom render) and table sorter
+         */
+        function initializeTableManager() {
+            tableManager = new HierarchicalTableManager('packingListTable', {
+                hierarchical: false,
+                itemsPerPage: itemsPerPage,
+                paginationContainerId: 'paginationContainer',
+                customRender: (pageData) => {
+                    populatePackingListTable(pageData, { skipPagination: true });
+                }
+            });
+            tableSorter = window.createTableSorter ? window.createTableSorter('packingListTable', {
+                dataGetter: getPackingListValueForSorting
+            }) : null;
+            if (tableSorter) {
+                const tableEl = document.getElementById('packingListTable');
+                if (tableEl) {
+                    tableEl.addEventListener('tableSorted', function(event) {
+                        const sortedData = event.detail?.data || [];
+                        tableManager.setData(sortedData);
+                        tableSorter.setData(sortedData, getPackingListValueForSorting);
+                    });
+                }
+            }
+        }
 
         /**
          * Initialize FilterManager with packing list filters
@@ -900,11 +925,8 @@
                 data: packingListData,
                 onFilterChange: (filteredData, filterValues) => {
                     filteredPackingListData = filteredData;
-                    currentPage = 1; // Reset to first page when filtering
-                    if (paginationComponent) {
-                        paginationComponent.reset();
-                    }
-                    populatePackingListTable(filteredPackingListData);
+                    if (tableManager) tableManager.setData(filteredData);
+                    if (tableSorter) tableSorter.setData(filteredData, getPackingListValueForSorting);
                 },
                 debounceDelay: 500
             });
@@ -961,17 +983,12 @@
                 console.log('📊 Received packing list data:', data.length, 'records');
                 
                 packingListData = data;
-                filteredPackingListData = data; // Initialize filtered data with all data
-                currentPage = 1; // Reset to first page when new data is loaded
-                if (paginationComponent) {
-                    paginationComponent.reset();
-                }
-                
-                // Update FilterManager with new data
+                filteredPackingListData = data;
                 if (filterManager) {
                     filterManager.updateData(data);
                 } else {
-                    populatePackingListTable(data);
+                    if (tableManager) tableManager.setData(data);
+                    if (tableSorter) tableSorter.setData(data, getPackingListValueForSorting);
                 }
                 console.log('✅ Packing list data loaded successfully');
                 
@@ -984,31 +1001,37 @@
             }
         }
 
-        function populatePackingListTable(data) {
+        function populatePackingListTable(data, options = {}) {
             const tableBody = document.getElementById('packingListTableBody');
             if (!tableBody) {
                 console.error('❌ Could not find table body for population');
                 return;
             }
+            const skipPagination = options.skipPagination === true;
             
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 console.log('📭 No packing lists found');
                 tableBody.innerHTML = '<tr><td colspan="24" class="loading-state">No packing lists found.</td></tr>';
-                updatePaginationControls();
+                if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.update();
+                }
                 return;
             }
             
-            // Calculate pagination
-            const totalPages = Math.ceil(data.length / itemsPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
+            let pageData;
+            let startIndex;
+            if (skipPagination) {
+                pageData = data;
+                startIndex = 0;
+            } else {
+                const totalPages = Math.ceil(data.length / itemsPerPage);
+                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+                startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+                pageData = data.slice(startIndex, endIndex);
             }
             
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, data.length);
-            const pageData = data.slice(startIndex, endIndex);
-            
-            console.log('📋 Populating table with', pageData.length, 'packing lists (page', currentPage, 'of', totalPages, ')');
+            console.log('📋 Populating table with', pageData.length, 'packing lists' + (skipPagination ? '' : ' (page ' + currentPage + ')'));
             let html = '';
             
             pageData.forEach((packingList, pageIndex) => {
@@ -1173,7 +1196,9 @@
             });
             
             tableBody.innerHTML = html;
-            updatePaginationControls();
+            if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                tableManager.paginationComponent.update();
+            }
             console.log('✅ Table population completed');
         }
 
@@ -1536,142 +1561,65 @@
         // Theme functions moved to js/common/utils.js
 
         /**
-         * Initialize PaginationComponent
+         * Custom data getter for packing list sorting (maps header data-sort to API fields)
          */
-        function initializePagination() {
-            paginationComponent = new PaginationComponent({
-                containerId: 'paginationContainer',
-                currentPage: 1,
-                itemsPerPage: itemsPerPage,
-                dataLength: filteredPackingListData.length,
-                onPageChange: (page) => {
-                    currentPage = page;
-                    populatePackingListTable(filteredPackingListData);
-                }
-            });
-        }
-        
-        /**
-         * Update pagination when data changes
-         */
-        function updatePaginationControls() {
-            if (paginationComponent) {
-                paginationComponent.updateDataLength(filteredPackingListData.length);
-                // Sync current page if needed
-                if (paginationComponent.getCurrentPage() !== currentPage) {
-                    paginationComponent.goToPage(currentPage);
-                }
-            }
-        }
-
-        // ===== TABLE SORTING FUNCTIONALITY =====
-        
-        // Initialize table sorter
-        let tableSorter = null;
-
-        // Custom data getter for packing list data
         function getPackingListValueForSorting(item, column) {
+            if (!item) return '';
+            const firstLine = item.lines && item.lines[0];
             switch (column) {
                 case 'created_at':
-                    return item.created_at;
+                    return item.created_at || item.delivery_date || '';
                 case 'packing_list_number':
-                    return item.packing_list_number;
+                    return item.packing_list_serial || item.packing_list_number || '';
                 case 'serial_number':
-                    return item.serial_number;
+                    return (firstLine && firstLine.stitching_invoice_number) || item.serial_number || '';
                 case 'garment':
-                    return item.garment;
+                    return (firstLine && firstLine.stitched_item) || item.garment || '';
                 case 'fabric':
-                    return item.fabric;
+                    return (firstLine && firstLine.fabric_name) || item.fabric || '';
                 case 'color':
-                    return item.color;
+                    return (firstLine && firstLine.color) || item.color || '';
                 case 'customer':
-                    return item.customer;
+                    return item.customer_name || item.customer || '';
                 case 'tax_invoice_number':
-                    return item.tax_invoice_number;
+                    return item.beta_tax_invoice_number || item.tax_invoice_number || '';
                 case 'msk_invoice_number':
-                    return item.msk_invoice_number;
+                    return item.tax_invoice_number || item.msk_invoice_number || '';
                 case 'group_bill_number':
-                    return item.group_bill_number;
+                    return item.group_bill_number || '';
                 case 'fabric_invoice':
-                    return item.fabric_invoice;
+                    return (firstLine && firstLine.fabric_invoice_number) || item.fabric_invoice || '';
                 case 'fabric_delivery_note':
-                    return item.fabric_delivery_note;
+                    return (firstLine && firstLine.delivery_note) || item.fabric_delivery_note || '';
                 case 'fabric_used':
-                    return item.fabric_used;
+                    return (firstLine && parseFloat(firstLine.yards_consumed)) ?? item.fabric_used ?? '';
                 case 'fabric_cost':
-                    return item.fabric_cost;
+                    return (firstLine && parseFloat(firstLine.fabric_unit_price)) ?? item.fabric_cost ?? '';
                 case 'fabric_value':
-                    return item.fabric_value;
+                    return (firstLine && parseFloat(firstLine.total_value)) ?? item.fabric_value ?? '';
                 case 'size_s':
-                    return item.size_s;
                 case 'size_m':
-                    return item.size_m;
                 case 'size_l':
-                    return item.size_l;
                 case 'size_xl':
-                    return item.size_xl;
                 case 'size_xxl':
-                    return item.size_xxl;
-                case 'size_xxxl':
-                    return item.size_xxxl;
+                case 'size_xxxl': {
+                    const key = column.replace('size_', '').toUpperCase();
+                    if (firstLine && firstLine.size_qty_json) {
+                        try {
+                            const qty = JSON.parse(firstLine.size_qty_json.replace(/'/g, '"'));
+                            return parseInt(qty[key] || qty[key.toLowerCase()]) || 0;
+                        } catch (e) { return 0; }
+                    }
+                    return item[column] ?? 0;
+                }
                 case 'total_qty':
-                    return item.total_qty;
+                    return item.total_items ?? item.total_qty ?? 0;
                 case 'sewing_cost':
-                    return item.sewing_cost;
+                    return (firstLine && parseFloat(firstLine.price)) ?? item.sewing_cost ?? '';
                 case 'sewing_value':
-                    return item.sewing_value;
+                    return (firstLine && parseFloat(firstLine.total_value)) ?? item.sewing_value ?? '';
                 default:
-                    return '';
-            }
-        }
-
-        // Initialize table sorter when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load theme immediately to prevent flashing
-            loadTheme();
-            
-            // Initialize table sorter
-            tableSorter = createTableSorter('packingListTable', {
-                dataGetter: getPackingListValueForSorting
-            });
-            
-            // Listen for sort events
-            document.getElementById('packingListTable').addEventListener('tableSorted', function(event) {
-                const { data } = event.detail;
-                packingListData = data;
-                populatePackingListTable(packingListData);
-            });
-            
-            console.log('✅ Packing list table sorter initialized and ready');
-        });
-
-        // Override the refreshPackingListTable function to update table sorter
-        const originalRefreshPackingListTable = refreshPackingListTable;
-        refreshPackingListTable = async function() {
-            await originalRefreshPackingListTable();
-            
-            // Initialize table sorter if not already done
-            if (!tableSorter) {
-                tableSorter = createTableSorter('packingListTable', {
-                    dataGetter: getPackingListValueForSorting
-                });
-                
-                // Listen for sort events
-                document.getElementById('packingListTable').addEventListener('tableSorted', function(event) {
-                    const { data } = event.detail;
-                    packingListData = data;
-                    populatePackingListTable(packingListData);
-                });
-                
-                console.log('✅ Packing list table sorter initialized after data load');
-            }
-            
-            // Update table sorter with new data
-            if (tableSorter && packingListData && packingListData.length > 0) {
-                tableSorter.setData(packingListData, getPackingListValueForSorting);
-                console.log(`💾 Updated packing list table sorter with ${packingListData.length} records`);
-            } else {
-                console.log('⚠️ No packing list data available for table sorter');
+                    return item[column] ?? '';
             }
         }
     </script>

@@ -157,6 +157,12 @@ This document addresses the massive code duplication in frontend HTML files. Ana
 - ✅ Total: ~200-300 lines of duplicate code removed per page
 - ✅ Version updated to GOMSv2.018
 
+### Phase 5.5: Hierarchical Table Manager & Table Migrations (COMPLETED)
+- ✅ Created `frontend/js/common/hierarchical-table-manager.js` – base component for flat and hierarchical tables (pagination, sorting, selection, optional customRender)
+- ✅ **Fabric Invoices**: Migrated to `HierarchicalTableManager` (flat mode), `PaginationComponent`, and `TableSorter`; pagination and column sorting (including Location) working; version GOMSv2.020
+- ✅ **Packing Lists**: Migrated to `HierarchicalTableManager` with `customRender`; 4 visual levels (parent PL → child line → secondary fabric → lining) preserved; pagination by packing list, sorting and filters wired; fixed `startIndex` when `skipPagination`; version GOMSv2.021
+- ✅ **Group Bills**: Migrated to `HierarchicalTableManager` with `customRender`; Group Bills view (parent → Fabric/Stitching summary → detail rows) and Commission Sales view (flat) preserved; toggle, expand/collapse, sorting, filters, and selection unchanged; version GOMSv2.022
+
 ---
 
 ## 2. Filter Behavior Duplication
@@ -457,7 +463,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - [x] Test FilterManager on Packing Lists page (proof of concept)
 - [x] Create `frontend/js/common/pagination.js`
 - [x] Create `frontend/js/common/page-initializer.js`
-- [ ] Create `frontend/js/common/hierarchical-table-manager.js`
+- [x] Create `frontend/js/common/hierarchical-table-manager.js`
 
 ### Phase 4: Standardize Filters (COMPLETED)
 - [x] FilterManager component created with multi-select support
@@ -516,7 +522,7 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - `js/common/utils.js`: ~339 lines (✅ Completed - All Functions #1-6 completed)
 - `js/common/filter-manager.js`: ~720 lines (✅ Completed - with multi-select, tested on Packing Lists)
 - `js/common/pagination.js`: ~269 lines (✅ Created)
-- `js/common/hierarchical-table-manager.js`: ~200 lines (Pending)
+- `js/common/hierarchical-table-manager.js`: ~664 lines (✅ Created – flat/hierarchical, customRender, pagination, sorting)
 - `js/common/page-initializer.js`: ~91 lines (✅ Created)
 - **Total**: ~1,370 lines
 
