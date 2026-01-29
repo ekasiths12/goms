@@ -162,6 +162,7 @@ This document addresses the massive code duplication in frontend HTML files. Ana
 - ✅ **Fabric Invoices**: Migrated to `HierarchicalTableManager` (flat mode), `PaginationComponent`, and `TableSorter`; pagination and column sorting (including Location) working; version GOMSv2.020
 - ✅ **Packing Lists**: Migrated to `HierarchicalTableManager` with `customRender`; 4 visual levels (parent PL → child line → secondary fabric → lining) preserved; pagination by packing list, sorting and filters wired; fixed `startIndex` when `skipPagination`; version GOMSv2.021
 - ✅ **Group Bills**: Migrated to `HierarchicalTableManager` with `customRender`; Group Bills view (parent → Fabric/Stitching summary → detail rows) and Commission Sales view (flat) preserved; toggle, expand/collapse, sorting, filters, and selection unchanged; version GOMSv2.022
+- ✅ **Stitching Records**: Migrated to `HierarchicalTableManager` with `customRender`; 2-level treeview (parent row per record, child rows for garment_fabrics and lining_fabrics) and expand/collapse preserved; pagination by record count, sorting and filters wired; selection by actualIndex preserved; version GOMSv2.023
 
 ---
 

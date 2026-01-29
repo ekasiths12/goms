@@ -586,9 +586,10 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
-    <script src="js/common/pagination.js"></script>
+    <script src="js/common/pagination.js?v=2.023"></script>
     <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
+    <script src="js/common/hierarchical-table-manager.js?v=2.023"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -705,7 +706,8 @@
         const itemsPerPage = 50;
         let currentStitchingRecord = null;
         let filterManager = null;
-        let paginationComponent = null;
+        let tableManager = null;
+        let tableSorter = null;
 
 
         // Authentication functions moved to js/common/utils.js
@@ -715,13 +717,9 @@
         PageInitializer.onLoad({
             activeTab: 'stitching-records',
             onAuthSuccess: async () => {
-                await loadStitchingData();
-                
-                // Initialize FilterManager after data is loaded
+                initializeTableManager();
                 initializeFilterManager();
-                
-                // Initialize PaginationComponent
-                initializePagination();
+                await loadStitchingData();
             }
         });
 
@@ -741,6 +739,33 @@
         }
 
         // Formatting functions moved to js/common/utils.js
+
+        /**
+         * Initialize table manager (pagination + custom render) and table sorter
+         */
+        function initializeTableManager() {
+            tableManager = new HierarchicalTableManager('stitchingTreeview', {
+                hierarchical: false,
+                itemsPerPage: itemsPerPage,
+                paginationContainerId: 'paginationContainer',
+                customRender: (pageData) => {
+                    populateStitchingTreeview(pageData, { skipPagination: true });
+                }
+            });
+            tableSorter = window.createTableSorter ? window.createTableSorter('stitchingTreeview', {
+                dataGetter: getStitchingValueForSorting
+            }) : null;
+            if (tableSorter) {
+                const tableEl = document.getElementById('stitchingTreeview');
+                if (tableEl) {
+                    tableEl.addEventListener('tableSorted', function(event) {
+                        const sortedData = event.detail?.data || [];
+                        tableManager.setData(sortedData);
+                        tableSorter.setData(sortedData, getStitchingValueForSorting);
+                    });
+                }
+            }
+        }
 
         /**
          * Initialize FilterManager with filter configuration
@@ -840,13 +865,9 @@
                 data: allStitchingData || [],
                 onFilterChange: (filteredData, filterValues) => {
                     console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
-                    // Update table with filtered data
                     stitchingData = filteredData;
-                    currentPage = 1; // Reset to first page when filters change
-                    if (paginationComponent) {
-                        paginationComponent.reset();
-                    }
-                    populateStitchingTreeview();
+                    if (tableManager) tableManager.setData(filteredData);
+                    if (tableSorter) tableSorter.setData(filteredData, getStitchingValueForSorting);
                 },
                 debounceDelay: 500
             });
@@ -914,18 +935,12 @@
                     
                     // Store all data for filtering
                     allStitchingData = data;
-                    
-                    // Update FilterManager with new data (it will apply filters and update table)
                     if (filterManager) {
                         filterManager.updateData(data);
                     } else {
-                        // Fallback: if FilterManager not initialized yet, just set data
                         stitchingData = data;
-                    currentPage = 1;
-                    if (paginationComponent) {
-                        paginationComponent.reset();
-                    }
-                    populateStitchingTreeview();
+                        if (tableManager) tableManager.setData(data);
+                        if (tableSorter) tableSorter.setData(data, getStitchingValueForSorting);
                     }
                 } else {
                     console.error('❌ Failed to load stitching data, status:', response.status);
@@ -939,26 +954,34 @@
             }
         }
 
-        function populateStitchingTreeview() {
-            console.log('🔄 populateStitchingTreeview called with', stitchingData.length, 'records');
+        function populateStitchingTreeview(data, options = {}) {
+            const skipPagination = options.skipPagination === true;
+            const sourceData = skipPagination ? (data || []) : stitchingData;
             const tbody = document.getElementById('stitchingTreeviewBody');
             tbody.innerHTML = '';
 
-            if (stitchingData.length === 0) {
+            if (!sourceData || sourceData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: var(--text-secondary);">No stitching records found. Try creating some stitching records from the Fabric Invoices page.</td></tr>';
-                updatePaginationControls();
+                if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.update();
+                }
                 return;
             }
 
-            // Calculate pagination
-            const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
+            let pageData;
+            let startIndex;
+            if (skipPagination) {
+                pageData = sourceData;
+                startIndex = tableManager && typeof tableManager.getCurrentPage === 'function'
+                    ? (tableManager.getCurrentPage() - 1) * itemsPerPage
+                    : 0;
+            } else {
+                const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
+                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+                startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, stitchingData.length);
+                pageData = stitchingData.slice(startIndex, endIndex);
             }
-            
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, stitchingData.length);
-            const pageData = stitchingData.slice(startIndex, endIndex);
 
             // Populate treeview
             pageData.forEach((record, pageIndex) => {
@@ -1101,8 +1124,10 @@
                 }
             });
 
-            console.log('✅ Stitching treeview populated with', pageData.length, 'rows (page', currentPage, 'of', totalPages, ')');
-            updatePaginationControls();
+            console.log('✅ Stitching treeview populated with', pageData.length, 'rows' + (skipPagination ? '' : ' (page ' + currentPage + ')'));
+            if (!skipPagination && tableManager && tableManager.paginationComponent) {
+                tableManager.paginationComponent.update();
+            }
             updateSelectAllCheckbox();
         }
         
@@ -1339,38 +1364,6 @@
             }
         }
 
-        // Pagination functions - using utilities with page-specific variables
-        /**
-         * Initialize PaginationComponent
-         */
-        function initializePagination() {
-            paginationComponent = new PaginationComponent({
-                containerId: 'paginationContainer',
-                currentPage: 1,
-                itemsPerPage: itemsPerPage,
-                dataLength: stitchingData.length,
-                onPageChange: (page) => {
-                    currentPage = page;
-                    populateStitchingTreeview();
-                }
-            });
-        }
-        
-        /**
-         * Update pagination when data changes
-         */
-        function updatePaginationControls() {
-            if (paginationComponent) {
-                paginationComponent.updateDataLength(stitchingData.length);
-                // Sync current page if needed
-                if (paginationComponent.getCurrentPage() !== currentPage) {
-                    paginationComponent.goToPage(currentPage);
-                }
-            }
-        }
-
-
-
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('#stitchingTableBody input[type="checkbox"]');
@@ -1392,13 +1385,12 @@
         function toggleSelectAllTree() {
             const selectAllCheckbox = document.getElementById('selectAllTree');
             const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
-            
-            console.log('🔍 toggleSelectAllTree called, selectAllCheckbox.checked:', selectAllCheckbox.checked);
+            const page = tableManager && typeof tableManager.getCurrentPage === 'function' ? tableManager.getCurrentPage() : currentPage;
             
             // Convert NodeList to Array for forEach method
             const checkboxesArray = Array.from(checkboxes);
             checkboxesArray.forEach((checkbox, index) => {
-                const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                const actualIndex = (page - 1) * itemsPerPage + index;
                 if (selectAllCheckbox.checked) {
                     checkbox.checked = true;
                     if (!selectedRows.includes(actualIndex)) {
@@ -1428,15 +1420,15 @@
             }
             
             // Update the checkbox state
+            const page = tableManager && typeof tableManager.getCurrentPage === 'function' ? tableManager.getCurrentPage() : currentPage;
             const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
             checkboxes.forEach((checkbox, index) => {
-                const checkboxActualIndex = (currentPage - 1) * itemsPerPage + index;
+                const checkboxActualIndex = (page - 1) * itemsPerPage + index;
                 if (checkboxActualIndex === actualIndex) {
                     checkbox.checked = selectedRows.includes(actualIndex);
                 }
             });
             
-            // Update select all checkbox
             updateSelectAllCheckbox();
         }
 
@@ -2144,120 +2136,53 @@
         // Theme Management
         // Theme functions moved to js/common/utils.js
 
-        // ===== TABLE SORTING FUNCTIONALITY =====
-        
-        // Initialize table sorter
-        let tableSorter = null;
-
-        // Custom data getter for stitching data
+        /**
+         * Custom data getter for stitching records sorting (maps header data-sort to API fields)
+         */
         function getStitchingValueForSorting(item, column) {
+            if (!item) return '';
+            let sizeQty = {};
+            if (item.size_qty_json) {
+                try {
+                    sizeQty = JSON.parse(item.size_qty_json.replace(/'/g, '"'));
+                } catch (e) {
+                    sizeQty = {};
+                }
+            }
+            const totalQty = Object.values(sizeQty).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+            const yardsConsumed = item.yard_consumed || 0;
+            const fabricUnitPrice = parseFloat(item.fabric_unit_price) || 0;
+            const fabricValue = fabricUnitPrice * yardsConsumed;
+            const yardsPerPiece = totalQty > 0 ? yardsConsumed / totalQty : 0;
             switch (column) {
-                case 'created_at':
-                    return item.created_at;
-                case 'packing_list_number':
-                    return item.packing_list_number;
-                case 'serial_number':
-                    return item.serial_number;
-                case 'garment':
-                    return item.garment;
-                case 'fabric':
-                    return item.fabric;
-                case 'color':
-                    return item.color;
-                case 'customer':
-                    return item.customer;
-                case 'tax_invoice_number':
-                    return item.tax_invoice_number;
-                case 'fabric_invoice':
-                    return item.fabric_invoice;
-                case 'fabric_delivery_note':
-                    return item.fabric_delivery_note;
-                case 'fabric_used':
-                    return item.fabric_used;
-                case 'fabric_cost':
-                    return item.fabric_cost;
-                case 'fabric_value':
-                    return item.fabric_value;
-                case 'size_s':
-                    return item.size_s;
-                case 'size_m':
-                    return item.size_m;
-                case 'size_l':
-                    return item.size_l;
-                case 'size_xl':
-                    return item.size_xl;
-                case 'size_xxl':
-                    return item.size_xxl;
-                case 'size_xxxl':
-                    return item.size_xxxl;
-                case 'total_qty':
-                    return item.total_qty;
-                case 'sewing_cost':
-                    return item.sewing_cost;
-                case 'sewing_price':
-                    return item.price || 0;
-                case 'sewing_profit':
-                    return item.stitching_profit || 0;
-                case 'sewing_value':
-                    return item.total_value || 0;
-                case 'sewing_earning':
-                    return (item.stitching_profit || 0) * (item.total_qty || 0);
-                case 'yards_per_piece':
-                    return item.yards_per_piece;
-                case 'garment_cost':
-                    return item.garment_cost;
-                default:
-                    return '';
-            }
-        }
-
-        // Initialize table sorter when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load theme immediately to prevent flashing
-            loadTheme();
-            
-            // Initialize table sorter
-            tableSorter = createTableSorter('stitchingTreeview', {
-                dataGetter: getStitchingValueForSorting
-            });
-            
-            // Listen for sort events
-            document.getElementById('stitchingTreeview').addEventListener('tableSorted', function(event) {
-                const { data } = event.detail;
-                stitchingData = data;
-                populateStitchingTreeview();
-            });
-            
-            console.log('✅ Stitching table sorter initialized and ready');
-        });
-
-        // Override the loadStitchingData function to update table sorter
-        const originalLoadStitchingData = loadStitchingData;
-        loadStitchingData = async function() {
-            await originalLoadStitchingData();
-            
-            // Initialize table sorter if not already done
-            if (!tableSorter) {
-                tableSorter = createTableSorter('stitchingTreeview', {
-                    dataGetter: getStitchingValueForSorting
-                });
-                
-                // Listen for sort events
-                document.getElementById('stitchingTreeview').addEventListener('tableSorted', function(event) {
-                    const { data } = event.detail;
-                    stitchingData = data;
-                    populateStitchingTreeview();
-                });
-                
-                console.log('✅ Stitching table sorter initialized after data load');
-            }
-            
-            // Update table sorter with new data
-            if (tableSorter && stitchingData && stitchingData.length > 0) {
-                tableSorter.setData(stitchingData, getStitchingValueForSorting);
-                console.log(`💾 Updated stitching table sorter with ${stitchingData.length} records`);
-            } else {
-                console.log('⚠️ No stitching data available for table sorter');
+                case 'created_at': return item.created_at || '';
+                case 'packing_list_number': return item.packing_list_number || '';
+                case 'serial_number': return item.stitching_invoice_number || item.serial_number || '';
+                case 'garment': return item.stitched_item || item.garment || '';
+                case 'fabric': return item.item_name || item.fabric || '';
+                case 'color': return item.color || '';
+                case 'customer': return item.customer_name || item.customer || '';
+                case 'tax_invoice_number': return item.tax_invoice_number || '';
+                case 'fabric_invoice': return item.fabric_invoice_number || item.fabric_invoice || '';
+                case 'fabric_delivery_note': return item.delivery_note || item.fabric_delivery_note || '';
+                case 'fabric_used': return yardsConsumed;
+                case 'fabric_cost': return fabricUnitPrice;
+                case 'fabric_value': return fabricValue;
+                case 'size_s': return parseInt(sizeQty.S) || 0;
+                case 'size_m': return parseInt(sizeQty.M) || 0;
+                case 'size_l': return parseInt(sizeQty.L) || 0;
+                case 'size_xl': return parseInt(sizeQty.XL) || 0;
+                case 'size_xxl': return parseInt(sizeQty.XXL) || 0;
+                case 'size_xxxl': return parseInt(sizeQty.XXXL) || 0;
+                case 'total_qty': return totalQty;
+                case 'sewing_cost': return parseFloat(item.stitching_cost) || 0;
+                case 'sewing_price': return parseFloat(item.price) || 0;
+                case 'sewing_profit': return parseFloat(item.stitching_profit) || 0;
+                case 'sewing_value': return parseFloat(item.total_value) || 0;
+                case 'sewing_earning': return (parseFloat(item.stitching_profit) || 0) * totalQty;
+                case 'yards_per_piece': return yardsPerPiece;
+                case 'garment_cost': return item.garment_cost ?? 0;
+                default: return item[column] ?? '';
             }
         }
     </script>
