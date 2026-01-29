@@ -4,7 +4,7 @@
 
 This document addresses the massive code duplication in frontend HTML files. Analysis shows **~11,000+ lines of duplicated code** across themes, tables, sorting, filters, and common behaviors that should be extracted into reusable components.
 
-**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed, pagination refactoring completed (all pages use PaginationComponent and PageInitializer), and **table migrations completed**: Fabric Invoices, Packing Lists, Group Bills, and Stitching Records now use `HierarchicalTableManager` (with `PaginationComponent` and `TableSorter`). Current version: GOMSv2.023.
+**Status**: Phase 1 (CSS Extraction), Navigation Bar refactoring, JavaScript Utilities (Functions #1-6), Filter Manager component completed, all filter migrations completed, pagination refactoring completed (all pages use PaginationComponent and PageInitializer), and **table migrations completed**: Fabric Invoices, Packing Lists, Group Bills, and Stitching Records now use `HierarchicalTableManager` (with `PaginationComponent` and `TableSorter`). Phase 6 cleanup (duplicate CSS/comments removed). Current version: GOMSv2.024.
 
 ---
 
@@ -488,11 +488,12 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 - [x] Update version to GOMSv2.018
 - [x] Commit changes
 
-### Phase 6: Cleanup (PENDING)
-- [ ] Remove all remaining duplicated code
-- [ ] Ensure all pages use common components
-- [ ] Update documentation
-- [ ] Final testing
+### Phase 6: Cleanup (IN PROGRESS)
+- [x] Remove duplicate CSS from pages (filter-controls, filter-row, filter-group, filter-input, filter-dropdown, etc. in common.css)
+- [x] Remove duplicate `formatDateForAPI` from stitching-records (use `GOMS.date.formatForAPI` from utils.js)
+- [x] Remove redundant "Pagination Styles - moved to common.css" and duplicate filter/action-buttons blocks from group-bills, packing-lists, stitching-records
+- [x] Simplify comments in fabric-invoices (pagination wrappers, API/auth moved to utils)
+- [ ] Final testing (see testing list below)
 
 ---
 
@@ -552,6 +553,20 @@ After careful inspection of all main pages, here's the comprehensive breakdown:
 3. **Create components** - refactor one page completely
 4. **Apply to other pages** - one at a time
 5. **Test each migration** - don't break existing functionality
+
+---
+
+## Testing After Phase 6 Cleanup
+
+After the cleanup (removal of duplicate CSS, `formatDateForAPI`, and redundant comments), verify the following:
+
+1. **Login** (`login.html`): Theme toggle, login flow, redirect after auth.
+2. **Dashboard** (`dashboard.html`): Nav, theme, filter controls (Customer, Garment Type, Location, Date From/To), date range buttons (30D, 60D, 90D, YTD, LFY), KPI cards, charts load.
+3. **Fabric Invoices** (`fabric-invoices.html`): Nav, theme, FilterManager (Customer, Fab Inv, Tax Inv, Item, DN, Location, dates, Stock Status), table sort, pagination (Next/Previous, page numbers), row selection, bulk actions, inline edit, modals.
+4. **Packing Lists** (`packing-lists.html`): Nav, theme, FilterManager (PL#, Serial#, Fabric, Customer, etc.), hierarchical table (expand/collapse parent/child/secondary/lining), pagination, selection, PDF, assign tax invoice.
+5. **Group Bills** (`group-bills.html`): Nav, theme, FilterManager (Customer, Group Number, dates), toggle "Show Group Bills" / "Show Commission Sales", expand/collapse groups and fabric/stitching details, pagination, selection, PDF actions.
+6. **Stitching Records** (`stitching-records.html`): Nav, theme, FilterManager (PL#, Serial#, Fabric, Customer, dates, Delivery Status), treeview expand/collapse, pagination, selection, Refresh/Export/Generate Packing List/Delete Selected; date filters use `isDateInRange`/`formatForAPI` from utils.
+7. **Common**: All pages use `common.css` (no missing filter/button/table styles), nav from `nav-bar.js`, theme from `utils.js`, no console errors.
 
 ---
 

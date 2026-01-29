@@ -4,7 +4,7 @@
  */
 
 // Version number - update this when you need to increment the version
-const NAV_VERSION = 'GOMSv2.023';
+const NAV_VERSION = 'GOMSv2.024';
 
 /**
  * Render navigation bar

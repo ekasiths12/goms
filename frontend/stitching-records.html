@@ -7,86 +7,7 @@
     <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/table-sorting.css">
     <style>
-        /* Page-specific styles only - common styles moved to common.css */
-
-
-
-        /* Filter Controls */
-        .filter-controls {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .filter-input {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            min-width: 120px;
-            transition: border-color 0.3s ease;
-        }
-
-        .filter-input:focus {
-            outline: none;
-            border-color: var(--focus-color);
-        }
-
-        .filter-select {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            min-width: 120px;
-            transition: border-color 0.3s ease;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--focus-color);
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .radio-group input[type="radio"] {
-            margin-right: 5px;
-        }
-
-        .radio-group label {
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
-        }
+        /* Page-specific styles only - filter/nav/pagination in common.css */
 
         /* Action Buttons */
         .action-buttons {
@@ -250,8 +171,6 @@
         .treeview-container::-webkit-scrollbar-thumb:hover {
             background: var(--nav-active);
         }
-
-        /* Pagination Styles - moved to common.css */
 
         /* Checkbox styling */
         .checkbox-wrapper {
@@ -586,10 +505,10 @@
     <script src="js/common/nav-bar.js"></script>
     <script src="js/common/utils.js"></script>
     <script src="js/common/filter-manager.js"></script>
-    <script src="js/common/pagination.js?v=2.023"></script>
+    <script src="js/common/pagination.js"></script>
     <script src="js/common/page-initializer.js"></script>
     <script src="js/table-sorting.js"></script>
-    <script src="js/common/hierarchical-table-manager.js?v=2.023"></script>
+    <script src="js/common/hierarchical-table-manager.js"></script>
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -723,22 +642,7 @@
             }
         });
 
-        function formatDateForAPI(dateString) {
-            if (!dateString) return '';
-            // Convert DD/MM/YY to YYYY-MM-DD
-            const parts = dateString.split('/');
-            if (parts.length === 3) {
-                const day = parts[0];
-                const month = parts[1];
-                const year = parts[2];
-                // Ensure year is 4 digits (assume 20xx for YY format)
-                const fullYear = year.length === 2 ? '20' + year : year;
-                return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            return dateString;
-        }
-
-        // Formatting functions moved to js/common/utils.js
+        // Date formatting: use GOMS.date.formatForAPI / formatForAPI from utils.js
 
         /**
          * Initialize table manager (pagination + custom render) and table sorter
