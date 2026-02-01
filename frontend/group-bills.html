@@ -705,99 +705,80 @@
 
 
     <script>
-        // Group Bills Functions
         let groupBillsData = [];
-        let allGroupBillsData = []; // Store all group bills data for client-side filtering
-        let allCommissionSalesData = []; // Store all commission sales data for client-side filtering
         let selectedGroupBillIds = [];
         let selectedCommissionSaleIds = [];
-        let currentPage = 1;
-        const itemsPerPage = 50;
+        const GROUP_BILLS_PAGE_SIZE = 50;
+        let groupBillsLoadAbortController = null;
         let showingCommissionSales = false;
         let filterManager = null;
         let tableManager = null;
         let tableSorter = null;
 
-        // API utilities moved to js/common/utils.js
+        function buildGroupBillsQueryParams(filterValues, page) {
+            const f = filterValues || (filterManager ? filterManager.getFilterValues() : {});
+            const params = new URLSearchParams();
+            params.set('limit', String(GROUP_BILLS_PAGE_SIZE));
+            params.set('offset', String(((page || 1) - 1) * GROUP_BILLS_PAGE_SIZE));
+            if (f.customer && (Array.isArray(f.customer) ? f.customer.length : f.customer)) {
+                params.set('customer', Array.isArray(f.customer) ? f.customer.join(',') : f.customer);
+            }
+            if (f.dateFrom && String(f.dateFrom).trim()) params.set('date_from', String(f.dateFrom).trim());
+            if (f.dateTo && String(f.dateTo).trim()) params.set('date_to', String(f.dateTo).trim());
+            return params.toString();
+        }
 
-        // Load data when page loads
-        // Authentication functions moved to js/common/utils.js
-
-        // Initialize page using PageInitializer
         PageInitializer.onLoad({
             activeTab: 'group-bills',
             onAuthSuccess: async () => {
                 initializeTableManager();
-                initializeFilterManager();
-                await loadGroupBillsData();
+                const filterOptions = await fetch(getApiBaseUrl() + '/api/group-bills/filter-options').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+                initializeFilterManager(filterOptions);
+                await loadGroupBillsData(1, filterManager.getFilterValues());
             }
         });
 
-        async function loadGroupBillsData() {
-            console.log('🔄 loadGroupBillsData called');
-            
+        async function loadGroupBillsData(page, filterValues) {
             const tbody = document.getElementById('groupBillsTableBody');
-            if (!tbody) {
-                console.error('❌ Group bills table body not found');
-                return;
-            }
-            
-            console.log('✅ Found group bills table body, showing loading state');
-            // Show loading state
-            tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading group bills data...</td></tr>';
-            
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading...</td></tr>';
+            if (groupBillsLoadAbortController) groupBillsLoadAbortController.abort();
+            groupBillsLoadAbortController = new AbortController();
+            const queryString = buildGroupBillsQueryParams(filterValues, page);
+            const baseUrl = getApiBaseUrl();
+            const url = showingCommissionSales
+                ? `${baseUrl}/api/group-bills/commission-sales?${queryString}&_t=${Date.now()}`
+                : `${baseUrl}/api/group-bills?${queryString}&_t=${Date.now()}`;
             try {
-                const baseUrl = getApiBaseUrl();
-                
-                // Load all data for both views (client-side filtering)
-                console.log('🌐 Loading all group bills data...');
-                const groupBillsResponse = await fetch(`${baseUrl}/api/group-bills?_t=${Date.now()}`, {
+                const response = await fetch(url, {
                     method: 'GET',
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
+                    headers: { 'Accept': 'application/json' },
+                    signal: groupBillsLoadAbortController.signal
                 });
-                
-                console.log('🌐 Loading all commission sales data...');
-                const commissionSalesResponse = await fetch(`${baseUrl}/api/group-bills/commission-sales?_t=${Date.now()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
-                });
-                
-                console.log('📡 Group bills response status:', groupBillsResponse.status);
-                console.log('📡 Commission sales response status:', commissionSalesResponse.status);
-                
-                if (groupBillsResponse.ok && commissionSalesResponse.ok) {
-                    allGroupBillsData = await groupBillsResponse.json();
-                    allCommissionSalesData = await commissionSalesResponse.json();
-                    console.log('📊 Received group bills data:', allGroupBillsData.length, 'records');
-                    console.log('📊 Received commission sales data:', allCommissionSalesData.length, 'records');
-                    
-                    groupBillsData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-                    if (filterManager) {
-                        const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-                        filterManager.updateData(currentData);
-                    } else {
-                        if (tableManager) tableManager.setData(groupBillsData);
-                        if (tableSorter) tableSorter.setData(groupBillsData, getGroupBillsValueForSorting);
-                    }
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const json = await response.json();
+                const pageNum = page || 1;
+                const offset = (pageNum - 1) * GROUP_BILLS_PAGE_SIZE;
+                let items, total;
+                if (Array.isArray(json)) {
+                    total = json.length;
+                    items = json.slice(offset, offset + GROUP_BILLS_PAGE_SIZE);
                 } else {
-                    console.error('❌ Failed to load data');
-                    if (!groupBillsResponse.ok) {
-                        console.error('❌ Group bills response status:', groupBillsResponse.status);
-                    }
-                    if (!commissionSalesResponse.ok) {
-                        console.error('❌ Commission sales response status:', commissionSalesResponse.status);
-                    }
-                    tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Failed to load group bills data. Please try refreshing the page.</td></tr>';
+                    items = json.items || [];
+                    total = json.total != null ? json.total : items.length;
                 }
-            } catch (error) {
-                console.error('❌ Error loading group bills data:', error);
-                tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Error loading group bills data. Please check your connection and try again.</td></tr>';
+                groupBillsData = items;
+                tableManager.setData(items);
+                tableManager.setServerSideTotal(total);
+                if (pageNum > 1 && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.currentPage = pageNum;
+                    tableManager.paginationComponent.update();
+                }
+                if (tableSorter) tableSorter.setData(items, getGroupBillsValueForSorting);
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                console.error('Error loading group bills data:', err);
+                tbody.innerHTML = '<tr><td colspan="25" style="text-align: center; padding: 20px; color: #f44336;">Failed to load data. Please try again.</td></tr>';
             }
         }
 
@@ -842,26 +823,7 @@
             selectedCommissionSaleIds = [];
             updateActionButtons();
             
-            // Update FilterManager and table with appropriate data and re-apply filters
-            if (filterManager) {
-                const currentData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-                // Update FilterManager data and refresh filter options
-                filterManager.updateData(currentData);
-                // Re-populate filter options for Group Number (only shows for group bills)
-                const groupNumberFilter = filterManager.filters.find(f => f.id === 'groupNumber');
-                if (groupNumberFilter) {
-                    // Force refresh of dropdown options
-                    const dropdown = document.getElementById(`dropdown_groupNumber`);
-                    if (dropdown) {
-                        const searchInput = dropdown.querySelector('.filter-input-search');
-                        const currentSearch = searchInput ? searchInput.value : '';
-                        filterManager.populateDropdownOptions(groupNumberFilter, currentSearch);
-                    }
-                }
-            } else {
-                // Fallback: reload data if FilterManager not initialized
-                loadGroupBillsData();
-            }
+            loadGroupBillsData(1, filterManager ? filterManager.getFilterValues() : {});
         }
         
         function updateTableHeadersForCommissionSales() {
@@ -924,19 +886,19 @@
             const skipPagination = options.skipPagination === true;
             let pageData;
             let startIndex;
+            const pageNum = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
+            const perPage = (tableManager && tableManager.itemsPerPage) || GROUP_BILLS_PAGE_SIZE;
             if (skipPagination && data != null) {
                 pageData = data;
-                startIndex = 0;
+                startIndex = (pageNum - 1) * perPage;
             } else {
-                const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
-                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-                startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+                const totalPages = Math.ceil(groupBillsData.length / perPage);
+                const currentPage = Math.min(pageNum, totalPages || 1);
+                startIndex = (currentPage - 1) * perPage;
+                const endIndex = Math.min(startIndex + perPage, groupBillsData.length);
                 pageData = groupBillsData.slice(startIndex, endIndex);
             }
-            
             tbody.innerHTML = '';
-            
             (pageData || []).forEach((sale, pageIndex) => {
                 const actualIndex = (startIndex || 0) + pageIndex;
                 const row = document.createElement('tr');
@@ -989,19 +951,19 @@
             
             let pageData;
             let startIndex;
+            const pageNum = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
+            const perPage = (tableManager && tableManager.itemsPerPage) || GROUP_BILLS_PAGE_SIZE;
             if (skipPagination) {
                 pageData = sourceData;
-                startIndex = 0;
+                startIndex = (pageNum - 1) * perPage;
             } else {
-                const totalPages = Math.ceil(groupBillsData.length / itemsPerPage);
-                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-                startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = Math.min(startIndex + itemsPerPage, groupBillsData.length);
+                const totalPages = Math.ceil(groupBillsData.length / perPage);
+                const currentPage = Math.min(pageNum, totalPages || 1);
+                startIndex = (currentPage - 1) * perPage;
+                const endIndex = Math.min(startIndex + perPage, groupBillsData.length);
                 pageData = groupBillsData.slice(startIndex, endIndex);
             }
-            
             tbody.innerHTML = '';
-            
             pageData.forEach((groupBill, pageIndex) => {
                 const actualIndex = startIndex + pageIndex;
                 // Level 1: Group Bill Summary (Parent Row)
@@ -1403,7 +1365,7 @@
                     // Clear selections and reload the data to reflect changes
                     selectedCommissionSaleIds = [];
                     updateActionButtons();
-                    loadGroupBillsData();
+                    loadGroupBillsData(1, filterManager ? filterManager.getFilterValues() : {});
                 } else {
                     const errorData = await response.json();
                     alert(`Error deleting commission sale: ${errorData.error || 'Unknown error'}`);
@@ -1460,8 +1422,10 @@
         function initializeTableManager() {
             tableManager = new HierarchicalTableManager('groupBillsTable', {
                 hierarchical: false,
-                itemsPerPage: itemsPerPage,
+                itemsPerPage: GROUP_BILLS_PAGE_SIZE,
                 paginationContainerId: 'paginationContainer',
+                serverSidePagination: true,
+                onPageChange: (page) => loadGroupBillsData(page, filterManager ? filterManager.getFilterValues() : {}),
                 customRender: (pageData) => {
                     if (showingCommissionSales) {
                         populateCommissionSalesTable(pageData, { skipPagination: true });
@@ -1487,11 +1451,10 @@
         }
 
         /**
-         * Initialize FilterManager with filter configuration
+         * Initialize FilterManager (server-side loading; options from API).
          */
-        function initializeFilterManager() {
-            console.log('🔄 Initializing FilterManager...');
-            
+        function initializeFilterManager(filterOptions) {
+            const opts = filterOptions || {};
             const filterConfig = [
                 {
                     id: 'customer',
@@ -1499,6 +1462,7 @@
                     label: 'Customer',
                     placeholder: 'Select Customer',
                     multiSelect: true,
+                    options: (opts.customers || []).map(v => ({ value: v, label: v })),
                     customExtract: (item) => {
                         // Handle both group bills and commission sales data structures
                         // Check if item has commission_date (commission sales) or group_number (group bills)
@@ -1632,19 +1596,14 @@
                     }
                 }
             ];
-            
-            // Get initial data based on current view
-            const initialData = showingCommissionSales ? allCommissionSalesData : allGroupBillsData;
-            
+
             filterManager = new FilterManager({
                 containerId: 'filterControls',
                 filters: filterConfig,
-                data: initialData || [],
+                data: [],
+                serverSide: true,
                 onFilterChange: (filteredData, filterValues) => {
-                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
-                    groupBillsData = filteredData;
-                    if (tableManager) tableManager.setData(filteredData);
-                    if (tableSorter) tableSorter.setData(filteredData, getGroupBillsValueForSorting);
+                    loadGroupBillsData(1, filterValues);
                 },
                 debounceDelay: 500
             });
@@ -1676,7 +1635,7 @@
         }
 
         function refreshGroupBillsTable() {
-            loadGroupBillsData();
+            loadGroupBillsData(1, filterManager ? filterManager.getFilterValues() : {});
         }
 
 
@@ -1737,7 +1696,7 @@
                 
                 if (response.ok) {
                     alert('Group bill deleted successfully');
-                    loadGroupBillsData();
+                    loadGroupBillsData(1, filterManager ? filterManager.getFilterValues() : {});
                 } else {
                     const error = await response.json();
                     alert(`Failed to delete group bill: ${error.error}`);

@@ -37,7 +37,13 @@ class HierarchicalTableManager {
         // Pagination
         this.paginationComponent = null;
         this.paginationContainerId = options.paginationContainerId || 'paginationContainer';
-        
+        /** When true, data is one page from the server; total count comes from setServerSideTotal(total). */
+        this.serverSidePagination = options.serverSidePagination || false;
+        /** Total record count from server (used when serverSidePagination is true). */
+        this.serverSideTotal = 0;
+        /** Callback when user requests a page (page number). Page should refetch with offset and call setData + setServerSideTotal. */
+        this.onPageChange = options.onPageChange || null;
+
         // Action buttons configuration
         this.actionButtons = options.actionButtons || [];
         
@@ -91,41 +97,61 @@ class HierarchicalTableManager {
             return false;
         }
 
-        // Don't re-initialize if already exists
         if (this.paginationComponent) {
             return true;
         }
-        
+
+        const onPageChangeHandler = this.serverSidePagination && this.onPageChange
+            ? (page) => {
+                this.currentPage = page;
+                this.onPageChange(page);
+            }
+            : (page) => {
+                this.currentPage = page;
+                this.render();
+            };
+
         this.paginationComponent = new PaginationComponent({
             containerId: this.paginationContainerId,
             currentPage: this.currentPage,
             itemsPerPage: this.itemsPerPage,
             dataLength: this.getPaginationDataLength(),
-            onPageChange: (page) => {
-                this.currentPage = page;
-                this.render();
-            }
+            onPageChange: onPageChangeHandler
         });
 
         return true;
     }
     
     /**
-     * Set the main data array
+     * Set the main data array. When serverSidePagination is true, data is one page; call setServerSideTotal(total) after this to update pagination.
      */
     setData(data) {
         this.data = data || [];
         this.filteredData = [...this.data];
-        this.currentPage = 1;
-        
-        // Update pagination component if it exists
+        if (!this.serverSidePagination) {
+            this.currentPage = 1;
+        }
         if (this.paginationComponent) {
             this.paginationComponent.updateDataLength(this.getPaginationDataLength());
-            this.paginationComponent.reset();
+            if (!this.serverSidePagination) {
+                this.paginationComponent.reset();
+            } else {
+                this.paginationComponent.update();
+            }
         }
-        
         this.render();
         this.onDataUpdate(this.data);
+    }
+
+    /**
+     * Set total record count from server (for server-side pagination). Call after setData(pageItems).
+     */
+    setServerSideTotal(total) {
+        this.serverSideTotal = Math.max(0, parseInt(total, 10) || 0);
+        if (this.paginationComponent) {
+            this.paginationComponent.updateDataLength(this.serverSideTotal);
+            this.paginationComponent.update();
+        }
     }
     
     /**
@@ -150,15 +176,20 @@ class HierarchicalTableManager {
      */
     render() {
         if (!this.tableBody) return;
-        
-        // Get current page from PaginationComponent if available
+
         const page = this.paginationComponent ? this.paginationComponent.getCurrentPage() : this.currentPage;
-        
-        // For hierarchical tables: paginate by parent rows, not raw records
-        const paginationData = this.hierarchical ? this.getParentRows(this.filteredData) : this.filteredData;
-        const startIndex = (page - 1) * this.itemsPerPage;
-        const endIndex = Math.min(startIndex + this.itemsPerPage, paginationData.length);
-        const pageData = paginationData.slice(startIndex, endIndex);
+
+        let pageData;
+        let startIndex;
+        if (this.serverSidePagination) {
+            pageData = this.filteredData;
+            startIndex = (page - 1) * this.itemsPerPage;
+        } else {
+            const paginationData = this.hierarchical ? this.getParentRows(this.filteredData) : this.filteredData;
+            startIndex = (page - 1) * this.itemsPerPage;
+            const endIndex = Math.min(startIndex + this.itemsPerPage, paginationData.length);
+            pageData = paginationData.slice(startIndex, endIndex);
+        }
         
         if (this.customRender && typeof this.customRender === 'function') {
             this.customRender(pageData);
@@ -639,6 +670,7 @@ class HierarchicalTableManager {
      * - Hierarchical tables: total parent rows
      */
     getPaginationDataLength() {
+        if (this.serverSidePagination) return this.serverSideTotal;
         if (!this.hierarchical) return this.filteredData.length;
         return this.getParentRows(this.filteredData).length;
     }

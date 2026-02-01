@@ -14,11 +14,20 @@ from extensions import db
 
 packing_lists_bp = Blueprint('packing_lists', __name__)
 
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 500
+
+
+def _parse_multi_value(param):
+    if not param or not str(param).strip():
+        return []
+    return [v.strip() for v in str(param).split(',') if v.strip()]
+
+
 @packing_lists_bp.route('/', methods=['GET'])
 def get_packing_lists():
-    """Get all packing lists with optional filters"""
+    """Get all packing lists with optional filters. Supports server-side pagination (limit/offset)."""
     try:
-        # Get query parameters for filtering
         pl_serial = request.args.get('pl_serial')
         stitch_serial = request.args.get('stitch_serial')
         fabric_name = request.args.get('fabric_name')
@@ -28,37 +37,38 @@ def get_packing_lists():
         fabric_dn = request.args.get('fabric_dn')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        billing_status = request.args.get('billing_status', 'all')  # all, billed, unbilled
-        
-        # Build query
+        billing_status = request.args.get('billing_status', 'all')
+        limit = min(int(request.args.get('limit', DEFAULT_LIMIT)), MAX_LIMIT)
+        offset = max(0, int(request.args.get('offset', 0)))
+
         query = PackingList.query.join(Customer)
-        
-        if pl_serial:
+
+        vals = _parse_multi_value(pl_serial)
+        if vals:
+            query = query.filter(PackingList.packing_list_serial.in_(vals))
+        elif pl_serial:
             query = query.filter(PackingList.packing_list_serial.ilike(f'%{pl_serial}%'))
-        
         if stitch_serial:
             query = query.join(PackingListLine).join(StitchingInvoice).filter(
                 StitchingInvoice.stitching_invoice_number.ilike(f'%{stitch_serial}%')
             )
-        
         if fabric_name:
             query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine).filter(
                 InvoiceLine.item_name.ilike(f'%{fabric_name}%')
             )
-        
-        if customer:
+        vals = _parse_multi_value(customer)
+        if vals:
+            query = query.filter(Customer.short_name.in_(vals))
+        elif customer:
             query = query.filter(Customer.short_name.ilike(f'%{customer}%'))
-        
         if tax_invoice:
             query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine).join(Invoice).filter(
                 Invoice.tax_invoice_number.ilike(f'%{tax_invoice}%')
             )
-        
         if fabric_invoice:
             query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine).join(Invoice).filter(
                 Invoice.invoice_number.ilike(f'%{fabric_invoice}%')
             )
-        
         if fabric_dn:
             query = query.join(PackingListLine).join(StitchingInvoice).join(InvoiceLine).filter(
                 InvoiceLine.delivery_note.ilike(f'%{fabric_dn}%')
@@ -99,10 +109,10 @@ def get_packing_lists():
         # Order by creation date (newest first)
         query = query.order_by(PackingList.created_at.desc())
         
-        # Execute query with distinct to avoid duplicates from joins
         packing_lists = query.distinct().all()
-        
-        # Convert to dictionary format with detailed data for treeview
+        total = len(packing_lists)
+        packing_lists = packing_lists[offset:offset + limit]
+
         result = []
         for pl in packing_lists:
             pl_dict = pl.to_dict()
@@ -155,11 +165,25 @@ def get_packing_lists():
             
             pl_dict['lines'] = lines
             result.append(pl_dict)
-        
-        return jsonify(result)
-        
+        return jsonify({'items': result, 'total': total})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@packing_lists_bp.route('/filter-options', methods=['GET'])
+def get_packing_lists_filter_options():
+    """Return distinct values for filter dropdowns. Used for server-side loading."""
+    try:
+        base = PackingList.query.join(Customer)
+        pl_serials = [r[0] for r in base.with_entities(PackingList.packing_list_serial).distinct().all() if r[0]]
+        customers = [r[0] for r in base.with_entities(Customer.short_name).distinct().all() if r[0]]
+        return jsonify({
+            'pl_serials': sorted(pl_serials),
+            'customers': sorted(customers)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @packing_lists_bp.route('/generate', methods=['POST'])
 def create_packing_list():

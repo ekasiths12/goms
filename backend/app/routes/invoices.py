@@ -14,6 +14,17 @@ from extensions import db
 
 invoices_bp = Blueprint('invoices', __name__)
 
+# Server-side loading: default and max page size
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 500
+
+
+def _parse_multi_value(param):
+    """Parse comma-separated query param into list of non-empty strings."""
+    if not param or not str(param).strip():
+        return []
+    return [v.strip() for v in str(param).split(',') if v.strip()]
+
 @invoices_bp.route('/test', methods=['GET'])
 def test_invoices():
     """Test endpoint to check if the API is working"""
@@ -41,12 +52,8 @@ def count_invoices():
 
 @invoices_bp.route('/', methods=['GET'])
 def get_invoices():
-    """Get all invoices with line items and customer information"""
+    """Get all invoices with line items and customer information. Supports server-side filtering and pagination."""
     try:
-        print("DEBUG: get_invoices called")
-        print(f"DEBUG: Request URL: {request.url}")
-        print(f"DEBUG: Request args: {dict(request.args)}")
-        
         # Get query parameters for filtering
         customer_filter = request.args.get('customer')
         invoice_number_filter = request.args.get('invoice_number')
@@ -57,29 +64,44 @@ def get_invoices():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         stock_status = request.args.get('stock_status', 'inStock')
-        print(f"DEBUG: Received stock_status parameter: '{stock_status}'")
-
-        print(f"DEBUG: Filters - customer: {customer_filter}, stock_status: {stock_status}")
-
-        print("DEBUG: About to execute query")
+        limit = min(int(request.args.get('limit', DEFAULT_LIMIT)), MAX_LIMIT)
+        offset = max(0, int(request.args.get('offset', 0)))
 
         # Build query
         query = db.session.query(InvoiceLine).join(Invoice).join(Customer).options(
             db.joinedload(InvoiceLine.commission_sales)
         )
-        
-        # Apply filters
-        if customer_filter:
+
+        # Multi-value filters (comma-separated): use IN; single value: ilike
+        vals = _parse_multi_value(customer_filter)
+        if vals:
+            query = query.filter(Customer.short_name.in_(vals))
+        elif customer_filter:
             query = query.filter(Customer.short_name.ilike(f'%{customer_filter}%'))
-        if invoice_number_filter:
+        vals = _parse_multi_value(invoice_number_filter)
+        if vals:
+            query = query.filter(Invoice.invoice_number.in_(vals))
+        elif invoice_number_filter:
             query = query.filter(Invoice.invoice_number.ilike(f'%{invoice_number_filter}%'))
-        if tax_invoice_filter:
+        vals = _parse_multi_value(tax_invoice_filter)
+        if vals:
+            query = query.filter(Invoice.tax_invoice_number.in_(vals))
+        elif tax_invoice_filter:
             query = query.filter(Invoice.tax_invoice_number.ilike(f'%{tax_invoice_filter}%'))
-        if item_code_filter:
+        vals = _parse_multi_value(item_code_filter)
+        if vals:
+            query = query.filter(InvoiceLine.item_name.in_(vals))
+        elif item_code_filter:
             query = query.filter(InvoiceLine.item_name.ilike(f'%{item_code_filter}%'))
-        if dn_filter:
+        vals = _parse_multi_value(dn_filter)
+        if vals:
+            query = query.filter(InvoiceLine.delivery_note.in_(vals))
+        elif dn_filter:
             query = query.filter(InvoiceLine.delivery_note.ilike(f'%{dn_filter}%'))
-        if location_filter:
+        vals = _parse_multi_value(location_filter)
+        if vals:
+            query = query.filter(InvoiceLine.delivered_location.in_(vals))
+        elif location_filter:
             query = query.filter(InvoiceLine.delivered_location.ilike(f'%{location_filter}%'))
         if date_from:
             try:
@@ -109,31 +131,15 @@ def get_invoices():
                 pass
         
         # Execute query
-        print("DEBUG: About to execute query")
         invoice_lines = query.all()
-        print(f"DEBUG: Query executed, found {len(invoice_lines)} invoice lines")
-        
-        # Filter based on stock status
-        print(f"DEBUG: Stock status filter: {stock_status}")
-        print(f"DEBUG: Total lines before filtering: {len(invoice_lines)}")
-        
-        # Debug a few lines to see their values
-        for i, line in enumerate(invoice_lines[:5]):
-            total_commission_yards = sum(cs.yards_sold for cs in line.commission_sales)
-            total_used = (line.yards_consumed or 0) + total_commission_yards
-            yards_sent = line.yards_sent or 0
-            print(f"DEBUG: Line {i} - yards_sent: {yards_sent}, yards_consumed: {line.yards_consumed}, commission_yards: {total_commission_yards}, total_used: {total_used}, has_stock: {yards_sent > total_used}")
-        
+
+        # Filter based on stock status (in-memory)
         if stock_status == 'inStock':
-            # In Stock: yards_sent > (yards_consumed + total_commission_yards)
             invoice_lines = [line for line in invoice_lines if (line.yards_sent or 0) > ((line.yards_consumed or 0) + sum(cs.yards_sold for cs in line.commission_sales))]
-            print(f"DEBUG: After inStock filter: {len(invoice_lines)} lines")
         elif stock_status == 'noStock':
-            # No Stock: yards_sent <= (yards_consumed + total_commission_yards)
             invoice_lines = [line for line in invoice_lines if (line.yards_sent or 0) <= ((line.yards_consumed or 0) + sum(cs.yards_sold for cs in line.commission_sales))]
-            print(f"DEBUG: After noStock filter: {len(invoice_lines)} lines")
-        
-        # Format response
+
+        # Format response (full list first for total count)
         result = []
         for line in invoice_lines:
             # Use yards_sent and yards_consumed like the old Qt app
@@ -166,14 +172,66 @@ def get_invoices():
                 'total_commission_amount': sum(float(cs.commission_amount) for cs in line.commission_sales),
                 'commission_sales_count': len(line.commission_sales)
             })
-        
-        print(f"DEBUG: Returning {len(result)} results")
-        return jsonify(result)
-        
+        total = len(result)
+        # Server-side pagination: return one page
+        result = result[offset:offset + limit]
+        return jsonify({'items': result, 'total': total})
     except Exception as e:
-        print(f"DEBUG: Error in get_invoices: {str(e)}")
-        print(f"DEBUG: Traceback: {traceback.format_exc()}")
-        return {'error': str(e)}, 500
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@invoices_bp.route('/filter-options', methods=['GET'])
+def get_invoices_filter_options():
+    """Return distinct values for filter dropdowns (scoped by date_from/date_to). Used for server-side loading."""
+    try:
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        base = db.session.query(InvoiceLine).join(Invoice).join(Customer).options(
+            db.joinedload(InvoiceLine.commission_sales)
+        )
+        if date_from:
+            try:
+                s = date_from.strip()
+                if len(s) == 8 and s.count('/') == 2:
+                    d, m, y = s.split('/')
+                    y = '20' + y if len(y) == 2 and int(y) < 50 else ('19' + y if len(y) == 2 else y)
+                    s = f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+                date_from_obj = datetime.strptime(s[:10], '%Y-%m-%d')
+                base = base.filter(Invoice.invoice_date >= date_from_obj)
+            except (ValueError, IndexError):
+                pass
+        if date_to:
+            try:
+                s = date_to.strip()
+                if len(s) == 8 and s.count('/') == 2:
+                    d, m, y = s.split('/')
+                    y = '20' + y if len(y) == 2 and int(y) < 50 else ('19' + y if len(y) == 2 else y)
+                    s = f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+                date_to_obj = datetime.strptime(s[:10], '%Y-%m-%d')
+                base = base.filter(Invoice.invoice_date <= date_to_obj)
+            except (ValueError, IndexError):
+                pass
+        customers = [r[0] for r in base.with_entities(Customer.short_name).distinct().all() if r[0]]
+        invoice_numbers = [r[0] for r in base.with_entities(Invoice.invoice_number).distinct().all() if r[0]]
+        tax_invoices = [r[0] for r in base.with_entities(Invoice.tax_invoice_number).distinct().all() if r[0]]
+        item_names = [r[0] for r in base.with_entities(InvoiceLine.item_name).distinct().all() if r[0]]
+        delivery_notes = [r[0] for r in base.with_entities(InvoiceLine.delivery_note).distinct().all() if r[0]]
+        locations = [r[0] for r in base.with_entities(InvoiceLine.delivered_location).distinct().all() if r[0]]
+        return jsonify({
+            'customers': sorted(customers),
+            'invoice_numbers': sorted(invoice_numbers),
+            'tax_invoice_numbers': sorted(tax_invoices),
+            'item_names': sorted(item_names),
+            'delivery_notes': sorted(delivery_notes),
+            'locations': sorted(locations)
+        })
+    except Exception as e:
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 
 @invoices_bp.route('/', methods=['POST'])
 def create_invoice_line():

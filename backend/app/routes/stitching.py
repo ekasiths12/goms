@@ -18,12 +18,20 @@ from extensions import db
 
 stitching_bp = Blueprint('stitching', __name__)
 
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 500
+
+
+def _parse_multi_value(param):
+    if not param or not str(param).strip():
+        return []
+    return [v.strip() for v in str(param).split(',') if v.strip()]
+
+
 @stitching_bp.route('/', methods=['GET'])
 def get_stitching():
-    """Get all stitching records with optional filters"""
+    """Get all stitching records with optional filters. Supports server-side pagination (limit/offset)."""
     try:
-        
-        # Get query parameters for filtering
         pl_number = request.args.get('pl_number')
         serial_number = request.args.get('serial_number')
         fabric_name = request.args.get('fabric_name')
@@ -32,54 +40,51 @@ def get_stitching():
         date_to = request.args.get('date_to')
         delivered_only = request.args.get('delivered_only', 'false').lower() == 'true'
         undelivered_only = request.args.get('undelivered_only', 'false').lower() == 'true'
-        
-        # Build query with image relationship loaded
+        limit = min(int(request.args.get('limit', DEFAULT_LIMIT)), MAX_LIMIT)
+        offset = max(0, int(request.args.get('offset', 0)))
+
         query = StitchingInvoice.query.options(db.joinedload(StitchingInvoice.image))
-        
-        if pl_number:
+
+        vals = _parse_multi_value(pl_number)
+        if vals:
+            query = query.join(PackingListLine).join(PackingList).filter(PackingList.packing_list_serial.in_(vals))
+        elif pl_number:
             query = query.join(PackingListLine).join(PackingList).filter(
                 PackingList.packing_list_serial.ilike(f'%{pl_number}%')
             )
-        
-        if serial_number:
+        vals = _parse_multi_value(serial_number)
+        if vals:
+            query = query.filter(StitchingInvoice.stitching_invoice_number.in_(vals))
+        elif serial_number:
             query = query.filter(StitchingInvoice.stitching_invoice_number.ilike(f'%{serial_number}%'))
-        
-        if fabric_name:
+        vals = _parse_multi_value(fabric_name)
+        if vals:
+            query = query.filter(StitchingInvoice.item_name.in_(vals))
+        elif fabric_name:
             query = query.filter(StitchingInvoice.item_name.ilike(f'%{fabric_name}%'))
-        
-        if customer:
+        vals = _parse_multi_value(customer)
+        if vals:
+            query = query.join(InvoiceLine).join(Invoice).join(Customer).filter(Customer.short_name.in_(vals))
+        elif customer:
             query = query.join(InvoiceLine).join(Invoice).join(Customer).filter(
                 Customer.short_name.ilike(f'%{customer}%')
             )
-        
         if date_from:
             query = query.filter(StitchingInvoice.created_at >= date_from)
-        
         if date_to:
             query = query.filter(StitchingInvoice.created_at <= date_to)
         
-        # Apply delivery status filter
         if delivered_only:
-            # Show only records that have a packing list number (delivered)
             query = query.join(PackingListLine).filter(PackingListLine.stitching_invoice_id.isnot(None))
         elif undelivered_only:
-            # Show only records that don't have a packing list number (undelivered)
             query = query.filter(~StitchingInvoice.id.in_(
                 db.session.query(PackingListLine.stitching_invoice_id).filter(PackingListLine.stitching_invoice_id.isnot(None))
             ))
-        
-        # Order by creation date (newest first)
-        query = query.order_by(StitchingInvoice.created_at.desc())
-        
-        # Execute query
+        query = query.distinct().order_by(StitchingInvoice.created_at.desc())
         stitching_records = query.all()
-        
-        # Convert to dictionary format with additional data for treeview
+
         result = []
         for record in stitching_records:
-            # Debug: Check image relationship
-            print(f"🔍 Debug: Stitching record {record.id} - image_id: {record.image_id}, has image: {hasattr(record, 'image')}, image object: {record.image}")
-            
             record_dict = record.to_dict()
             
             # Get packing list information
@@ -126,11 +131,47 @@ def get_stitching():
                 }
             
             result.append(record_dict)
-        
-        return jsonify(result)
-        
+        total = len(result)
+        result = result[offset:offset + limit]
+        return jsonify({'items': result, 'total': total})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@stitching_bp.route('/filter-options', methods=['GET'])
+def get_stitching_filter_options():
+    """Return distinct values for filter dropdowns. Used for server-side loading."""
+    try:
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        base = StitchingInvoice.query
+        if date_from:
+            base = base.filter(StitchingInvoice.created_at >= date_from)
+        if date_to:
+            base = base.filter(StitchingInvoice.created_at <= date_to)
+        pl_serials = []
+        try:
+            sub = base.join(PackingListLine).join(PackingList).with_entities(PackingList.packing_list_serial).distinct()
+            pl_serials = sorted([r[0] for r in sub.all() if r[0]])
+        except Exception:
+            pass
+        serials = [r[0] for r in base.with_entities(StitchingInvoice.stitching_invoice_number).distinct().all() if r[0]]
+        fabric_names = [r[0] for r in base.with_entities(StitchingInvoice.item_name).distinct().all() if r[0]]
+        customers = []
+        try:
+            sub = base.join(InvoiceLine).join(Invoice).join(Customer).with_entities(Customer.short_name).distinct()
+            customers = sorted([r[0] for r in sub.all() if r[0]])
+        except Exception:
+            pass
+        return jsonify({
+            'pl_numbers': sorted(pl_serials),
+            'serial_numbers': sorted(serials),
+            'fabric_names': sorted(fabric_names),
+            'customers': customers
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @stitching_bp.route('/generate-serial', methods=['POST'])
 def generate_stitching_serial():

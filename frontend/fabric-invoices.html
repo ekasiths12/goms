@@ -1182,90 +1182,90 @@
 
         // Filter Manager
         let filterManager = null;
-        let allInvoiceData = []; // Store all data for client-side filtering
+        const INVOICE_PAGE_SIZE = 50;
+        let invoiceLoadAbortController = null;
 
-        // Authentication functions moved to js/common/utils.js
+        // Build query string for server-side invoice list (filters + pagination)
+        function buildInvoicesQueryParams(filterValues, page) {
+            const f = filterValues || (filterManager ? filterManager.getFilterValues() : {});
+            const params = new URLSearchParams();
+            params.set('limit', String(INVOICE_PAGE_SIZE));
+            params.set('offset', String(((page || 1) - 1) * INVOICE_PAGE_SIZE));
+            if (f.customer && (Array.isArray(f.customer) ? f.customer.length : f.customer)) {
+                params.set('customer', Array.isArray(f.customer) ? f.customer.join(',') : f.customer);
+            }
+            if (f.fabInvoice && (Array.isArray(f.fabInvoice) ? f.fabInvoice.length : f.fabInvoice)) {
+                params.set('invoice_number', Array.isArray(f.fabInvoice) ? f.fabInvoice.join(',') : f.fabInvoice);
+            }
+            if (f.taxInvoice && (Array.isArray(f.taxInvoice) ? f.taxInvoice.length : f.taxInvoice)) {
+                params.set('tax_invoice', Array.isArray(f.taxInvoice) ? f.taxInvoice.join(',') : f.taxInvoice);
+            }
+            if (f.itemCode && (Array.isArray(f.itemCode) ? f.itemCode.length : f.itemCode)) {
+                params.set('item_code', Array.isArray(f.itemCode) ? f.itemCode.join(',') : f.itemCode);
+            }
+            if (f.dn && (Array.isArray(f.dn) ? f.dn.length : f.dn)) {
+                params.set('dn', Array.isArray(f.dn) ? f.dn.join(',') : f.dn);
+            }
+            if (f.location && (Array.isArray(f.location) ? f.location.length : f.location)) {
+                params.set('location', Array.isArray(f.location) ? f.location.join(',') : f.location);
+            }
+            if (f.dateFrom && String(f.dateFrom).trim()) params.set('date_from', String(f.dateFrom).trim());
+            if (f.dateTo && String(f.dateTo).trim()) params.set('date_to', String(f.dateTo).trim());
+            if (f.stockStatus) params.set('stock_status', f.stockStatus);
+            return params.toString();
+        }
 
-        // Initialize page using PageInitializer
         PageInitializer.onLoad({
             activeTab: 'fabric-invoices',
             onAuthSuccess: async () => {
-                // Initialize table manager first
                 initializeTableManager();
-                
-                await loadInvoiceData();
-                
-                // Initialize FilterManager after data is loaded
-                initializeFilterManager();
-                
-                // Load cost and price lists for filter options
-                await loadCostList();
-                await loadPriceList();
-                
-                // Load customers for dropdowns
-                await loadCustomers();
+                const [filterOptions] = await Promise.all([
+                    fetch(getApiBaseUrl() + '/api/invoices/filter-options').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+                    loadCostList(),
+                    loadPriceList(),
+                    loadCustomers()
+                ]);
+                initializeFilterManager(filterOptions);
+                await loadInvoiceData(1, filterManager.getFilterValues());
             }
         });
 
-        async function loadInvoiceData() {
-            console.log('🔄 loadInvoiceData called');
-            
-            // Initialize components if not already done
-            if (!tableManager) {
-                initializeTableManager();
-            }
-            
-            // Clear selected rows when refreshing data
+        async function loadInvoiceData(page, filterValues) {
+            if (!tableManager) initializeTableManager();
             selectedRows = [];
-            console.log('🧹 Cleared selectedRows due to data refresh');
-            
+            if (invoiceLoadAbortController) invoiceLoadAbortController.abort();
+            invoiceLoadAbortController = new AbortController();
+            const queryString = buildInvoicesQueryParams(filterValues, page);
+            const apiUrl = `${getApiBaseUrl()}/api/invoices?${queryString}`;
             try {
-                // Load all data without filters (client-side filtering)
-                console.log('🌐 Fetching /api/invoices (all data)...');
-                const apiBaseUrl = getApiBaseUrl();
-                const apiUrl = `${apiBaseUrl}/api/invoices`;
-                
                 const response = await fetch(apiUrl, {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' },
+                    signal: invoiceLoadAbortController.signal
                 });
-                
-                if (response.ok) {
-                    const responseText = await response.text();
-                    try {
-                        const data = JSON.parse(responseText);
-                        console.log('📊 Received invoice data:', data.length, 'records');
-                        
-                        // Store all data for filtering
-                        allInvoiceData = data;
-                        
-                        // Update FilterManager with new data (it will apply filters and update table)
-                        if (filterManager) {
-                            filterManager.updateData(data);
-                        } else {
-                            // Fallback: if FilterManager not initialized yet, just set data
-                            tableManager.setData(data);
-                            if (tableSorter) {
-                                tableSorter.setData(data, invoiceSorterDataGetter);
-                            }
-                        }
-                        
-                    } catch (parseError) {
-                        console.error('❌ JSON parse error:', parseError);
-                        tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error parsing response data.</td></tr>';
-                    }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const json = await response.json();
+                const pageNum = page || 1;
+                const offset = (pageNum - 1) * INVOICE_PAGE_SIZE;
+                let items, total;
+                if (Array.isArray(json)) {
+                    total = json.length;
+                    items = json.slice(offset, offset + INVOICE_PAGE_SIZE);
                 } else {
-                    console.error('❌ Failed to load invoice data, status:', response.status);
-                    const errorText = await response.text();
-                    console.error('❌ Error response:', errorText);
-                    tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Failed to load invoice data. Please try refreshing the page.</td></tr>';
+                    items = json.items || [];
+                    total = json.total != null ? json.total : items.length;
                 }
-            } catch (error) {
-                console.error('❌ Error loading invoice data:', error);
-                tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Error loading invoice data. Please check your connection and try again.</td></tr>';
+                tableManager.setData(items);
+                tableManager.setServerSideTotal(total);
+                if (pageNum > 1 && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.currentPage = pageNum;
+                    tableManager.paginationComponent.update();
+                }
+                if (tableSorter) tableSorter.setData(items, invoiceSorterDataGetter);
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                console.error('Error loading invoice data:', err);
+                tableManager.tableBody.innerHTML = '<tr><td colspan="15" style="text-align: center; padding: 20px; color: #f44336;">Failed to load data. Please try again.</td></tr>';
             }
         }
         
@@ -1279,10 +1279,12 @@
             // Fabric invoices is currently a flat table (no hierarchy), but this keeps us on the new foundation.
             tableManager = new HierarchicalTableManager('invoiceTable', {
                 hierarchical: false,
-                itemsPerPage: 50,
+                itemsPerPage: INVOICE_PAGE_SIZE,
                 rowTemplate: rowTemplate.template,
                 rowIdentifier: 'id',
-                paginationContainerId: 'paginationContainer', // Use PaginationComponent
+                paginationContainerId: 'paginationContainer',
+                serverSidePagination: true,
+                onPageChange: (page) => loadInvoiceData(page, filterManager ? filterManager.getFilterValues() : {}),
                 onDataUpdate: (data) => {
                     console.log('📊 Table data updated:', data.length, 'records');
                 },
@@ -1324,105 +1326,34 @@
         }
 
         /**
-         * Initialize FilterManager with filter configuration
+         * Initialize FilterManager with filter configuration (server-side loading; options from API).
          */
-        function initializeFilterManager() {
-            console.log('🔄 Initializing FilterManager...');
-            
+        function initializeFilterManager(filterOptions) {
+            const opts = filterOptions || {};
             const filterConfig = [
-                {
-                    id: 'customer',
-                    type: 'dropdown',
-                    label: 'Customer',
-                    placeholder: 'Select Customer',
-                    multiSelect: true,
-                    dataKey: 'customer.short_name'
-                },
-                {
-                    id: 'fabInvoice',
-                    type: 'dropdown',
-                    label: 'Fab Inv',
-                    placeholder: 'Select Invoice',
-                    multiSelect: true,
-                    dataKey: 'invoice_number'
-                },
-                {
-                    id: 'taxInvoice',
-                    type: 'dropdown',
-                    label: 'Tax Inv',
-                    placeholder: 'Select Tax Invoice',
-                    multiSelect: true,
-                    dataKey: 'tax_invoice_number'
-                },
-                {
-                    id: 'itemCode',
-                    type: 'dropdown',
-                    label: 'Item',
-                    placeholder: 'Select Item',
-                    multiSelect: true,
-                    dataKey: 'item_name'
-                },
-                {
-                    id: 'dn',
-                    type: 'dropdown',
-                    label: 'DN',
-                    placeholder: 'Select DN',
-                    multiSelect: true,
-                    dataKey: 'delivery_note'
-                },
-                {
-                    id: 'location',
-                    type: 'dropdown',
-                    label: 'Location',
-                    placeholder: 'Select Location',
-                    multiSelect: true,
-                    dataKey: 'delivered_location'
-                },
-                {
-                    id: 'dateFrom',
-                    type: 'date',
-                    label: 'From',
-                    placeholder: 'DD/MM/YY',
-                    rangeType: 'from'
-                },
-                {
-                    id: 'dateTo',
-                    type: 'date',
-                    label: 'To',
-                    placeholder: 'DD/MM/YY',
-                    rangeType: 'to'
-                },
+                { id: 'customer', type: 'dropdown', label: 'Customer', placeholder: 'Select Customer', multiSelect: true, options: (opts.customers || []).map(v => ({ value: v, label: v })) },
+                { id: 'fabInvoice', type: 'dropdown', label: 'Fab Inv', placeholder: 'Select Invoice', multiSelect: true, options: (opts.invoice_numbers || []).map(v => ({ value: v, label: v })) },
+                { id: 'taxInvoice', type: 'dropdown', label: 'Tax Inv', placeholder: 'Select Tax Invoice', multiSelect: true, options: (opts.tax_invoice_numbers || []).map(v => ({ value: v, label: v })) },
+                { id: 'itemCode', type: 'dropdown', label: 'Item', placeholder: 'Select Item', multiSelect: true, options: (opts.item_names || []).map(v => ({ value: v, label: v })) },
+                { id: 'dn', type: 'dropdown', label: 'DN', placeholder: 'Select DN', multiSelect: true, options: (opts.delivery_notes || []).map(v => ({ value: v, label: v })) },
+                { id: 'location', type: 'dropdown', label: 'Location', placeholder: 'Select Location', multiSelect: true, options: (opts.locations || []).map(v => ({ value: v, label: v })) },
+                { id: 'dateFrom', type: 'date', label: 'From', placeholder: 'DD/MM/YY', rangeType: 'from' },
+                { id: 'dateTo', type: 'date', label: 'To', placeholder: 'DD/MM/YY', rangeType: 'to' },
                 {
                     id: 'stockStatus',
                     type: 'radio',
                     label: 'Stock Status',
-                    options: [
-                        { value: 'inStock', label: 'In Stock' },
-                        { value: 'noStock', label: 'No Stock' }
-                    ],
-                    defaultValue: 'inStock',
-                    customFilter: (item, filterValue) => {
-                        if (filterValue === 'inStock') {
-                            return !item.delivered_location || item.delivered_location === '';
-                        } else if (filterValue === 'noStock') {
-                            return item.delivered_location && item.delivered_location !== '';
-                        }
-                        return true;
-                    }
+                    options: [{ value: 'inStock', label: 'In Stock' }, { value: 'noStock', label: 'No Stock' }],
+                    defaultValue: 'inStock'
                 }
             ];
-            
             filterManager = new FilterManager({
                 containerId: 'filterControls',
                 filters: filterConfig,
-                data: allInvoiceData || [],
+                data: [],
+                serverSide: true,
                 onFilterChange: (filteredData, filterValues) => {
-                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
-                    // Update table with filtered data
-                    tableManager.setData(filteredData);
-                    if (tableSorter) {
-                        tableSorter.setData(filteredData, invoiceSorterDataGetter);
-                    }
+                    loadInvoiceData(1, filterValues);
                 },
                 debounceDelay: 500
             });
@@ -2723,7 +2654,7 @@
                 if (result.message) {
                     alert(result.message);
                     closeStitchingRecordDialog();
-                    loadInvoiceData(); // Refresh the table
+                    loadInvoiceData(1, filterManager ? filterManager.getFilterValues() : {});
                 } else {
                     alert('Error: ' + (result.error || 'Unknown error'));
                 }
@@ -2740,7 +2671,7 @@
         }
         
         function refreshInvoiceTable() {
-            loadInvoiceData();
+            loadInvoiceData(1, filterManager ? filterManager.getFilterValues() : {});
         }
 
         function openStitchingRecordDialog(selectedLineIds = null) {
@@ -3041,7 +2972,7 @@
                     }
                     alert(resultMsg);
                     closeModal('datImportModal');
-                    loadInvoiceData(); // Refresh the table
+                    loadInvoiceData(1, filterManager ? filterManager.getFilterValues() : {});
                 } else {
                     alert('Import failed. Please check the file format and try again.');
                 }

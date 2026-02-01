@@ -13,43 +13,49 @@ from extensions import db
 
 group_bills_bp = Blueprint('group_bills', __name__)
 
+DEFAULT_LIMIT = 50
+MAX_LIMIT = 500
+
+
+def _parse_multi_value(param):
+    if not param or not str(param).strip():
+        return []
+    return [v.strip() for v in str(param).split(',') if v.strip()]
+
+
 @group_bills_bp.route('/', methods=['GET'])
 def get_group_bills():
-    """Get all group bills with optional filters"""
+    """Get all group bills with optional filters. Supports server-side pagination (limit/offset)."""
     try:
-        # Get query parameters for filtering
         customer = request.args.get('customer')
-        status = request.args.get('status')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        
-        # Build query
+        limit = min(int(request.args.get('limit', DEFAULT_LIMIT)), MAX_LIMIT)
+        offset = max(0, int(request.args.get('offset', 0)))
+
         query = StitchingInvoiceGroup.query.join(Customer)
-        
-        if customer:
+        vals = _parse_multi_value(customer)
+        if vals:
+            query = query.filter(Customer.short_name.in_(vals))
+        elif customer:
             query = query.filter(Customer.short_name.ilike(f'%{customer}%'))
-        
         if date_from:
             try:
-                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                date_from_obj = datetime.strptime(date_from[:10], '%Y-%m-%d').date()
                 query = query.filter(db.func.date(StitchingInvoiceGroup.created_at) >= date_from_obj)
             except ValueError:
                 pass
-        
         if date_to:
             try:
-                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                date_to_obj = datetime.strptime(date_to[:10], '%Y-%m-%d').date()
                 query = query.filter(db.func.date(StitchingInvoiceGroup.created_at) <= date_to_obj)
             except ValueError:
                 pass
-        
-        # Order by creation date (newest first)
         query = query.order_by(StitchingInvoiceGroup.created_at.desc())
-        
-        # Execute query
         group_bills = query.all()
-        
-        # Convert to dictionary format with detailed structure
+        total = len(group_bills)
+        group_bills = group_bills[offset:offset + limit]
+
         result = []
         for group_bill in group_bills:
             group_dict = group_bill.to_dict()
@@ -64,11 +70,23 @@ def get_group_bills():
             group_dict['total_items'] = details.get('total_items', 0)
             
             result.append(group_dict)
-        
-        return jsonify(result)
-        
+        return jsonify({'items': result, 'total': total})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@group_bills_bp.route('/filter-options', methods=['GET'])
+def get_group_bills_filter_options():
+    """Return distinct values for filter dropdowns (group bills and commission sales). Used for server-side loading."""
+    try:
+        from app.models.commission_sale import CommissionSale
+        gb_customers = [r[0] for r in StitchingInvoiceGroup.query.join(Customer).with_entities(Customer.short_name).distinct().all() if r[0]]
+        cs_customers = [r[0] for r in CommissionSale.query.with_entities(CommissionSale.customer_name).distinct().all() if r[0]]
+        all_customers = sorted(set(gb_customers) | set(cs_customers))
+        return jsonify({'customers': all_customers})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @group_bills_bp.route('/create', methods=['POST'])
 def create_group_bill():
@@ -1458,39 +1476,38 @@ def get_group_bill_details(group_id):
 
 @group_bills_bp.route('/commission-sales', methods=['GET'])
 def get_commission_sales():
-    """Get all commission sales for the group bills page"""
+    """Get all commission sales. Supports server-side pagination (limit/offset)."""
     try:
         from app.models.commission_sale import CommissionSale
-        
-        # Get query parameters for filtering
+
         customer = request.args.get('customer')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        
-        # Build query
+        limit = min(int(request.args.get('limit', DEFAULT_LIMIT)), MAX_LIMIT)
+        offset = max(0, int(request.args.get('offset', 0)))
+
         query = CommissionSale.query
-        
-        if customer:
+        vals = _parse_multi_value(customer)
+        if vals:
+            query = query.filter(CommissionSale.customer_name.in_(vals))
+        elif customer:
             query = query.filter(CommissionSale.customer_name.ilike(f'%{customer}%'))
-        
         if date_from:
             try:
-                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                date_from_obj = datetime.strptime(date_from[:10], '%Y-%m-%d').date()
                 query = query.filter(CommissionSale.sale_date >= date_from_obj)
             except ValueError:
                 pass
-        
         if date_to:
             try:
-                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                date_to_obj = datetime.strptime(date_to[:10], '%Y-%m-%d').date()
                 query = query.filter(CommissionSale.sale_date <= date_to_obj)
             except ValueError:
                 pass
-        
-        # Execute query
         commission_sales = query.order_by(CommissionSale.sale_date.desc()).all()
-        
-        # Convert to dictionary format
+        total = len(commission_sales)
+        commission_sales = commission_sales[offset:offset + limit]
+
         result = []
         for sale in commission_sales:
             sale_dict = {
@@ -1509,8 +1526,6 @@ def get_commission_sales():
                 'delivered_location': sale.delivered_location
             }
             result.append(sale_dict)
-        
-        return jsonify(result)
-        
+        return jsonify({'items': result, 'total': total})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

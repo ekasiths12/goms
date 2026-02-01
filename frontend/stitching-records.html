@@ -617,28 +617,49 @@
     </div>
 
     <script>
-        // Stitching Records Functions
         let stitchingData = [];
-        let allStitchingData = []; // Store all data for client-side filtering
         let selectedRows = [];
-        let currentPage = 1;
-        const itemsPerPage = 50;
+        const STITCHING_PAGE_SIZE = 50;
+        let stitchingLoadAbortController = null;
         let currentStitchingRecord = null;
         let filterManager = null;
         let tableManager = null;
         let tableSorter = null;
 
+        function buildStitchingQueryParams(filterValues, page) {
+            const f = filterValues || (filterManager ? filterManager.getFilterValues() : {});
+            const params = new URLSearchParams();
+            params.set('limit', String(STITCHING_PAGE_SIZE));
+            params.set('offset', String(((page || 1) - 1) * STITCHING_PAGE_SIZE));
+            if (f.plNumber && (Array.isArray(f.plNumber) ? f.plNumber.length : f.plNumber)) {
+                params.set('pl_number', Array.isArray(f.plNumber) ? f.plNumber.join(',') : f.plNumber);
+            }
+            if (f.serialNumber && (Array.isArray(f.serialNumber) ? f.serialNumber.length : f.serialNumber)) {
+                params.set('serial_number', Array.isArray(f.serialNumber) ? f.serialNumber.join(',') : f.serialNumber);
+            }
+            if (f.fabricName && (Array.isArray(f.fabricName) ? f.fabricName.length : f.fabricName)) {
+                params.set('fabric_name', Array.isArray(f.fabricName) ? f.fabricName.join(',') : f.fabricName);
+            }
+            if (f.customer && (Array.isArray(f.customer) ? f.customer.length : f.customer)) {
+                params.set('customer', Array.isArray(f.customer) ? f.customer.join(',') : f.customer);
+            }
+            if (f.dateFrom && String(f.dateFrom).trim()) params.set('date_from', String(f.dateFrom).trim());
+            if (f.dateTo && String(f.dateTo).trim()) params.set('date_to', String(f.dateTo).trim());
+            if (f.deliveryStatus === 'delivered') {
+                params.set('delivered_only', 'true');
+            } else if (f.deliveryStatus === 'undelivered') {
+                params.set('undelivered_only', 'true');
+            }
+            return params.toString();
+        }
 
-        // Authentication functions moved to js/common/utils.js
-
-        // Load data when page loads
-        // Initialize page using PageInitializer
         PageInitializer.onLoad({
             activeTab: 'stitching-records',
             onAuthSuccess: async () => {
                 initializeTableManager();
-                initializeFilterManager();
-                await loadStitchingData();
+                const filterOptions = await fetch(getApiBaseUrl() + '/api/stitching/filter-options').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+                initializeFilterManager(filterOptions);
+                await loadStitchingData(1, filterManager.getFilterValues());
             }
         });
 
@@ -650,8 +671,10 @@
         function initializeTableManager() {
             tableManager = new HierarchicalTableManager('stitchingTreeview', {
                 hierarchical: false,
-                itemsPerPage: itemsPerPage,
+                itemsPerPage: STITCHING_PAGE_SIZE,
                 paginationContainerId: 'paginationContainer',
+                serverSidePagination: true,
+                onPageChange: (page) => loadStitchingData(page, filterManager ? filterManager.getFilterValues() : {}),
                 customRender: (pageData) => {
                     populateStitchingTreeview(pageData, { skipPagination: true });
                 }
@@ -671,79 +694,16 @@
             }
         }
 
-        /**
-         * Initialize FilterManager with filter configuration
-         */
-        function initializeFilterManager() {
-            console.log('🔄 Initializing FilterManager...');
-            
+        function initializeFilterManager(filterOptions) {
+            const opts = filterOptions || {};
             const filterConfig = [
-                {
-                    id: 'plNumber',
-                    type: 'dropdown',
-                    label: 'PL#',
-                    placeholder: 'Select PL#',
-                    multiSelect: true,
-                    dataKey: 'packing_list_number'
-                },
-                {
-                    id: 'serialNumber',
-                    type: 'dropdown',
-                    label: 'Serial#',
-                    placeholder: 'Select Serial#',
-                    multiSelect: true,
-                    dataKey: 'stitching_invoice_number'
-                },
-                {
-                    id: 'fabricName',
-                    type: 'dropdown',
-                    label: 'Fabric',
-                    placeholder: 'Select Fabric',
-                    multiSelect: true,
-                    dataKey: 'item_name'
-                },
-                {
-                    id: 'fabricInvoice',
-                    type: 'dropdown',
-                    label: 'Fabric Inv.',
-                    placeholder: 'Select Fabric Inv.',
-                    multiSelect: true,
-                    dataKey: 'fabric_invoice_number'
-                },
-                {
-                    id: 'customer',
-                    type: 'dropdown',
-                    label: 'Customer',
-                    placeholder: 'Select Customer',
-                    multiSelect: true,
-                    dataKey: 'customer_name'
-                },
-                {
-                    id: 'dateFrom',
-                    type: 'date',
-                    label: 'From',
-                    placeholder: 'DD/MM/YY',
-                    rangeType: 'from',
-                    customFilter: (record, filterValue) => {
-                        if (!filterValue || !String(filterValue).trim()) return true;
-                        const recordDate = new Date(record.created_at);
-                        if (isNaN(recordDate.getTime())) return true;
-                        return isDateInRange(recordDate, filterValue, 'from');
-                    }
-                },
-                {
-                    id: 'dateTo',
-                    type: 'date',
-                    label: 'To',
-                    placeholder: 'DD/MM/YY',
-                    rangeType: 'to',
-                    customFilter: (record, filterValue) => {
-                        if (!filterValue || !String(filterValue).trim()) return true;
-                        const recordDate = new Date(record.created_at);
-                        if (isNaN(recordDate.getTime())) return true;
-                        return isDateInRange(recordDate, filterValue, 'to');
-                    }
-                },
+                { id: 'plNumber', type: 'dropdown', label: 'PL#', placeholder: 'Select PL#', multiSelect: true, options: (opts.pl_numbers || []).map(v => ({ value: v, label: v })) },
+                { id: 'serialNumber', type: 'dropdown', label: 'Serial#', placeholder: 'Select Serial#', multiSelect: true, options: (opts.serial_numbers || []).map(v => ({ value: v, label: v })) },
+                { id: 'fabricName', type: 'dropdown', label: 'Fabric', placeholder: 'Select Fabric', multiSelect: true, options: (opts.fabric_names || []).map(v => ({ value: v, label: v })) },
+                { id: 'fabricInvoice', type: 'dropdown', label: 'Fabric Inv.', placeholder: 'Select Fabric Inv.', multiSelect: true, options: [] },
+                { id: 'customer', type: 'dropdown', label: 'Customer', placeholder: 'Select Customer', multiSelect: true, options: (opts.customers || []).map(v => ({ value: v, label: v })) },
+                { id: 'dateFrom', type: 'date', label: 'From', placeholder: 'DD/MM/YY', rangeType: 'from' },
+                { id: 'dateTo', type: 'date', label: 'To', placeholder: 'DD/MM/YY', rangeType: 'to' },
                 {
                     id: 'deliveryStatus',
                     type: 'radio',
@@ -753,33 +713,16 @@
                         { value: 'delivered', label: 'Delivered Only' },
                         { value: 'undelivered', label: 'Undelivered Only' }
                     ],
-                    defaultValue: 'undelivered', // Default to undelivered as per original behavior
-                    customFilter: (record, filterValue) => {
-                        // Check if record has packing_list_number (delivered) or not (undelivered)
-                        const hasPackingList = record.packing_list_number && 
-                                             record.packing_list_number.trim() !== '';
-                        
-                        if (filterValue === 'delivered') {
-                            return hasPackingList;
-                        } else if (filterValue === 'undelivered') {
-                            return !hasPackingList;
-                        } else {
-                            // 'all' - show all records
-                            return true;
-                        }
-                    }
+                    defaultValue: 'undelivered'
                 }
             ];
-            
             filterManager = new FilterManager({
                 containerId: 'filterControls',
                 filters: filterConfig,
-                data: allStitchingData || [],
+                data: [],
+                serverSide: true,
                 onFilterChange: (filteredData, filterValues) => {
-                    console.log('🔍 Filters changed, filtered data:', filteredData.length, 'records');
-                    stitchingData = filteredData;
-                    if (tableManager) tableManager.setData(filteredData);
-                    if (tableSorter) tableSorter.setData(filteredData, getStitchingValueForSorting);
+                    loadStitchingData(1, filterValues);
                 },
                 debounceDelay: 500
             });
@@ -813,56 +756,43 @@
             console.log('✅ FilterManager initialized');
         }
 
-        async function loadStitchingData() {
-            console.log('🔄 loadStitchingData called');
-            
+        async function loadStitchingData(page, filterValues) {
             const tbody = document.getElementById('stitchingTreeviewBody');
-            if (!tbody) {
-                console.error('❌ Stitching table body not found');
-                return;
-            }
-            
-            console.log('✅ Found stitching table body, showing loading state');
-            tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading stitching records...</td></tr>';
-            
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="26" style="text-align: center; padding: 20px; color: var(--text-secondary);">Loading...</td></tr>';
+            if (stitchingLoadAbortController) stitchingLoadAbortController.abort();
+            stitchingLoadAbortController = new AbortController();
+            const queryString = buildStitchingQueryParams(filterValues, page);
             try {
-                // Load all data without filters (client-side filtering)
-                console.log('🌐 Fetching /api/stitching (all data)...');
-                const apiBaseUrl = getApiBaseUrl();
-                const apiUrl = `${apiBaseUrl}/api/stitching`;
-                
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`${getApiBaseUrl()}/api/stitching?${queryString}`, {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' },
+                    signal: stitchingLoadAbortController.signal
                 });
-                
-                console.log('📡 Response status:', response.status);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📊 Received stitching data:', data.length, 'records');
-                    
-                    // Store all data for filtering
-                    allStitchingData = data;
-                    if (filterManager) {
-                        filterManager.updateData(data);
-                    } else {
-                        stitchingData = data;
-                        if (tableManager) tableManager.setData(data);
-                        if (tableSorter) tableSorter.setData(data, getStitchingValueForSorting);
-                    }
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const json = await response.json();
+                const pageNum = page || 1;
+                const offset = (pageNum - 1) * STITCHING_PAGE_SIZE;
+                let items, total;
+                if (Array.isArray(json)) {
+                    total = json.length;
+                    items = json.slice(offset, offset + STITCHING_PAGE_SIZE);
                 } else {
-                    console.error('❌ Failed to load stitching data, status:', response.status);
-                    const errorText = await response.text();
-                    console.error('❌ Error response:', errorText);
-                    tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: #f44336;">Failed to load stitching data. Please try refreshing the page.</td></tr>';
+                    items = json.items || [];
+                    total = json.total != null ? json.total : items.length;
                 }
-            } catch (error) {
-                console.error('❌ Error loading stitching data:', error);
-                tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: #f44336;">Error loading stitching data. Please check your connection and try again.</td></tr>';
+                stitchingData = items;
+                tableManager.setData(items);
+                tableManager.setServerSideTotal(total);
+                if (pageNum > 1 && tableManager.paginationComponent) {
+                    tableManager.paginationComponent.currentPage = pageNum;
+                    tableManager.paginationComponent.update();
+                }
+                if (tableSorter) tableSorter.setData(items, getStitchingValueForSorting);
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                console.error('Error loading stitching data:', err);
+                tbody.innerHTML = '<tr><td colspan="29" style="text-align: center; padding: 20px; color: #f44336;">Failed to load data. Please try again.</td></tr>';
             }
         }
 
@@ -880,18 +810,18 @@
                 return;
             }
 
+            const pageNum = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
+            const perPage = (tableManager && tableManager.itemsPerPage) || STITCHING_PAGE_SIZE;
             let pageData;
             let startIndex;
             if (skipPagination) {
                 pageData = sourceData;
-                startIndex = tableManager && typeof tableManager.getCurrentPage === 'function'
-                    ? (tableManager.getCurrentPage() - 1) * itemsPerPage
-                    : 0;
+                startIndex = (pageNum - 1) * perPage;
             } else {
-                const totalPages = Math.ceil(stitchingData.length / itemsPerPage);
-                if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-                startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = Math.min(startIndex + itemsPerPage, stitchingData.length);
+                const totalPages = Math.ceil(stitchingData.length / perPage);
+                const currentPage = Math.min(pageNum, totalPages || 1);
+                startIndex = (currentPage - 1) * perPage;
+                const endIndex = Math.min(startIndex + perPage, stitchingData.length);
                 pageData = stitchingData.slice(startIndex, endIndex);
             }
 
@@ -1036,7 +966,7 @@
                 }
             });
 
-            console.log('✅ Stitching treeview populated with', pageData.length, 'rows' + (skipPagination ? '' : ' (page ' + currentPage + ')'));
+            console.log('✅ Stitching treeview populated with', pageData.length, 'rows');
             if (!skipPagination && tableManager && tableManager.paginationComponent) {
                 tableManager.paginationComponent.update();
             }
@@ -1265,7 +1195,7 @@
                     const result = await response.json();
                     alert('Stitching record amended successfully!');
                     closeStitchingDetailModal();
-                    loadStitchingData(); // Refresh the data
+                    loadStitchingData(1, filterManager ? filterManager.getFilterValues() : {});
                 } else {
                     const error = await response.json();
                     alert(`Error amending stitching record: ${error.error}`);
@@ -1281,7 +1211,9 @@
             const checkboxes = document.querySelectorAll('#stitchingTableBody input[type="checkbox"]');
             
             checkboxes.forEach((checkbox, index) => {
-                const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                const pg = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
+            const perPage = (tableManager && tableManager.itemsPerPage) || STITCHING_PAGE_SIZE;
+            const actualIndex = (pg - 1) * perPage + index;
                 if (selectAllCheckbox.checked) {
                     checkbox.checked = true;
                     if (!selectedRows.includes(actualIndex)) {
@@ -1297,12 +1229,13 @@
         function toggleSelectAllTree() {
             const selectAllCheckbox = document.getElementById('selectAllTree');
             const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
-            const page = tableManager && typeof tableManager.getCurrentPage === 'function' ? tableManager.getCurrentPage() : currentPage;
+            const page = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
             
             // Convert NodeList to Array for forEach method
             const checkboxesArray = Array.from(checkboxes);
             checkboxesArray.forEach((checkbox, index) => {
-                const actualIndex = (page - 1) * itemsPerPage + index;
+                const perPage = (tableManager && tableManager.itemsPerPage) || STITCHING_PAGE_SIZE;
+                const actualIndex = (page - 1) * perPage + index;
                 if (selectAllCheckbox.checked) {
                     checkbox.checked = true;
                     if (!selectedRows.includes(actualIndex)) {
@@ -1332,10 +1265,11 @@
             }
             
             // Update the checkbox state
-            const page = tableManager && typeof tableManager.getCurrentPage === 'function' ? tableManager.getCurrentPage() : currentPage;
+            const page = tableManager && tableManager.paginationComponent ? tableManager.paginationComponent.getCurrentPage() : 1;
             const checkboxes = document.querySelectorAll('#stitchingTreeviewBody input[type="checkbox"]');
             checkboxes.forEach((checkbox, index) => {
-                const checkboxActualIndex = (page - 1) * itemsPerPage + index;
+                const perPage = (tableManager && tableManager.itemsPerPage) || STITCHING_PAGE_SIZE;
+                const checkboxActualIndex = (page - 1) * perPage + index;
                 if (checkboxActualIndex === actualIndex) {
                     checkbox.checked = selectedRows.includes(actualIndex);
                 }
@@ -1393,7 +1327,7 @@
         }
 
         function refreshStitchingTable() {
-            loadStitchingData();
+            loadStitchingData(1, filterManager ? filterManager.getFilterValues() : {});
         }
 
         function exportStitchingRecords() {
@@ -1853,7 +1787,7 @@
                     if (result.message) {
                         alert(result.message);
                         closeStitchingDetailModal();
-                        loadStitchingData(); // Refresh the table
+                        loadStitchingData(1, filterManager ? filterManager.getFilterValues() : {});
                     } else {
                         alert('Error: ' + (result.error || 'Unknown error'));
                     }
@@ -1895,7 +1829,7 @@
                     if (result.message) {
                         alert(result.message);
                         selectedRows = []; // Clear selection
-                        loadStitchingData(); // Refresh the table
+                        loadStitchingData(1, filterManager ? filterManager.getFilterValues() : {});
                     } else {
                         alert('Error: ' + (result.error || 'Unknown error'));
                     }
@@ -2012,7 +1946,7 @@
                 if (result.message) {
                     alert(result.message);
                     selectedRows = []; // Clear selection
-                    loadStitchingData(); // Refresh the table
+                    loadStitchingData(1, filterManager ? filterManager.getFilterValues() : {});
                     closePackingListDialog();
                 } else {
                     alert('Error: ' + (result.error || 'Unknown error'));

@@ -3,6 +3,7 @@
  * Handles all filter types: dropdown (with search), text, date, radio
  * Supports multi-select with tags/chips display
  * Auto-extracts options from data or accepts manual options
+ * When serverSide is true: no in-memory filtering; onFilterChange(filteredData, filterValues) is called with filteredData=null so the page refetches with params.
  */
 
 class FilterManager {
@@ -12,12 +13,13 @@ class FilterManager {
         this.data = config.data || [];
         this.onFilterChange = config.onFilterChange || (() => {});
         this.debounceDelay = config.debounceDelay || 500;
-        
+        /** When true, filtering is done on the server; applyFilters() calls onFilterChange(null, filterValues) so the page can refetch. */
+        this.serverSide = config.serverSide || false;
+
         this.filterValues = {};
         this.filterTimer = null;
         this.container = null;
-        
-        // Initialize
+
         this.initialize();
     }
     
@@ -46,15 +48,15 @@ class FilterManager {
         // Render filters
         this.render();
         
-        // Setup event listeners
         this.setupEventListeners();
-        
-        // Apply initial filters if data exists
-        if (this.data && this.data.length > 0) {
+
+        if (this.serverSide) {
+            this.onFilterChange(null, this.filterValues);
+        } else if (this.data && this.data.length > 0) {
             this.applyFilters();
         }
-        
-        console.log('✅ FilterManager initialized');
+
+        console.log('✅ FilterManager initialized' + (this.serverSide ? ' (server-side)' : ''));
     }
     
     /**
@@ -569,15 +571,18 @@ class FilterManager {
     }
     
     /**
-     * Apply filters to data
+     * Apply filters to data. When serverSide is true, does not filter in memory; calls onFilterChange(null, filterValues) so the page refetches.
      */
     applyFilters() {
+        if (this.serverSide) {
+            this.onFilterChange(null, this.filterValues);
+            return;
+        }
         const filtered = this.data.filter(item => {
             return this.filters.every(filter => {
                 return this.matchesFilter(item, filter);
             });
         });
-        
         this.onFilterChange(filtered, this.filterValues);
     }
     
@@ -684,19 +689,13 @@ class FilterManager {
     }
     
     /**
-     * Update data and refresh options
+     * Update data and refresh options. When serverSide, only updates internal data for dropdown option extraction if options are not provided by the page.
      */
     updateData(newData) {
         this.data = newData || [];
-        
-        // Refresh dropdown options for filters that auto-extract
-        this.filters.forEach(filter => {
-            if (filter.type === 'dropdown' && !filter.options) {
-                // Options will be refreshed when dropdown is opened
-            }
-        });
-        
-        // Re-apply filters with new data
+        if (this.serverSide) {
+            return;
+        }
         this.applyFilters();
     }
     
